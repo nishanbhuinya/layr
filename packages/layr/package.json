@@ -53,11 +53,7 @@
 		},
 		"./package.json": "./package.json"
 	},
-	"files": [
-		"dist",
-		"README.md",
-		"LICENSE"
-	],
+	"files": ["dist", "README.md", "LICENSE"],
 	"sideEffects": false,
 	"scripts": {
 		"build": "tsup",
