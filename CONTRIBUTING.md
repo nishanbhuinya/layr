@@ -23,22 +23,23 @@ Thank you for considering contributing to Layr.
 9. Open a pull request
 
 ## Development Setup
-
-Clone the repository
+```bash
+# Clone the repository
 git clone <https://github.com/nishanbhuinya/layr.git>
 cd layr
 
-Install dependencies
+# Install dependencies
 pnpm install
 
-Build the package
+# Build the package
 pnpm build
 
-Run tests
+# Run tests
 pnpm test
 
-Run tests in watch mode
+# Run tests in watch mode
 pnpm test:watch
+```
 
 ## Code Style
 
