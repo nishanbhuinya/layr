@@ -70,6 +70,24 @@ layr/
 
 Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+## Known Issues
+
+### Row Width Constraints
+
+`Row` components may not respect parent `Container` width constraints. 
+
+**Workaround:** Wrap Row in a Container with `constraints={{ maxWidth: "100%" }}`:
+
+```tsx
+<Container width="80vw">
+  <Container constraints={{ maxWidth: "100%" }}>
+    <Row>...</Row>
+  </Container>
+</Container>
+```
+
+See [#2](https://github.com/nishanbhuiya/layr/issues/2) for tracking.
+
 ## License
 
 MIT © 2025 [DynShift](https://dynshift.com) & [Nishan Bhuiya](https://nishanbhuinya.com)
