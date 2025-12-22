@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # ✅ Required for OIDC
+  id-token: write
 
 jobs:
   publish:
@@ -23,7 +23,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          registry-url: 'https://registry.npmjs.org'
+          # ❌ REMOVED: registry-url (this was breaking OIDC)
           cache: 'pnpm'
       
       - name: Install dependencies
@@ -35,7 +35,6 @@ jobs:
       - name: Build package
         run: pnpm build
       
-      - name: Publish with Trusted Publisher (OIDC)
+      - name: Publish with OIDC
         working-directory: packages/layr
         run: npm publish --access public
-        # ❌ DO NOT SET NODE_AUTH_TOKEN - npm uses OIDC automatically
