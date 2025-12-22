@@ -4,6 +4,7 @@
 
 > **Flutter-inspired layout primitives for React**
 
+[![CI](https://github.com/nishanbhuinya/layr/actions/workflows/ci.yml/badge.svg)](https://github.com/nishanbhuinya/layr/actions)
 [![npm version](https://img.shields.io/npm/v/@dynshift/layr.svg)](https://www.npmjs.com/package/@dynshift/layr)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
