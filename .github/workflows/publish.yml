@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+  id-token: write  # Required for OIDC
 
 jobs:
   publish:
@@ -22,8 +22,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          # ❌ REMOVED: registry-url (this was breaking OIDC)
+          node-version: '24'  # ✅ npm 11.5.1+ included (REQUIRED for OIDC)
+          registry-url: 'https://registry.npmjs.org'  # ✅ REQUIRED for OIDC
           cache: 'pnpm'
       
       - name: Install dependencies
@@ -37,4 +37,4 @@ jobs:
       
       - name: Publish with OIDC
         working-directory: packages/layr
-        run: npm publish --access public
+        run: npm publish --access public  # No token needed - OIDC auto-detected
