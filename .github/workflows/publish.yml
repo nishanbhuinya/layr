@@ -5,47 +5,37 @@ on:
     tags:
       - 'v*.*.*'
 
+permissions:
+  contents: read
+  id-token: write  # ✅ Required for OIDC
+
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write   # for Trusted Publisher / OIDC
-
+    
     steps:
       - uses: actions/checkout@v4
-
+      
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-
+      
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
           cache: 'pnpm'
-
+      
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-
+      
       - name: Run tests
         run: pnpm test
-
+      
       - name: Build package
         run: pnpm build
-
-      # 1) Try Trusted Publisher (OIDC + provenance)
-      - name: Publish with Trusted Publisher
-        working-directory: packages/layr
-        run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        continue-on-error: true
-
-      # 2) Fallback to classic token publish if above fails
-      - name: Fallback publish with NPM_TOKEN
-        if: failure()          # only runs if previous step failed
+      
+      - name: Publish with Trusted Publisher (OIDC)
         working-directory: packages/layr
         run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        # ❌ DO NOT SET NODE_AUTH_TOKEN - npm uses OIDC automatically
