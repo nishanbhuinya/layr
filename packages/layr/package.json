@@ -1,6 +1,6 @@
 {
 	"name": "@dynshift/layr",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"description": "Flutter-inspired layout primitives for React",
 	"keywords": [
 		"react",
