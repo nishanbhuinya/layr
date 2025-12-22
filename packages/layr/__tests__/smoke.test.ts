@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from "vitest";
 
-describe('layr package', () => {
-  it('smoke test placeholder', () => {
-    expect(true).toBe(true);
-  });
+describe("layr package", () => {
+	it("smoke test placeholder", () => {
+		expect(true).toBe(true);
+	});
 });

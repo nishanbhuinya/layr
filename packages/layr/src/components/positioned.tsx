@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import type React from 'react';
-import type { CSSProperties, ReactNode } from 'react';
+import type React from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 // ============================================================================
 // TYPES - Positioned Props
@@ -11,64 +11,64 @@ import type { CSSProperties, ReactNode } from 'react';
  * Positioned Props - Mirrors Flutter Positioned widget
  */
 export interface PositionedProps {
-  /**
-   * The child widget to position
-   */
-  children?: ReactNode;
+	/**
+	 * The child widget to position
+	 */
+	children?: ReactNode;
 
-  /**
-   * Distance from top edge of stack
-   * 
-   * @example
-   * ```
-   * <Positioned top={20}>
-   *   <Container>20px from top</Container>
-   * </Positioned>
-   * ```
-   */
-  top?: number | string;
+	/**
+	 * Distance from top edge of stack
+	 *
+	 * @example
+	 * ```
+	 * <Positioned top={20}>
+	 *   <Container>20px from top</Container>
+	 * </Positioned>
+	 * ```
+	 */
+	top?: number | string;
 
-  /**
-   * Distance from bottom edge of stack
-   */
-  bottom?: number | string;
+	/**
+	 * Distance from bottom edge of stack
+	 */
+	bottom?: number | string;
 
-  /**
-   * Distance from left edge of stack (in LTR mode)
-   */
-  left?: number | string;
+	/**
+	 * Distance from left edge of stack (in LTR mode)
+	 */
+	left?: number | string;
 
-  /**
-   * Distance from right edge of stack (in LTR mode)
-   */
-  right?: number | string;
+	/**
+	 * Distance from right edge of stack (in LTR mode)
+	 */
+	right?: number | string;
 
-  /**
-   * Width of the positioned child
-   * 
-   * @example
-   * ```
-   * <Positioned left={0} right={0} width="100%">
-   *   <Container>Full width</Container>
-   * </Positioned>
-   * ```
-   */
-  width?: number | string;
+	/**
+	 * Width of the positioned child
+	 *
+	 * @example
+	 * ```
+	 * <Positioned left={0} right={0} width="100%">
+	 *   <Container>Full width</Container>
+	 * </Positioned>
+	 * ```
+	 */
+	width?: number | string;
 
-  /**
-   * Height of the positioned child
-   */
-  height?: number | string;
+	/**
+	 * Height of the positioned child
+	 */
+	height?: number | string;
 
-  /**
-   * Additional CSS class names
-   */
-  className?: string;
+	/**
+	 * Additional CSS class names
+	 */
+	className?: string;
 
-  /**
-   * Custom inline styles
-   */
-  style?: CSSProperties;
+	/**
+	 * Custom inline styles
+	 */
+	style?: CSSProperties;
 }
 
 // ============================================================================
@@ -79,8 +79,8 @@ export interface PositionedProps {
  * Normalizes dimension values (number to px string)
  */
 function normalizeDimension(value?: number | string): string | undefined {
-  if (value === undefined) return undefined;
-  return typeof value === 'number' ? `${value}px` : value;
+	if (value === undefined) return undefined;
+	return typeof value === "number" ? `${value}px` : value;
 }
 
 // ============================================================================
@@ -89,10 +89,10 @@ function normalizeDimension(value?: number | string): string | undefined {
 
 /**
  * Positioned - Controls where a child of Stack is positioned
- * 
+ *
  * Must be a direct child of Stack. At least one of top, bottom, left, or right
  * must be non-null.
- * 
+ *
  * @example Basic positioning
  * ```
  * <Stack style={{ width: 300, height: 300 }}>
@@ -104,7 +104,7 @@ function normalizeDimension(value?: number | string): string | undefined {
  *   </Positioned>
  * </Stack>
  * ```
- * 
+ *
  * @example Full width at bottom
  * ```
  * <Stack style={{ width: '100%', height: '100vh' }}>
@@ -115,7 +115,7 @@ function normalizeDimension(value?: number | string): string | undefined {
  *   </Positioned>
  * </Stack>
  * ```
- * 
+ *
  * @example Centered with specific size
  * ```
  * <Stack style={{ width: 400, height: 400 }}>
@@ -130,12 +130,12 @@ function normalizeDimension(value?: number | string): string | undefined {
  *   </Positioned>
  * </Stack>
  * ```
- * 
+ *
  * @example Privogram hero badge (your design)
  * ```
  * <Stack style={{ width: '100%', height: '100vh' }}>
  *   <Container decoration={{ image: { image: '/bg.jpg', fit: 'cover' } }} />
- *   
+ *
  *   <Positioned top={20} right={20}>
  *     <Container
  *       padding={8}
@@ -152,45 +152,45 @@ function normalizeDimension(value?: number | string): string | undefined {
  * ```
  */
 export const Positioned: React.FC<PositionedProps> = ({
-  children,
-  top,
-  bottom,
-  left,
-  right,
-  width,
-  height,
-  className = '',
-  style = {},
+	children,
+	top,
+	bottom,
+	left,
+	right,
+	width,
+	height,
+	className = "",
+	style = {},
 }) => {
-  // Build positioned styles
-  const positionedStyles: CSSProperties = {
-    position: 'absolute',
-    
-    // Position from edges
-    top: normalizeDimension(top),
-    bottom: normalizeDimension(bottom),
-    left: normalizeDimension(left),
-    right: normalizeDimension(right),
-    
-    // Explicit dimensions
-    width: normalizeDimension(width),
-    height: normalizeDimension(height),
-    
-    // Box sizing
-    boxSizing: 'border-box',
-    
-    // Custom styles
-    ...style,
-  };
+	// Build positioned styles
+	const positionedStyles: CSSProperties = {
+		position: "absolute",
 
-  return (
-    <div className={className} style={positionedStyles}>
-      {children}
-    </div>
-  );
+		// Position from edges
+		top: normalizeDimension(top),
+		bottom: normalizeDimension(bottom),
+		left: normalizeDimension(left),
+		right: normalizeDimension(right),
+
+		// Explicit dimensions
+		width: normalizeDimension(width),
+		height: normalizeDimension(height),
+
+		// Box sizing
+		boxSizing: "border-box",
+
+		// Custom styles
+		...style,
+	};
+
+	return (
+		<div className={className} style={positionedStyles}>
+			{children}
+		</div>
+	);
 };
 
 // Display name for Stack to detect positioned children
-Positioned.displayName = 'Positioned';
+Positioned.displayName = "Positioned";
 
 export default Positioned;
