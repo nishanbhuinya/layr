@@ -9,9 +9,7 @@
 [![license](https://img.shields.io/npm/l/@dynshift/layr.svg?style=flat-square)](https://github.com/nishanbhuinya/layr/blob/main/LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 
-<p align="center">
-  <img src="https://via.placeholder.com/150x50/0d0d0d/fdfdfd?text=LAYR" alt="Layr" width="150" />
-</p>
+<img src="https://github.com/nishanbhuinya/layr/blob/main/packages/layr/layr.gif" alt="Layr" width="150" />
 
 [Documentation](https://layr.dynshift.com) · [GitHub](https://github.com/nishanbhuinya/layr) · [npm](https://www.npmjs.com/package/@dynshift/layr)
 

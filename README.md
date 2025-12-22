@@ -1,9 +1,15 @@
+<div align="center">
+
 # Layr
 
 > **Flutter-inspired layout primitives for React**
 
 [![npm version](https://img.shields.io/npm/v/@dynshift/layr.svg)](https://www.npmjs.com/package/@dynshift/layr)
 [![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+<img src="https://github.com/nishanbhuinya/layr/blob/main/packages/layr/layr.gif" alt="Layr" width="150" />
+
+</div>
 
 ## About
 
