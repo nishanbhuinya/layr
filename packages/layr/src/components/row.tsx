@@ -290,6 +290,7 @@ export const Row: React.FC<RowProps> = ({
 
 		// Main axis size behavior
 		width: mainAxisSize === MainAxisSize.max ? "100%" : "auto",
+		maxWidth: "100%", // Respect parent width constraints
 		minWidth: mainAxisSize === MainAxisSize.min ? "auto" : undefined,
 
 		// Spacing between children (CSS gap for clean implementation)
