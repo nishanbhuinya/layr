@@ -2,6 +2,7 @@
 	"name": "layr-monorepo",
 	"version": "1.0.0",
 	"private": true,
+	"license": "MIT",
 	"description": "Monorepo for Layr - Flutter-inspired layout primitives for React",
 	"scripts": {
 		"build": "pnpm --filter @dynshift/layr build",

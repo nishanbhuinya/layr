@@ -23,6 +23,7 @@ Thank you for considering contributing to Layr.
 9. Open a pull request
 
 ## Development Setup
+
 ```bash
 # Clone the repository
 git clone <https://github.com/nishanbhuinya/layr.git>
