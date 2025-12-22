@@ -86,7 +86,7 @@ Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for gui
 </Container>
 ```
 
-See [#2](https://github.com/nishanbhuiya/layr/issues/2) for tracking.
+See [#2](https://github.com/nishanbhuinya/layr/issues/2) for tracking.
 
 ## License
 
