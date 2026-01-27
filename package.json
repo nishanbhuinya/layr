@@ -6,7 +6,9 @@
 	"description": "Monorepo for Layr - Flutter-inspired layout primitives for React",
 	"scripts": {
 		"build": "pnpm --filter @dynshift/layr build",
-		"dev": "pnpm --filter @dynshift/layr dev",
+		"dev": "pnpm --parallel --filter @dynshift/layr --filter playground dev",
+		"dev:lib": "pnpm --filter @dynshift/layr dev",
+		"dev:playground": "pnpm --filter playground dev",
 		"test": "pnpm --filter @dynshift/layr test",
 		"test:watch": "pnpm --filter @dynshift/layr test:watch",
 		"lint": "pnpm --filter @dynshift/layr lint",
