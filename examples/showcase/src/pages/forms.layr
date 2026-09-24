@@ -1,0 +1,40 @@
+Page(
+  .name(Forms)
+  .route('/forms')
+  var txt name = ''
+  var bool agree = false
+  var txt size = 'M'
+  var int volume = 40
+  var bool open = false
+  var txt sent = ''
+
+  Scaffold(
+    .config(padding: all(24))
+    .body(Column(
+      .config(maxW: 480, gap: 12)
+      Text(.config(type: h2) .obj('Forms'))
+      Form(
+        .config(gap: 12)
+        .fnc { sent = name; open = true }
+        Input(.config(label: 'Name', placeholder: 'Ada', value: name) .fnc { name = value })
+        Toggle(.config(label: 'I agree', value: agree) .fnc { agree = value })
+        Select(.config(label: 'Size', options: ['S', 'M', 'L'], value: size) .fnc { size = value })
+        Slider(.config(label: 'Volume', max: 100, min: 0, value: volume) .fnc { volume = value })
+        Button(.preset(pill) .config(label: 'Send', submit: true))
+      )
+      Text(.a11y(label: 'summary') .obj('$name / $agree / $size / $volume'))
+      Overlay(
+        .config(label: 'Sent', open: open)
+        .on(close: { open = false })
+        .obj(Container(
+          .config(color: white, cornerRadius: 16, padding: all(24))
+          .obj(Column(
+            .config(gap: 12)
+            Text(.a11y(label: 'dialog text') .obj('Sent: $sent'))
+            Button(.preset(default) .config(label: 'Close') .fnc { open = false })
+          ))
+        ))
+      )
+    ))
+  )
+)

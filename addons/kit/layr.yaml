@@ -1,0 +1,4 @@
+name: kit
+layr: ^3.0.0
+kind: addon
+

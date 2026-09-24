@@ -1,0 +1,11 @@
+import { TopBar } from '../widgets/shell.layr'
+import { MdPage } from '../widgets/mdpage.layr'
+import { loadCli } from '../lib/content.ts'
+
+Page(
+  .name(CliPage)
+  .route('/cli')
+  .meta(title: 'CLI · LAYR', description: 'Every layr command: create, dev, build, format, analyze, explain, addons, skills, lsp and mcp.')
+  .load { return loadCli() }
+  Scaffold(.config(color: canvas) .bar(TopBar()) .body(MdPage(.config(page: data))))
+)

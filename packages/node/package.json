@@ -1,0 +1,8 @@
+{
+  "name": "@layr-internal/node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "dependencies": { "@layr-internal/compiler": "workspace:*", "yaml": "^2.9.1" }
+}

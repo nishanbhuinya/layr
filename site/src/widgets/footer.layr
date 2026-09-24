@@ -1,0 +1,78 @@
+// The site footer.
+import { Mark } from './shell.layr'
+
+Widget(
+  .name(FootCol)
+  .param(req txt title)
+  .obj(
+    Column(
+      .config(gap: 10, minW: 150)
+      Text(.config(size: 13, weight: semibold) .obj(param.title))
+      .obj
+    )
+  )
+)
+
+Widget(
+  .name(FootLink)
+  .param(req txt label, req txt href, bool external = false)
+  .obj(Link(.config(href: param.href, external: param.external, underline: false, className: 'foot-link') .obj(Text(.config(size: 14, color: muted) .obj(param.label)))))
+)
+
+Widget(
+  .name(SiteFooter)
+  .obj(
+    Column(
+      .config(w: fill, padding: sym(x: 32, y: 56), xAlign: mid, .border(color: line, width: 1, sides: top))
+      .at(m, padding: sym(x: 16, y: 40))
+      Column(
+        .config(w: fill, maxW: 1240, gap: 40)
+        Wrap(
+          .config(w: fill, gap: 48, runGap: 32, xAlign: between)
+          Column(
+            .config(gap: 12, maxW: 300)
+            Row(.config(gap: 10, yAlign: mid) Mark(), Text(.config(size: 17, weight: semibold) .obj('LAYR')))
+            Text(.config(size: 14, color: muted, lineHeight: 1.6) .obj('Layout Authoritative Yet Responsive. A compiled UI language for the web, MIT licensed.'))
+          )
+          Wrap(
+            .config(gap: 48, runGap: 32)
+            FootCol(
+              .config(title: 'Learn')
+              FootLink(.config(label: 'Quick start', href: '/docs/quick-start'))
+              FootLink(.config(label: 'Documentation', href: '/docs'))
+              FootLink(.config(label: 'Widgets and keys', href: '/api'))
+              FootLink(.config(label: 'Diagnostics', href: '/errors'))
+            )
+            FootCol(
+              .config(title: 'Build')
+              FootLink(.config(label: 'Playground', href: '/playground'))
+              FootLink(.config(label: 'Library', href: '/library'))
+              FootLink(.config(label: 'CLI', href: '/cli'))
+              FootLink(.config(label: 'AI Skill', href: '/skills'))
+            )
+            FootCol(
+              .config(title: 'Project')
+              FootLink(.config(label: 'GitHub', href: 'https://github.com/nishanbhuinya/layr', external: true))
+              FootLink(.config(label: 'npm', href: 'https://www.npmjs.com/package/@dynshift/layr', external: true))
+              FootLink(.config(label: 'LAYR v1', href: '/v1'))
+              FootLink(.config(label: 'Privacy', href: '/privacy'))
+            )
+          )
+        )
+        Wrap(
+          .config(w: fill, gap: 16, runGap: 8, xAlign: between, yAlign: mid)
+          Text(.config(size: 13, color: faint) .obj('© 2026 Nishan Bhuinya and LAYR contributors. This site is built with LAYR.'))
+          Row(
+            .config(gap: 20, yAlign: mid)
+            Button(
+              .config(className: 'foot-link')
+              .fnc { window.layrPrivacySettings?.() }
+              .obj(Text(.config(size: 13, color: faint) .obj('Privacy settings')))
+            )
+            Link(.config(href: 'https://dynshift.com', external: true, underline: false, className: 'foot-link') .obj(Text(.config(size: 13, color: faint) .obj('A DynShift project'))))
+          )
+        )
+      )
+    )
+  )
+)

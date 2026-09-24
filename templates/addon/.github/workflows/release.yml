@@ -1,0 +1,22 @@
+name: Release
+# Publishes to npm with provenance when a v* tag is pushed. Configure npm trusted
+# publishing for this repository and workflow (npmjs.com → package → Settings).
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: npm install
+      - run: npx layr analyze
+      - run: npx layr pack
+      - run: npm publish --provenance --access public

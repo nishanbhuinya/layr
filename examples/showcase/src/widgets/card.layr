@@ -1,0 +1,17 @@
+// A reusable widget: params become config keys; .obj(.obj) forwards the caller's object.
+Widget(
+  .name(Card)
+  .param(req txt title, color tint = brand, len pad = 16)
+  .obj(Container(
+    .id(frame)
+    .config(
+      w: fill
+      .border(color: param.tint, width: 2)
+      color: white
+      cornerRadius: 16
+      padding: all(param.pad)
+      shadow: shadow(y: 2, blur: 8, color: black.alpha(10%))
+    )
+    .obj(Column(.config(gap: 8) Text(.config(color: param.tint, type: h3) .obj(param.title)), .obj))
+  ))
+)

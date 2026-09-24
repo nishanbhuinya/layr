@@ -1,0 +1,114 @@
+// The page inside the home page's inspector. Plain LAYR: resize the frame and the row stacks,
+// the chips wrap and every number scales, with no media queries written here.
+Widget(
+  .name(DayBar)
+  .param(req txt day, req num load)
+  .obj(
+    Column(
+      .config(w: fill, gap: 8, xAlign: mid)
+      Container(
+        .config(w: fill, h: 96, color: sunken, cornerRadius: 6, objAlign: bottomMid)
+        .obj(Container(.config(w: fill, h: 96 * param.load, color: accent, cornerRadius: 6)))
+      )
+      Text(.config(size: 12, color: muted) .obj(param.day))
+    )
+  )
+)
+
+Widget(
+  .name(Slot)
+  .param(req txt time, bool picked = false)
+  .obj(
+    Container(
+      .config(color: param.picked ? accent : panel, cornerRadius: 8, padding: sym(x: 12, y: 7), .border(color: param.picked ? accent : line, width: 1))
+      .obj(Text(.config(size: 14, weight: medium, color: param.picked ? onAccent : ink) .obj(param.time)))
+    )
+  )
+)
+
+Widget(
+  .name(Booking)
+  .param(req txt day, req txt time, req txt who, req txt hours)
+  .obj(
+    Row(
+      .config(w: fill, gap: 14, yAlign: mid, padding: only(top: 10), .border(color: line, width: 1, sides: top))
+      Column(
+        .config(w: 52, gap: 0, xAlign: mid)
+        Text(.config(size: 12, color: muted) .obj(param.day))
+        Text(.config(size: 15, weight: semibold) .obj(param.time))
+      )
+      Text(.config(w: fill, size: 14) .obj(param.who))
+      Text(.config(size: 13, color: muted) .obj(param.hours))
+    )
+  )
+)
+
+Page(
+  .name(Demo)
+  .route('/inspect/demo')
+  .meta(title: 'LAYR inspector demo')
+  Scaffold(
+    .config(color: canvas)
+    .body(Column(
+      .config(w: fill, padding: all(24), gap: 20)
+      Row(
+        .config(w: fill, xAlign: between, yAlign: mid)
+        Column(
+          .config(gap: 2)
+          Text(.config(size: 13, color: muted) .obj('Studio booking'))
+          Text(.config(type: h1, size: 26, weight: semibold, letterSpacing: -0.4) .obj('Room B'))
+        )
+        Container(
+          .config(color: accent.alpha(12%), cornerRadius: 999, padding: sym(x: 10, y: 4))
+          .obj(Text(.config(size: 12, weight: semibold, color: accent) .obj('Available')))
+        )
+      )
+      Row(
+        .config(w: fill, gap: 20)
+        Column(
+          .config(w: fill, color: panel, cornerRadius: 12, padding: all(18), gap: 14, .border(color: line, width: 1))
+          Text(.config(size: 14, weight: semibold) .obj('This week'))
+          Row(
+            .config(w: fill, gap: 8)
+            DayBar(.config(day: 'Mon', load: 0.35))
+            DayBar(.config(day: 'Tue', load: 0.7))
+            DayBar(.config(day: 'Wed', load: 0.5))
+            DayBar(.config(day: 'Thu', load: 0.9))
+            DayBar(.config(day: 'Fri', load: 0.6))
+          )
+        )
+        Column(
+          .config(w: fill, color: panel, cornerRadius: 12, padding: all(18), gap: 14, .border(color: line, width: 1))
+          Text(.config(size: 14, weight: semibold) .obj('Pick a time'))
+          Wrap(
+            .config(gap: 8)
+            Slot(.config(time: '09:00'))
+            Slot(.config(time: '10:30', picked: true))
+            Slot(.config(time: '12:00'))
+            Slot(.config(time: '14:30'))
+            Slot(.config(time: '16:00'))
+          )
+          Row(
+            .config(gap: 8)
+            Button(
+              .config(color: accent, cornerRadius: 8, padding: sym(x: 16, y: 9))
+              .obj(Text(.config(size: 14, weight: semibold, color: onAccent) .obj('Book 2 hours')))
+            )
+            Button(
+              .config(cornerRadius: 8, padding: sym(x: 16, y: 9), .border(color: lineStrong, width: 1))
+              .obj(Text(.config(size: 14, weight: medium) .obj('Details')))
+            )
+          )
+        )
+      )
+      Column(
+        .config(w: fill, color: panel, cornerRadius: 12, padding: all(18), gap: 12, .border(color: line, width: 1))
+        Text(.config(size: 14, weight: semibold) .obj('Upcoming'))
+        Booking(.config(day: 'Tue', time: '10:30', who: 'Mixing session', hours: '2 hours'))
+        Booking(.config(day: 'Thu', time: '14:30', who: 'Podcast recording', hours: '1 hour'))
+        Booking(.config(day: 'Fri', time: '09:00', who: 'Band rehearsal', hours: '3 hours'))
+      )
+      Text(.config(size: 12, color: faint) .obj('Sample page, compiled from LAYR. Drag the frame to see it adapt.'))
+    ))
+  )
+)

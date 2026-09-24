@@ -1,0 +1,57 @@
+import { DocsShell, TopBar } from '../../widgets/shell.layr'
+import { loadApiIndex } from '../../lib/content.ts'
+
+Widget(
+  .name(WidgetEntry)
+  .param(req txt name, req txt href, txt summary = '')
+  .obj(
+    Link(
+      .config(w: fill, href: param.href, padding: all(12), cornerRadius: 8, underline: false, className: 'nav-item')
+      .obj(Column(
+        .config(w: fill, gap: 3)
+        Text(.config(size: 15, weight: semibold, font: code) .obj(param.name))
+        Text(.config(size: 13.5, color: muted, lineHeight: 1.5) .obj(param.summary))
+      ))
+    )
+  )
+)
+
+Page(
+  .name(ApiIndex)
+  .route('/api')
+  .meta(title: 'Widgets and keys · LAYR', description: 'Every core LAYR widget with its config keys, types, defaults, aliases, slots and events, generated from the schema.')
+  .load { return loadApiIndex() }
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(DocsShell(
+      Column(
+        .config(w: fill, maxW: 1040, gap: 40, padding: sym(x: 48, y: 40))
+        .at(m, padding: only(left: 20, right: 20, top: 28, bottom: 40))
+        Column(
+          .config(w: fill, gap: 12)
+          Text(.config(type: h1, size: 34, weight: 640, letterSpacing: -0.8) .obj('Widgets and keys'))
+          Text(.config(size: 17, color: muted, maxW: 640, lineHeight: 1.6) .obj('Every core widget, generated from the schema the compiler, the language server and the LAYR Skill read.'))
+        )
+        If(
+          .cnd(data != null)
+          .obj(Column(
+            .config(w: fill, gap: 36)
+            Each(
+              .of(data.modules)
+              .as(mod)
+              .obj(Row(
+                .config(w: fill, gap: 32, padding: only(top: 24), .border(color: line, width: 1, sides: top))
+                Column(.config(w: 160) Text(.config(type: h2, size: 15, weight: semibold, color: muted) .obj(mod.title)))
+                Grid(
+                  .config(w: fill, minItemW: 260, gap: 4)
+                  Each(.of(mod.widgets) .as(wd) .obj(WidgetEntry(.config(name: wd.name, href: '/api/' + wd.slug, summary: wd.summary))))
+                )
+              ))
+            )
+          ))
+        )
+      )
+    ))
+  )
+)

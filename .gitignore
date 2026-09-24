@@ -1,30 +1,23 @@
-# Dependencies
 node_modules/
-.pnpm-store/
-
-# Build outputs
 dist/
-build/
-*.tsbuildinfo
-
-# Environment
-.env
-.env.local
-
-# Testing
+.layr/
 coverage/
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# OS
+playwright-report/
+test-results/
+*.tsbuildinfo
 .DS_Store
 Thumbs.db
-
-# Logs
+.env
+.env.*
+!.env.example
 *.log
-npm-debug.log*
-pnpm-debug.log*
+.vscode-test/
+*.vsix
+vite.log
+test-results/
+playwright-report/
+preview.log
+.layr/
+*.vsix
+addons/*/dist/
+examples/*/dist/

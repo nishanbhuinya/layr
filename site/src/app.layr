@@ -1,0 +1,45 @@
+// layr.dynshift.com: a warm studio. One hot ember accent; the light (ember, gold, teal, violet)
+// only where something glows: the hero field, preview stages and the inspector's box model.
+App(
+  .scale(DesignScale(.m(w: 390, h: 844) .t(w: 834, h: 1194) .w(w: 1440, h: 900) .frame(xl, w: 1600, h: 1000, from: 1280) .uw(w: 2560, h: 1080)))
+  .theme(Theme(
+    .colors(
+      canvas: #f4efe7
+      panel: #fffcf7
+      sunken: #efe8dd
+      line: #e4dbcd
+      lineStrong: #cdc1af
+      ink: #1c1917
+      muted: #625a50
+      faint: #938a7e
+      accent: #c93f12
+      onAccent: #fffcf7
+      ember: #e8551f
+      gold: #d99a1e
+      teal: #0e9f92
+      violet: #6d5ce6
+      danger: #c42b1c
+      warn: #9a5b00
+    )
+    .dark(
+      canvas: #121110
+      panel: #1a1816
+      sunken: #221f1c
+      line: #2e2a26
+      lineStrong: #433d37
+      ink: #f3ede6
+      muted: #b0a79d
+      faint: #7f776e
+      accent: #ff6a3d
+      onAccent: #1c0c05
+      ember: #ff6a3d
+      gold: #ffc46b
+      teal: #2ed3c4
+      violet: #9b8cff
+      danger: #ff8577
+      warn: #ffc46b
+    )
+    .font(body: 'Geist Variable', code: 'Geist Mono Variable')
+  ))
+  .meta(title: 'LAYR')
+)

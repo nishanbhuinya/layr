@@ -1,0 +1,10 @@
+Page(
+  .name(Checkout)
+  .route('/')
+  Scaffold(.body(Container(
+    .id(card)
+    .config(widht: 320, !mut color: #16181d, padding: all(24))
+  )))
+)
+
+Inject(.into(Checkout.card) card.color = #1a66e8)

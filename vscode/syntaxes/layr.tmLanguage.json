@@ -1,0 +1,96 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "LAYR",
+  "scopeName": "source.layr",
+  "patterns": [{ "include": "#item" }],
+  "repository": {
+    "item": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#block" },
+        { "include": "#import" },
+        { "include": "#decl" },
+        { "include": "#modifier" },
+        { "include": "#prop" },
+        { "include": "#expression" }
+      ]
+    },
+    "comment": {
+      "patterns": [
+        { "name": "comment.line.double-slash.layr", "match": "//.*$" },
+        { "name": "comment.block.layr", "begin": "/\\*", "end": "\\*/" }
+      ]
+    },
+    "block": {
+      "name": "meta.embedded.block.typescript.layr",
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": { "0": { "name": "punctuation.section.embedded.begin.layr" } },
+      "endCaptures": { "0": { "name": "punctuation.section.embedded.end.layr" } },
+      "patterns": [{ "include": "source.ts" }]
+    },
+    "import": {
+      "match": "^\\s*(import)\\b(.*?)\\b(from)\\b",
+      "captures": { "1": { "name": "keyword.control.import.layr" }, "3": { "name": "keyword.control.from.layr" } }
+    },
+    "decl": {
+      "patterns": [
+        { "name": "storage.modifier.layr", "match": "!mut\\b" },
+        { "name": "storage.type.layr", "match": "\\b(var|const|bind|export|req|ref|step)\\b" },
+        {
+          "match": "\\b(int|num|txt|bool|color|paint|len|size|insets|align|axis|time|angle|shadow|border|obj|fn|list|map|any|double|string|object|padding)(\\??)\\s+([a-z_][A-Za-z0-9_]*)\\b(?!\\s*[(:])",
+          "captures": { "1": { "name": "support.type.layr" }, "3": { "name": "variable.other.declaration.layr" } }
+        }
+      ]
+    },
+    "modifier": {
+      "match": "(\\.)([a-zA-Z_][A-Za-z0-9_]*)(?=\\s*[({])",
+      "captures": { "1": { "name": "punctuation.accessor.layr" }, "2": { "name": "entity.name.function.modifier.layr" } }
+    },
+    "prop": {
+      "match": "\\b([a-zA-Z_][A-Za-z0-9_]*)\\s*(:)(?!:)",
+      "captures": { "1": { "name": "variable.other.property.layr" }, "2": { "name": "punctuation.separator.key-value.layr" } }
+    },
+    "expression": {
+      "patterns": [
+        { "include": "#string" },
+        { "name": "constant.other.color.layr", "match": "#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\\b" },
+        {
+          "match": "(-?\\b\\d+(?:\\.\\d+)?|\\.\\d+)(ds|px|%|fr|ms|s|deg)?\\b",
+          "captures": { "1": { "name": "constant.numeric.layr" }, "2": { "name": "keyword.other.unit.layr" } }
+        },
+        { "name": "constant.numeric.hex.layr", "match": "\\b0x[0-9a-fA-F_]+\\b" },
+        { "name": "constant.language.layr", "match": "\\b(true|false|null|fill|hug)\\b" },
+        { "name": "keyword.other.construct.layr", "match": "\\b(App|Page|Widget|Function|Preset|DesignScale|Theme|Extract|Inject|Export|If|Each|Var)(?=\\s*\\()" },
+        { "name": "entity.name.type.widget.layr", "match": "\\b[A-Z][A-Za-z0-9_]*(?=\\s*\\()" },
+        { "name": "support.function.layr", "match": "\\b(all|sym|only|rgb|rgba|hsl|shadow|border|px|go|wait|fade|slide|scale)(?=\\s*\\()" },
+        { "name": "support.constant.layr", "match": "\\b(spring|ease)\\.[a-zA-Z]+" },
+        { "name": "variable.language.layr", "match": "\\b(param|route|data|value|event|self)\\b" },
+        { "name": "keyword.operator.layr", "match": "\\?\\?|\\?\\.|==|!=|<=|>=|&&|\\|\\||[-+*/%<>!=?]" },
+        { "name": "entity.name.function.layr", "match": "\\b[a-z_][A-Za-z0-9_]*(?=\\s*\\()" }
+      ]
+    },
+    "string": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.layr",
+          "begin": "'",
+          "end": "'",
+          "patterns": [{ "include": "#interpolation" }, { "name": "constant.character.escape.layr", "match": "\\\\." }]
+        },
+        {
+          "name": "string.quoted.double.layr",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [{ "include": "#interpolation" }, { "name": "constant.character.escape.layr", "match": "\\\\." }]
+        }
+      ]
+    },
+    "interpolation": {
+      "patterns": [
+        { "name": "meta.interpolation.layr", "begin": "\\$\\{", "end": "\\}", "beginCaptures": { "0": { "name": "punctuation.definition.template-expression.begin.layr" } }, "endCaptures": { "0": { "name": "punctuation.definition.template-expression.end.layr" } }, "patterns": [{ "include": "#expression" }] },
+        { "name": "variable.other.interpolated.layr", "match": "\\$[A-Za-z_][A-Za-z0-9_]*" }
+      ]
+    }
+  }
+}

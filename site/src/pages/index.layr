@@ -1,0 +1,169 @@
+import { TopBar } from '../widgets/shell.layr'
+import { SiteFooter } from '../widgets/footer.layr'
+import { AddonRow, Band, Pane, PrimaryLink, SectionHead, TextLink } from '../widgets/home.layr'
+import { loadHome } from '../lib/content.ts'
+import { Ad } from '../react/Ad.tsx'
+import { Cascade } from '../react/Cascade.tsx'
+import { Frames } from '../react/Frames.tsx'
+import { Inspector } from '../react/Inspector.tsx'
+import { LightField } from '../react/LightField.tsx'
+import { Code, Command, Console } from '../react/Prose.tsx'
+
+Widget(
+  .name(Tab)
+  .param(req txt label, bool on = false)
+  .obj(
+    Button(
+      .config(padding: sym(x: 12, y: 8), cornerRadius: 6, color: param.on ? panel : transparent, className: 'tab', .border(color: param.on ? line : transparent, width: 1))
+      .a11y(pressed: param.on)
+      .obj(Text(.config(size: 13, weight: medium, color: param.on ? ink : muted) .obj(param.label)))
+    )
+  )
+)
+
+Page(
+  .name(Home)
+  .route('/')
+  .meta(title: 'LAYR: build websites deterministically', description: 'LAYR is a compiled UI language. Write layout in design pixels and ship static CSS and React that resolve the same way on every screen.')
+  .load { return loadHome() }
+  var txt tab = 'source'
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(Column(
+      .config(w: fill)
+      // The first viewport: the promise on the left, a real LAYR page under an inspector on the right.
+      Stack(
+        .config(w: fill)
+        Container(.config(w: fill, h: fill, className: 'hero-light') .obj(LightField()))
+        Column(
+          .config(w: fill, padding: sym(x: 32, y: 64), xAlign: mid, className: 'hero-content')
+          .at(m, padding: only(left: 16, right: 16, top: 40, bottom: 48))
+          Row(
+            .config(w: fill, maxW: 1360, gap: 56, yAlign: mid, stackAt: 1100)
+            Column(
+              .config(w: fill, flex: 0.8, minW: 360, gap: 24)
+              Text(
+                .config(type: h1, size: 56, weight: 650, letterSpacing: -2, lineHeight: 1.02)
+                .at(m, size: 34, letterSpacing: -1)
+                .at(t, size: 64, letterSpacing: -2.2)
+                .at(w, size: 52, letterSpacing: -1.8)
+                .obj('Build websites deterministically.')
+              )
+              Text(
+                .config(size: 19, color: muted, lineHeight: 1.55, maxW: 460)
+                .obj('A compiled UI language. Write layout in your design’s numbers and ship static CSS and React that resolve the same way on every screen.')
+              )
+              Wrap(
+                .config(gap: 12, runGap: 12, yAlign: mid, margin: only(top: 4))
+                PrimaryLink(.config(label: 'Try it in the browser', href: '/playground', icon: 'play'))
+                Command(.props(command: 'npm create @dynshift/layr@latest'))
+              )
+            )
+            Column(
+              .config(w: fill, flex: 1.2, minW: 0)
+              If(.cnd(data != null) .obj(Inspector(.props(src: '/inspect/demo', lines: data.demo.lines, file: data.demo.file, playground: data.demo.playground))))
+            )
+          )
+        )
+      )
+
+      Band(
+        SectionHead(.config(title: 'Layout you can read in the code.', sub: 'Objects nest the way they render. The compiler turns the file into static CSS and a React module, and both are yours to read.'))
+        If(
+          .cnd(data != null)
+          .obj(Pane(
+            Row(
+              .config(w: fill, gap: 4, padding: all(6), color: sunken, .border(color: line, width: 1, sides: bottom))
+              Tab(.config(label: 'profile.layr', on: tab == 'source') .fnc { tab = 'source' })
+              Tab(.config(label: 'Compiled CSS', on: tab == 'css') .fnc { tab = 'css' })
+              Tab(.config(label: 'React module', on: tab == 'js') .fnc { tab = 'js' })
+            )
+            If(.cnd(tab == 'source') .obj(Code(.props(html: data.shape.source))))
+            If(.cnd(tab == 'css') .obj(Code(.props(html: data.shape.css))))
+            If(.cnd(tab == 'js') .obj(Code(.props(html: data.shape.js))))
+          ))
+        )
+        TextLink(.config(label: 'The language, step by step', href: '/docs/syntax'))
+      )
+
+      Band(
+        SectionHead(.config(title: 'One design, every screen.', sub: 'Numbers are design pixels from your frames. Values flow between frames and structure steps at them. You write no media queries.'))
+        Frames(.props(src: '/inspect/demo'))
+        TextLink(.config(label: 'How Design Scale works', href: '/docs/design-scale'))
+      )
+
+      Band(
+        SectionHead(.config(title: 'Change anything from anywhere, in order.', sub: 'Extract reads a feature, Inject layers a change at an exeOrder, and !mut protects what must never change. Tick the layers.'))
+        If(
+          .cnd(data != null)
+          .obj(Row(
+            .config(w: fill, gap: 20, yAlign: stretch)
+            Pane(.config(title: 'store.layr') Code(.props(html: data.eei)))
+            Pane(
+              .config(title: 'Home.card', note: 'live')
+              Column(
+                .config(w: fill, h: fill, padding: all(28), xAlign: mid, yAlign: mid, className: 'lit-stage')
+                Container(
+                  .id(card)
+                  .config(w: 260, cornerRadius: 12, padding: all(16), !mut color: panel, shadow: shadow(y: 8, blur: 24, color: black.alpha(18%)), .border(color: line, width: 1))
+                  .obj(Column(
+                    .config(w: fill, gap: 4)
+                    Text(.config(size: 15, weight: semibold) .obj('Order 1042'))
+                    Text(.config(size: 13, color: muted) .obj('Two items, ships Monday'))
+                  ))
+                )
+              )
+              Cascade()
+            )
+          ))
+        )
+        TextLink(.config(label: 'Export, Extract and Inject', href: '/docs/export-extract-inject'))
+      )
+
+      Band(
+        SectionHead(.config(title: 'Mistakes explained before they ship.', sub: 'Every problem has a code, an explanation and a fix. The same checks run in your editor, in the CLI and in CI.'))
+        If(
+          .cnd(data != null)
+          .obj(Row(
+            .config(w: fill, gap: 20, yAlign: stretch)
+            Pane(.config(title: 'checkout.layr') Code(.props(html: data.mistakes.source)))
+            Pane(.config(title: 'layr analyze', note: '${data.mistakes.count} errors') Console(.props(text: data.mistakes.report)))
+          ))
+        )
+        TextLink(.config(label: 'Every diagnostic', href: '/errors'))
+      )
+
+      Band(
+        SectionHead(.config(title: 'Your React packages keep working.', sub: 'Import a React component and use it as a node; hooks run in a .react block. LAYR components work inside React apps too.'))
+        If(.cnd(data != null) .obj(Pane(.config(title: 'stats.layr') Code(.props(html: data.react)))))
+        TextLink(.config(label: 'React interop', href: '/docs/react'))
+      )
+
+      Band(
+        SectionHead(.config(title: 'Addons from the Library.', sub: 'Official addons ship as LAYR source you can read and eject. Anyone can publish one to npm and list it.'))
+        If(
+          .cnd(data != null)
+          .obj(Pane(Each(.of(data.addons) .as(a) .obj(AddonRow(.config(id: a.id, npm: a.npm, description: a.description, version: a.version))))))
+        )
+        TextLink(.config(label: 'Browse the Library', href: '/library'))
+      )
+
+      Column(.config(w: fill, padding: sym(x: 32), xAlign: mid) Column(.config(w: fill, maxW: 1240) Ad(.props(placement: 'home', height: 250))))
+
+      Band(
+        Column(
+          .config(w: fill, gap: 20, xAlign: mid, padding: sym(y: 24))
+          Text(.config(type: h2, size: 48, weight: 650, letterSpacing: -1.5, align: mid) .at(m, size: 30) .obj('Start in the browser. Keep it in your repo.'))
+          Text(.config(size: 17, color: muted, align: mid, maxW: 560) .obj('The playground runs the real compiler. When you are ready, one command makes a project.'))
+          Wrap(
+            .config(gap: 12, runGap: 12, xAlign: mid, yAlign: mid)
+            PrimaryLink(.config(label: 'Try it in the browser', href: '/playground', icon: 'play'))
+            Command(.props(command: 'npm create @dynshift/layr@latest'))
+          )
+        )
+      )
+    ))
+    .footer(SiteFooter())
+  )
+)

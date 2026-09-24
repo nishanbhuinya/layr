@@ -1,0 +1,24 @@
+// A reference or Markdown page inside the docs shell.
+import { DocsShell, TopBar } from './shell.layr'
+import { Article, Crumbs } from './article.layr'
+import { Prose } from '../react/Prose.tsx'
+
+Widget(
+  .name(MdPage)
+  .param(any page = null)
+  .obj(
+    DocsShell(
+      If(
+        .cnd(param.page != null)
+        .obj(Article(
+          .config(toc: param.page.toc, edit: param.page.edit ?? '')
+          Column(
+            .config(w: fill, gap: 20)
+            Crumbs(.config(section: param.page.section))
+            Prose(.props(html: param.page.html))
+          )
+        ))
+      )
+    )
+  )
+)

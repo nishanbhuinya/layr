@@ -1,0 +1,57 @@
+{
+  "name": "@dynshift/layr-liquid-drop",
+  "version": "3.0.0-next.0",
+  "description": "A living liquid drop: an animated showpiece made entirely of LAYR Animate, springs and a looping action.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": [
+    "layr",
+    "layr-addon",
+    "animation",
+    "showcase"
+  ],
+  "homepage": "https://layr.dynshift.com/library/liquid_drop",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nishanbhuinya/layr.git",
+    "directory": "addons/liquid_drop"
+  },
+  "exports": {
+    ".": "./src/index.layr",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "examples",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "layr": {
+    "id": "liquid_drop",
+    "kind": "component",
+    "layr": "^3.0.0-0",
+    "entry": "./src/index.layr",
+    "categories": [
+      "animations",
+      "components"
+    ],
+    "tags": [
+      "animation",
+      "showcase"
+    ],
+    "examples": "./examples"
+  },
+  "peerDependencies": {
+    "@dynshift/layr": "^3.0.0-0"
+  },
+  "devDependencies": {
+    "@dynshift/layr": "workspace:*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vite": "^8.3.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

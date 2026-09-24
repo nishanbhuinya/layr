@@ -1,0 +1,34 @@
+{
+  "name": "@layr-internal/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./vite": "./src/vite.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@layr-internal/compiler": "workspace:*",
+    "@layr-internal/lsp": "workspace:*",
+    "@layr-internal/model": "workspace:*",
+    "@layr-internal/node": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "semver": "^7.8.5",
+    "yaml": "^2.9.1",
+    "zod": "^3.25.76"
+  },
+  "peerDependencies": {
+    "vite": "^8.0.0"
+  },
+  "devDependencies": {
+    "@types/pngjs": "^6.0.5",
+    "@types/semver": "^7.8.0",
+    "playwright": "~1.63.0",
+    "vite": "^8.3.0"
+  }
+}

@@ -1,0 +1,23 @@
+import { useState } from 'react'
+import { Counter } from '../react/Counter.tsx'
+
+Page(
+  .name(Interop)
+  .route('/interop')
+  .react {
+    const [clicks, setClicks] = useState(0)
+  }
+  Scaffold(
+    .config(padding: all(24))
+    .body(Column(
+      .config(gap: 12)
+      Text(.config(type: h2) .obj('React interop'))
+      Counter(
+        .config(padding: all(8))
+        .props(start: 5, label: 'React counter')
+        .on(change: { setClicks(clicks + 1) })
+      )
+      Text(.a11y(label: 'clicks') .obj('changes seen by LAYR: $clicks'))
+    ))
+  )
+)

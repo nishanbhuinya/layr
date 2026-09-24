@@ -1,0 +1,42 @@
+Page(
+  .name(More)
+  .route('/more')
+  var bool show = true
+  bind size doubled = boxFeatures.boxSize * 2
+
+  Scaffold(
+    .config(padding: all(24))
+    .body(Column(
+      .config(gap: 20, w: fill)
+      Text(.config(type: h2) .obj('More'))
+
+      // Adapt: the first candidate that fits is shown.
+      Adapt(
+        .id(adapt)
+        .config(w: fill)
+        Row(.config(gap: 12) Text('wide one'), Text('wide two'), Text('wide three'), Text('wide four'), Text('wide five'))
+        Text(.a11y(label: 'compact') .obj('compact'))
+      )
+
+      // A component designed at 400 scales with the space it is given.
+      Container(
+        .config(w: 200)
+        .obj(DesignScale(.frame(card, w: 400, h: 300, from: 0) .config(min: 0.25, max: 4) .obj(Container(.id(scaled) .config(w: 400, h: 40, color: brand)))))
+      )
+
+      // The notes' Export form: named features under an export id.
+      Container(
+        .config(w: 120, h: 30, color: ink)
+        .export(id: boxFeatures, size boxSize = container.size)
+      )
+      Text(.a11y(label: 'doubled') .obj('doubled: $doubled'))
+
+      Button(.preset(default) .config(label: 'Toggle') .fnc { show = !show })
+      If(
+        .cnd(show)
+        .obj(Animate(.exit(fade) .config(duration: 400ms) .obj(Container(.id(leaving) .config(size: 60, color: red)))))
+        .fb(Text(.a11y(label: 'gone') .obj('gone')))
+      )
+    ))
+  )
+)

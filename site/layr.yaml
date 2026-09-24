@@ -1,0 +1,4 @@
+name: layr-site
+layr: ^3.0.0
+# Lookup paths and source lines on every element: the home page's inspector reads them.
+inspect: true

@@ -1,0 +1,14 @@
+import { useQuery } from '@tanstack/react-query'
+import { LineChart, Line } from 'recharts'
+import { getVisits } from './api.ts'
+
+Page(
+  .name(Stats)
+  .route('/stats')
+  .react { const q = useQuery({ queryKey: ['visits'], queryFn: getVisits }) }
+  Scaffold(.body(Column(
+    .config(gap: 12, padding: all(24))
+    Text(.config(type: h2) .obj('Visits'))
+    LineChart(.config(w: fill, h: 240) .props(data: q.data) .obj(Line(.props(dataKey: 'n'))))
+  )))
+)

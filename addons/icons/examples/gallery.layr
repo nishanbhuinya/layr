@@ -1,0 +1,21 @@
+import '../src/index.layr'
+
+Page(
+  .name(Gallery)
+  .route('/')
+  Scaffold(
+    .config(padding: all(24))
+    .body(Column(
+      .config(gap: 16)
+      Text(.config(type: h1) .obj('Icons'))
+      Wrap(
+        .config(gap: 20)
+        Icon('arrow-right'), Icon('arrow-left'), Icon('arrow-up'), Icon('arrow-down'), Icon('chevron-right'), Icon('chevron-left'), Icon('chevron-up'), Icon('chevron-down')
+        Icon('check'), Icon('x'), Icon('plus'), Icon('minus'), Icon('menu'), Icon('search'), Icon('star'), Icon('heart'), Icon('home'), Icon('user')
+        Icon('settings'), Icon('external-link'), Icon('copy'), Icon('sun'), Icon('moon'), Icon('info'), Icon('alert'), Icon('mail'), Icon('calendar')
+        Icon('clock'), Icon('download'), Icon('upload'), Icon('trash'), Icon('edit'), Icon('link'), Icon('code'), Icon('layers'), Icon('grid'), Icon('play'), Icon('github')
+      )
+      Row(.config(gap: 16) Icon(.config(name: 'star', size: 40, color: #f59e0b)), Icon(.config(name: 'heart', size: 40, color: #ef4444, label: 'Liked')))
+    ))
+  )
+)

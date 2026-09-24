@@ -1,0 +1,43 @@
+// LiquidDrop: a living drop. Every 1.4s a new organic shape is written to the drop's corners,
+// and Animate carries it there on a slow spring. Pure LAYR: Animate + a looping mount action.
+Widget(
+  .name(LiquidDrop)
+  .param(
+    color tint = #2563eb
+    len size = 180
+    txt label = ''
+  )
+  Function(
+    .name(breathe)
+    .def {
+      const r = () => pct(36 + Math.random() * 28)
+      while (true) {
+        drop.cornerRadius = only({ top: r(), right: r(), bottom: r(), left: r() })
+        await 1400ms
+      }
+    }
+  )
+  .obj(
+    Stack(
+      .config(size: param.size, objAlign: mid)
+      .on(mount: breathe)
+      Animate(
+        .config(ease: spring.slow)
+        .obj(Container(
+          .id(drop)
+          .config(
+            size: param.size
+            color: RadialGradient(.colors(param.tint.tint(4), param.tint, param.tint.shade(3)) .center(topLeft))
+            cornerRadius: only(topLeft: 50%, topRight: 50%, bottomRight: 50%, bottomLeft: 50%)
+            shadow: shadow(y: 18, blur: 40, color: param.tint.alpha(35%))
+          )
+        ))
+      )
+      Position(
+        .config(top: 18%, left: 22%)
+        .obj(Container(.config(w: param.size * 0.28, h: param.size * 0.16, color: white.alpha(45%), cornerRadius: 999)))
+      )
+      If(.cnd(param.label != '') .obj(Text(.config(color: white, weight: bold, size: 18) .obj(param.label))))
+    )
+  )
+)

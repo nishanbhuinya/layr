@@ -1,0 +1,31 @@
+// Drag the preview's corner: the row stacks when the panes no longer fit side by side.
+Page(
+  .name(Hello)
+  .route('/')
+
+  var int count = 0
+
+  Scaffold(
+    .config(color: #fffcf7)
+    .body(Column(
+      .config(w: fill, padding: all(24), gap: 20)
+      Text(.config(type: h1, size: 32) .obj('Hello, LAYR'))
+      Row(
+        .config(w: fill, gap: 16)
+        Container(
+          .config(w: fill, h: 140, color: #ff6a3d, cornerRadius: 16, padding: all(16))
+          .obj(Text(.config(color: white, weight: semibold) .obj('fill')))
+        )
+        Container(
+          .config(w: fill, h: 140, color: #2ed3c4, cornerRadius: 16, padding: all(16))
+          .obj(Text(.config(weight: semibold) .obj('fill')))
+        )
+      )
+      Row(
+        .config(gap: 12, yAlign: mid)
+        Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
+        Text('Clicked $count times')
+      )
+    ))
+  )
+)

@@ -1,0 +1,13 @@
+import { TopBar } from '../widgets/shell.layr'
+import { Playground } from '../react/Playground.tsx'
+
+Page(
+  .name(PlaygroundPage)
+  .route('/playground')
+  .meta(title: 'Playground · LAYR', description: 'Write LAYR in the browser: the real compiler, a live preview at every design frame, the compiled CSS and React, and every diagnostic.')
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(Playground())
+  )
+)

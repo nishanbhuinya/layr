@@ -1,0 +1,24 @@
+// Export / Extract / Inject: ordered, reversible layers on another object's features.
+// File-level state is shared by everything in the file, the Inject included.
+var bool big = false
+
+Page(
+  .name(Store)
+  .route('/')
+
+  Scaffold(
+    .config(color: #fffcf7)
+    .body(Column(
+      .config(w: fill, padding: all(24), gap: 16)
+      Container(
+        .id(card)
+        .config(padding: all(16), cornerRadius: 12, !mut color: #efe8dd)
+        .obj(Text('Order 1042'))
+      )
+      Button(.preset(default) .config(label: 'Toggle the bigger padding') .fnc { big = !big })
+    ))
+  )
+)
+
+Extract(.from(Store.card) insets base = card.padding)
+Inject(.into(Store.card) .exeOrder(0) card.padding = big ? base * 3 : base)

@@ -1,0 +1,211 @@
+// The site shell: top bar, docs rail, and the framed content panel (an app you work in).
+import { docsNav } from '../lib/content.ts'
+import { Icon, Palette, SearchButton, ThemeToggle } from '../react/Chrome.tsx'
+
+// Open state of the small-screen menu; links close it as they navigate.
+var bool menuOpen = false
+
+// The LAYR mark: one rounded bar, drawn in LAYR.
+Widget(
+  .name(Mark)
+  .param(len size = 20)
+  .obj(Container(.config(w: param.size, h: param.size * 0.3, color: ink, cornerRadius: 999)))
+)
+
+Widget(
+  .name(Wordmark)
+  .obj(
+    Link(
+      .config(href: '/', padding: sym(x: 4, y: 6), underline: false)
+      .a11y(label: 'LAYR home')
+      .obj(Row(
+        .config(gap: 10, yAlign: mid)
+        Mark()
+        Text(.config(size: 17, weight: semibold, letterSpacing: -0.2) .obj('LAYR'))
+      ))
+    )
+  )
+)
+
+Widget(
+  .name(TopLink)
+  .param(req txt label, req txt href)
+  .obj(
+    Link(
+      .config(href: param.href, padding: sym(x: 10, y: 7), cornerRadius: 6, underline: false, className: 'top-link nav-item')
+      .obj(Text(.config(size: 14, weight: medium, color: muted) .obj(param.label)))
+    )
+  )
+)
+
+Widget(
+  .name(TopBar)
+  .obj(
+    Row(
+      .config(w: fill, h: 56, color: panel, padding: sym(x: 16), gap: 8, xAlign: between, yAlign: mid, .border(color: line, width: 1, sides: bottom))
+      Row(
+        .config(gap: 20, yAlign: mid)
+        Wordmark()
+        Row(
+          .config(gap: 2, yAlign: mid, hide: true)
+          .at(w, hide: false)
+          TopLink(.config(label: 'Docs', href: '/docs'))
+          TopLink(.config(label: 'Reference', href: '/api'))
+          TopLink(.config(label: 'Playground', href: '/playground'))
+          TopLink(.config(label: 'Library', href: '/library'))
+        )
+      )
+      Row(
+        .config(gap: 6, yAlign: mid)
+        Container(.config(w: 280, hide: true) .at(t, hide: false) SearchButton())
+        Container(.config(hide: false) .at(t, hide: true) SearchButton(.props(compact: true)))
+        ThemeToggle()
+        Link(
+          .config(href: 'https://github.com/nishanbhuinya/layr', external: true, size: 34, cornerRadius: 8, objAlign: mid, underline: false, className: 'icon-btn')
+          .a11y(label: 'LAYR on GitHub')
+          .obj(Icon(.props(name: 'github', size: 18)))
+        )
+        Button(
+          .config(size: 34, cornerRadius: 8, objAlign: mid, className: 'icon-btn')
+          .at(w, hide: true)
+          .a11y(label: 'Menu', expanded: menuOpen)
+          .fnc { menuOpen = true }
+          .obj(Icon(.props(name: 'menu', size: 18)))
+        )
+      )
+      Palette()
+      Overlay(
+        .config(open: menuOpen, label: 'Menu', placement: midRight, color: panel, padding: all(16), backdrop: black.alpha(35%))
+        .on(close: { menuOpen = false })
+        .obj(Column(
+          .config(w: 300, gap: 20)
+          Row(
+            .config(w: fill, xAlign: between, yAlign: mid)
+            Wordmark()
+            Button(
+              .config(size: 34, cornerRadius: 8, objAlign: mid, className: 'icon-btn')
+              .a11y(label: 'Close menu')
+              .fnc { menuOpen = false }
+              .obj(Icon(.props(name: 'close', size: 18)))
+            )
+          )
+          Column(
+            .config(w: fill, gap: 2)
+            MenuLink(.config(label: 'Docs', href: '/docs'))
+            MenuLink(.config(label: 'Reference', href: '/api'))
+            MenuLink(.config(label: 'Playground', href: '/playground'))
+            MenuLink(.config(label: 'Library', href: '/library'))
+          )
+          Container(.config(w: fill, h: 1px, color: line))
+          DocsNav()
+        ))
+      )
+    )
+  )
+)
+
+Widget(
+  .name(MenuLink)
+  .param(req txt label, req txt href)
+  .obj(
+    Link(
+      .config(w: fill, href: param.href, padding: sym(x: 10, y: 9), cornerRadius: 6, underline: false, className: 'nav-item')
+      .fnc { menuOpen = false }
+      .obj(Text(.config(size: 15, weight: medium) .obj(param.label)))
+    )
+  )
+)
+
+// The docs tree: sections from docs/content plus the generated references. Sections fold.
+Widget(
+  .name(DocsNav)
+  var list<txt> folded = []
+  .obj(
+    Column(
+      .config(w: fill, gap: 14)
+      Each(
+        .of(docsNav)
+        .as(section)
+        .obj(NavSection(
+          .config(title: section.title, open: !folded.includes(section.title))
+          .on(toggle: { folded = folded.includes(section.title) ? folded.filter((t) => t != section.title) : [...folded, section.title] })
+          Each(.of(section.items) .as(item) .obj(NavItem(.config(label: item.title, href: item.href))))
+        ))
+      )
+      NavSection(
+        .config(title: 'Reference', open: !folded.includes('Reference'))
+        .on(toggle: { folded = folded.includes('Reference') ? folded.filter((t) => t != 'Reference') : [...folded, 'Reference'] })
+        NavItem(.config(label: 'Widgets and keys', href: '/api'))
+        NavItem(.config(label: 'Diagnostics', href: '/errors'))
+        NavItem(.config(label: 'CLI commands', href: '/cli'))
+        NavItem(.config(label: 'AI Skill and MCP', href: '/skills'))
+      )
+    )
+  )
+)
+
+Widget(
+  .name(NavSection)
+  .param(req txt title, bool open = true)
+  .obj(
+    Column(
+      .config(w: fill, gap: 2)
+      Button(
+        .config(w: fill, padding: sym(x: 10, y: 5), cornerRadius: 6, objAlign: midLeft, className: 'nav-item')
+        .a11y(expanded: param.open)
+        .fnc { emit('toggle') }
+        .obj(Row(
+          .config(w: fill, xAlign: between, yAlign: mid)
+          Text(.config(size: 12.5, weight: semibold, color: faint) .obj(param.title))
+          Icon(.props(name: param.open ? 'caretDown' : 'caretRight', size: 12))
+        ))
+      )
+      If(.cnd(param.open) .obj(Column(.config(w: fill, gap: 1) .obj)))
+    )
+  )
+)
+
+Widget(
+  .name(NavItem)
+  .param(req txt label, req txt href)
+  .obj(
+    Link(
+      .config(w: fill, href: param.href, padding: sym(x: 10, y: 6), cornerRadius: 6, underline: false, className: 'nav-item')
+      .fnc { menuOpen = false }
+      .obj(Text(.config(size: 14, color: muted) .obj(param.label)))
+    )
+  )
+)
+
+// Rail | framed panel. The rail joins at `w`; below it the menu carries the tree.
+Widget(
+  .name(DocsShell)
+  .obj(
+    // Stretched rows give the sticky rail (and the page's own rail) room to stay in view.
+    Row(
+      .config(w: fill, color: canvas, yAlign: stretch, overflow: clip)
+      Column(
+        .config(w: 260, hide: true)
+        .at(w, hide: false)
+        Position(
+          .config(sticky: true, top: 56)
+          .obj(Scroll(
+            .config(w: 260, maxH: 100dvh - 56, padding: only(left: 12, right: 8, top: 20, bottom: 32), axis: y, fade: 32, className: 'rail')
+            .obj(DocsNav())
+          ))
+        )
+      )
+      Column(
+        .config(w: fill, minW: 0, padding: all(12))
+        .at(m, padding: all(0))
+        .at(w, padding: all(12))
+        Column(
+          .config(w: fill, minW: 0, color: panel, cornerRadius: 10, xAlign: mid, .border(color: line, width: 1))
+          .at(m, cornerRadius: 0)
+          .at(w, cornerRadius: 10)
+          .obj
+        )
+      )
+    )
+  )
+)

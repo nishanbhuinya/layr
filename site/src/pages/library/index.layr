@@ -1,0 +1,93 @@
+import { DocsShell, TopBar } from '../../widgets/shell.layr'
+import { loadLibrary } from '../../lib/content.ts'
+import { Ad } from '../../react/Ad.tsx'
+
+Widget(
+  .name(Badge)
+  .param(req txt label, bool strong = false)
+  .obj(
+    Container(
+      .config(padding: sym(x: 8, y: 3), cornerRadius: 999, color: param.strong ? accent.alpha(14%) : sunken)
+      .obj(Text(.config(size: 11.5, weight: semibold, color: param.strong ? accent : muted) .obj(param.label)))
+    )
+  )
+)
+
+Widget(
+  .name(LibraryRow)
+  .param(req txt id, req txt name, req txt npm, txt description = '', txt version = '', bool official = false)
+  .obj(
+    Link(
+      .config(w: fill, href: '/library/' + param.id, padding: sym(x: 16, y: 16), underline: false, className: 'row-link', .border(color: line, width: 1, sides: top))
+      .obj(Row(
+        .config(w: fill, gap: 24, yAlign: mid)
+        Column(
+          .config(w: 240, gap: 4)
+          Row(.config(gap: 8, yAlign: mid) Text(.config(size: 15.5, weight: semibold) .obj(param.name)), If(.cnd(param.official) .obj(Badge(.config(label: 'Official', strong: true)))))
+          Text(.config(size: 12.5, color: muted, font: code) .obj(param.npm))
+        )
+        Text(.config(w: fill, size: 14.5, color: muted, lineHeight: 1.5) .obj(param.description))
+        Text(.config(size: 12.5, color: faint, font: code) .obj(param.version))
+      ))
+    )
+  )
+)
+
+Page(
+  .name(LibraryIndex)
+  .route('/library')
+  .meta(title: 'Library · LAYR', description: 'Official and community LAYR addons: components, icons, design systems and effects, installable with layr add.')
+  .load { return loadLibrary() }
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(DocsShell(
+      Column(
+        .config(w: fill, maxW: 1040, gap: 32, padding: sym(x: 48, y: 40))
+        .at(m, padding: only(left: 20, right: 20, top: 28, bottom: 40))
+        Column(
+          .config(w: fill, gap: 12)
+          Text(.config(type: h1, size: 34, weight: 640, letterSpacing: -0.8) .obj('Library'))
+          Text(.config(size: 17, color: muted, maxW: 640, lineHeight: 1.6) .obj('Addons are LAYR source on npm. Install one with layr add and its widgets import like your own; eject it to own the code.'))
+          Row(
+            .config(gap: 16, yAlign: mid, margin: only(top: 4))
+            Link(.config(href: '/library/publish', underline: false, className: 'text-link') .obj(Text(.config(size: 14.5, weight: medium, color: accent) .obj('Publish an addon'))))
+            Link(.config(href: '/addons.json', underline: false, className: 'text-link') .obj(Text(.config(size: 14.5, color: muted, font: code) .obj('addons.json'))))
+          )
+        )
+        If(
+          .cnd(data != null)
+          .obj(Column(
+            .config(w: fill, gap: 28)
+            Column(
+              .config(w: fill, gap: 10)
+              Text(.config(type: h2, size: 15, weight: semibold, color: muted) .obj('Official'))
+              Column(
+                .config(w: fill, color: panel, cornerRadius: 10, clip: true, .border(color: line, width: 1))
+                Each(.of(data.filter((a) => a.official)) .as(a) .obj(LibraryRow(.config(id: a.id, name: a.name, npm: a.npm, description: a.description, version: a.version, official: true))))
+              )
+            )
+            Ad(.props(placement: 'library', height: 120))
+            Column(
+              .config(w: fill, gap: 10)
+              Text(.config(type: h2, size: 15, weight: semibold, color: muted) .obj('Community'))
+              If(
+                .cnd(data.some((a) => !a.official))
+                .obj(Column(
+                  .config(w: fill, color: panel, cornerRadius: 10, clip: true, .border(color: line, width: 1))
+                  Each(.of(data.filter((a) => !a.official)) .as(a) .obj(LibraryRow(.config(id: a.id, name: a.name, npm: a.npm, description: a.description, version: a.version))))
+                ))
+                .fb(Column(
+                  .config(w: fill, padding: all(24), gap: 8, cornerRadius: 10, xAlign: mid, .border(color: line, width: 1, style: dashed))
+                  Text(.config(size: 15, weight: medium) .obj('No community addons listed yet.'))
+                  Text(.config(size: 14, color: muted, align: mid) .obj('Published one? Add a single YAML file by pull request and it appears here.'))
+                  Link(.config(href: '/library/publish', underline: false) .obj(Text(.config(size: 14, weight: medium, color: accent) .obj('How to list an addon'))))
+                ))
+              )
+            )
+          ))
+        )
+      )
+    ))
+  )
+)

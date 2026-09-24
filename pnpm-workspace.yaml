@@ -1,4 +1,10 @@
 packages:
-  - 'apps/*'
-  - 'packages/*'
-  - 'docs'
+  - "packages/*"
+  - "addons/*"
+  - "site"
+  - "compat/*"
+  - "vscode"
+  - "examples/*"
+
+allowBuilds:
+  esbuild: true

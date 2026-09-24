@@ -1,0 +1,53 @@
+import { Avatar, Badge, Callout, Card, Chip, Dialog, Divider, GhostButton, NavBar, PrimaryButton, SecondaryButton, Switch, TextField } from '../src/index.layr'
+
+Page(
+  .name(KitGallery)
+  .route('/')
+  .meta(title: 'LAYR Kit')
+
+  var txt name = ''
+  var bool dark = false
+  var bool open = false
+  var txt picked = 'Design'
+
+  Scaffold(
+    .config(color: #fafaf9)
+    .bar(NavBar(.config(title: 'LAYR Kit') .obj(Link(.config(href: 'https://layr.dynshift.com', label: 'Docs')))))
+    .body(Column(
+      .config(w: fill, maxW: 960, gap: 24, padding: all(24))
+      Text(.config(type: h1, size: 40) .obj('Kit'))
+      Row(
+        .config(gap: 12)
+        PrimaryButton(.config(label: 'Primary') .fnc { open = true })
+        SecondaryButton(.config(label: 'Secondary'))
+        GhostButton(.config(label: 'Ghost'))
+        PrimaryButton(.config(label: 'Disabled', disabled: true))
+      )
+      Row(.config(gap: 8) Badge(.config(label: 'New')), Badge(.config(label: 'Beta', tint: #d97706)), Badge(.config(label: 'Stable', tint: #16a34a)))
+      Wrap(
+        .config(gap: 8)
+        Chip(.config(label: 'Design', selected: picked == 'Design') .fnc { picked = 'Design' })
+        Chip(.config(label: 'Code', selected: picked == 'Code') .fnc { picked = 'Code' })
+        Chip(.config(label: 'Motion', selected: picked == 'Motion') .fnc { picked = 'Motion' })
+      )
+      Row(
+        .config(w: fill, gap: 16)
+        Card(.config(title: 'Profile', subtitle: 'Your details') .obj(Column(
+          .config(w: fill, gap: 12)
+          TextField(.config(label: 'Name', value: name, placeholder: 'Ada') .fnc { name = value })
+          Switch(.config(label: 'Dark mode', value: dark) .fnc { dark = !dark })
+          Text(.a11y(label: 'state') .obj('$name / $dark / $picked'))
+        )))
+        Card(.config(title: 'People') .obj(Row(.config(gap: 12, yAlign: mid) Avatar(.config(name: 'Ada')), Avatar(.config(name: 'Grace', size: 48)), Text('Two people'))))
+      )
+      Divider()
+      Callout(.config(text: 'Kit widgets are plain LAYR: read their source with layr eject kit.'))
+      Callout(.config(text: 'Careful: this is a warning.', tone: 'warning'))
+      Dialog(
+        .config(open: open, title: 'Hello')
+        .on(close: { open = false })
+        .obj(Text('A kit dialog. Escape, the backdrop or Close dismisses it.'))
+      )
+    ))
+  )
+)

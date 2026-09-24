@@ -1,93 +1,68 @@
-<div align="center">
+<p align="center"><img src="brand/app-icon-128.png" width="72" alt="LAYR"></p>
 
-# Layr
+<h1 align="center">LAYR</h1>
 
-> **Flutter-inspired layout primitives for React**
+<p align="center">Layout Authoritative Yet Responsive. A compiled UI language for building websites deterministically.</p>
 
-[![CI](https://github.com/nishanbhuinya/layr/actions/workflows/ci.yml/badge.svg)](https://github.com/nishanbhuinya/layr/actions)
-[![npm version](https://img.shields.io/npm/v/@dynshift/layr.svg)](https://www.npmjs.com/package/@dynshift/layr)
-[![license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center"><a href="https://layr.dynshift.com">Website</a> · <a href="https://layr.dynshift.com/docs">Docs</a> · <a href="https://layr.dynshift.com/playground">Playground</a> · <a href="https://layr.dynshift.com/library">Library</a></p>
 
-<img src="https://github.com/nishanbhuinya/layr/blob/main/packages/layr/layr.gif" alt="Layr" width="150" />
+---
 
-</div>
+LAYR files describe layout the way it looks. The compiler turns them into static CSS and React components, with numbers in your design's pixels that resolve the same way on every screen.
 
-## About
+```layr
+Page(
+  .name(Home)
+  .route('/')
 
-Layr brings Flutter's elegant layout system to React with type-safe, zero-dependency components.
+  var int count = 0
 
-- **Familiar API** — Identical to Flutter widgets
-- **Lightweight** — Tree-shakeable with zero dependencies
-- **Type-safe** — Full TypeScript support
-- **Flexible** — Works with any React framework
+  Scaffold(
+    .body(Mid(Column(
+      .config(gap: 16, xAlign: mid)
+      Text(.config(type: h1) .obj('Count: $count'))
+      Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
+    )))
+  )
+)
+```
 
-## Installation
+## Start
 
 ```bash
-npm install @dynshift/layr
+npm create @dynshift/layr@latest my-app
+cd my-app
+npm run dev
 ```
 
-```bash
-# Or using other package managers
-pnpm add @dynshift/layr
-yarn add @dynshift/layr
-```
+Or try it without installing anything in the [playground](https://layr.dynshift.com/playground).
 
-## Quick Example
+## What is in the box
 
-```tsx
-import { Container, Column, Row } from '@dynshift/layr';
+- **The language**: objects that nest the way they render, one canonical form (`layr format`), state, functions as SAPI steps or TypeScript.
+- **Design Scale**: numbers are design pixels from your frames; values flow between frames and structure steps at them.
+- **Deterministic layout**: fixed, hug and fill sizing; rows wrap or stack by fixed rules, and every adaptation is explainable.
+- **Export, Extract, Inject**: read and change any object's features from anywhere as ordered, reversible layers the compiler checks; `!mut` protects what must never change.
+- **React interop**: React packages work inside LAYR, and LAYR components work inside React apps.
+- **Tooling**: the `layr` CLI, a language server and VS Code extension, the LAYR Skill and an MCP server for AI agents.
 
-function App() {
-  return (
-    <Container width={320} padding={24} color="#0b0b0b">
-      <Column spacing={12}>
-        <h1>Hello Layr</h1>
-        <Row spacing={8}>
-          <button>Action</button>
-        </Row>
-      </Column>
-    </Container>
-  );
-}
-```
+## This repository
 
-## Documentation
+| Path | What it is |
+|---|---|
+| `packages/` | the compiler, runtime, React target, CLI, language server, and `@dynshift/layr` |
+| `addons/` | official addons: `kit`, `icons`, `liquid_drop` |
+| `docs/content/` | the documentation (every snippet compiles in CI) |
+| `site/` | layr.dynshift.com, built with LAYR |
+| `skills/layr/` | the LAYR Skill for AI agents |
+| `vscode/` | the VS Code extension |
 
-Full documentation and API reference available at [layr.dynshift.com](https://layr.dynshift.com).
-
-## Repository Structure
-
-```bash
-layr/
-├── packages/
-│   └── layr/          # Main package (@dynshift/layr)
-├── docs/              # Documentation site
-└── .github/           # CI/CD workflows
-```
+LAYR 1.x (Flutter-style React components) lives on the [`v1` branch](https://github.com/nishanbhuinya/layr/tree/v1) and on npm as `@dynshift/layr@v1`.
 
 ## Contributing
 
-Contributions are welcome. Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Known Issues
+## Licence
 
-### Row Width Constraints
-
-`Row` components may not respect parent `Container` width constraints. 
-
-**Workaround:** Wrap Row in a Container with `constraints={{ maxWidth: "100%" }}`:
-
-```tsx
-<Container width="80vw">
-  <Container constraints={{ maxWidth: "100%" }}>
-    <Row>...</Row>
-  </Container>
-</Container>
-```
-
-See [#2](https://github.com/nishanbhuinya/layr/issues/2) for tracking.
-
-## License
-
-MIT © 2025 [DynShift](https://dynshift.com) & [Nishan Bhuiya](https://nishanbhuinya.com)
+MIT. LAYR is a [DynShift](https://dynshift.com) project; see [TRADEMARK.md](TRADEMARK.md) for the name and marks.

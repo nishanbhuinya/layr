@@ -1,0 +1,32 @@
+{
+  "name": "layr-{{name}}",
+  "version": "0.1.0",
+  "description": "A LAYR addon.",
+  "type": "module",
+  "license": "MIT",
+  "keywords": ["layr", "layr-addon"],
+  "exports": { ".": "./src/index.layr", "./package.json": "./package.json" },
+  "files": ["src", "examples", "README.md", "CHANGELOG.md", "LICENSE"],
+  "layr": {
+    "id": "{{id}}",
+    "kind": "component",
+    "layr": "^{{layrVersion}}",
+    "entry": "./src/index.layr",
+    "categories": ["components"],
+    "tags": [],
+    "examples": "./examples"
+  },
+  "peerDependencies": { "@dynshift/layr": "^{{layrVersion}}" },
+  "devDependencies": {
+    "@dynshift/layr": "^{{layrVersion}}",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "vite": "^8.3.0"
+  },
+  "scripts": {
+    "dev": "layr dev",
+    "analyze": "layr analyze",
+    "pack:check": "layr pack",
+    "release": "layr publish"
+  }
+}

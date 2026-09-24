@@ -1,62 +1,17 @@
 ---
 name: Bug report
-about: Report a bug or unexpected behavior in @dynshift/layr
-title: "[Bug]: "
+about: Something LAYR does wrong
 labels: bug
-assignees: MNBLabs, nishanbhuinya
-
 ---
 
-## Description
+**What happened**
 
-A clear and concise description of the bug.
+**What you expected**
 
-## Steps to Reproduce
+**The smallest `.layr` that shows it** (a playground Share link is ideal)
 
-1. Install `@dynshift/layr@1.0.2`
-2. Import a component (e.g. `Container`)
-3. Use it with props:
+```layr
 
-```tsx
-<Container width={200} height={100}>
-  {/* content */}
-</Container>
 ```
 
-4. Observe the unexpected behavior
-
-## Expected Behavior
-
-What you expected to happen.
-
-## Actual Behavior
-
-What actually happened.
-
-## Environment
-
-* **@dynshift/layr version**: 1.0.2
-* **React version**: (e.g. 18.3.1, 19.x)
-* **TypeScript version**: (if applicable)
-* **Browser / Node environment**: (e.g. Chrome 120, Node 20.11)
-* **Build tool**: (e.g. Vite, Next.js, Create React App)
-
-## Code Sample
-
-Minimal reproducible example:
-
-```tsx
-import { Container } from '@dynshift/layr';
-
-export default function Example() {
-  return (
-    <Container width={200}>
-      {/* Your code here */}
-    </Container>
-  );
-}
-```
-
-## Additional Context
-
-Add screenshots, error logs, stack traces, or any other relevant context here.
+**`npx layr doctor` output**

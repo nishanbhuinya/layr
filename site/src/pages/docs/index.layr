@@ -1,0 +1,74 @@
+import { DocsShell, TopBar } from '../../widgets/shell.layr'
+import { docsNav } from '../../lib/content.ts'
+import { Command } from '../../react/Prose.tsx'
+
+Widget(
+  .name(IndexEntry)
+  .param(req txt title, req txt href, txt description = '')
+  .obj(
+    Link(
+      .config(w: fill, href: param.href, padding: all(12), cornerRadius: 8, underline: false, className: 'nav-item')
+      .obj(Column(
+        .config(w: fill, gap: 3)
+        Text(.config(size: 15, weight: medium) .obj(param.title))
+        Text(.config(size: 13.5, color: muted, lineHeight: 1.5) .obj(param.description))
+      ))
+    )
+  )
+)
+
+Widget(
+  .name(IndexSection)
+  .param(req txt title)
+  .obj(
+    Row(
+      .config(w: fill, gap: 32, padding: only(top: 24), .border(color: line, width: 1, sides: top))
+      Column(.config(w: 200) Text(.config(type: h2, size: 15, weight: semibold, color: muted) .obj(param.title)))
+      Grid(.config(w: fill, minItemW: 280, gap: 4) .obj)
+    )
+  )
+)
+
+Page(
+  .name(DocsHome)
+  .route('/docs')
+  .meta(title: 'Documentation · LAYR', description: 'Learn LAYR: the language, layout and Design Scale, state, Export/Extract/Inject, React interop, addons and deployment.')
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(DocsShell(
+      Column(
+        .config(w: fill, maxW: 1040, gap: 40, padding: sym(x: 48, y: 40))
+        .at(m, padding: only(left: 20, right: 20, top: 28, bottom: 40))
+        Column(
+          .config(w: fill, gap: 12)
+          Text(.config(type: h1, size: 34, weight: 640, letterSpacing: -0.8) .obj('Documentation'))
+          Text(.config(size: 17, color: muted, maxW: 620, lineHeight: 1.6) .obj('Everything LAYR does, in reading order. Start with the quick start, or run code right away in the playground.'))
+          Wrap(
+            .config(gap: 12, margin: only(top: 8), yAlign: mid)
+            Command(.props(command: 'npm create @dynshift/layr@latest'))
+            Link(
+              .config(href: '/playground', padding: sym(x: 14, y: 10), cornerRadius: 8, color: accent, underline: false)
+              .obj(Text(.config(size: 14, weight: medium, color: onAccent) .obj('Try it in the browser')))
+            )
+          )
+        )
+        Each(
+          .of(docsNav)
+          .as(section)
+          .obj(IndexSection(
+            .config(title: section.title)
+            Each(.of(section.items) .as(item) .obj(IndexEntry(.config(title: item.title, href: item.href, description: item.description))))
+          ))
+        )
+        IndexSection(
+          .config(title: 'Reference')
+          IndexEntry(.config(title: 'Widgets and keys', href: '/api', description: 'Every core widget, its config keys, types, defaults and aliases, generated from the schema.'))
+          IndexEntry(.config(title: 'Diagnostics', href: '/errors', description: 'Every L-code the compiler and runtime report, with the fix.'))
+          IndexEntry(.config(title: 'CLI commands', href: '/cli', description: 'Every layr command and its flags.'))
+          IndexEntry(.config(title: 'AI Skill and MCP', href: '/skills', description: 'Give coding agents the LAYR rules, references and a language server.'))
+        )
+      )
+    ))
+  )
+)

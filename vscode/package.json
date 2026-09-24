@@ -1,0 +1,87 @@
+{
+  "name": "layr",
+  "displayName": "LAYR",
+  "description": "LAYR language support: diagnostics, completion, hover docs, formatting and Export/Extract/Inject navigation.",
+  "version": "3.0.0",
+  "publisher": "dynshift",
+  "license": "MIT",
+  "private": true,
+  "icon": "icon.png",
+  "homepage": "https://layr.dynshift.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nishanbhuinya/layr.git",
+    "directory": "vscode"
+  },
+  "engines": {
+    "vscode": "^1.95.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
+  "activationEvents": [
+    "onLanguage:layr",
+    "workspaceContains:**/layr.yaml"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "layr",
+        "aliases": [
+          "LAYR",
+          "layr"
+        ],
+        "extensions": [
+          ".layr"
+        ],
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./icon.png",
+          "dark": "./icon.png"
+        }
+      }
+    ],
+    "grammars": [
+      {
+        "language": "layr",
+        "scopeName": "source.layr",
+        "path": "./syntaxes/layr.tmLanguage.json",
+        "embeddedLanguages": {
+          "meta.embedded.block.typescript.layr": "typescript"
+        }
+      }
+    ],
+    "configurationDefaults": {
+      "[layr]": {
+        "editor.defaultFormatter": "dynshift.layr",
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2
+      }
+    },
+    "commands": [
+      {
+        "command": "layr.restart",
+        "title": "LAYR: Restart language server"
+      },
+      {
+        "command": "layr.explain",
+        "title": "LAYR: Explain a diagnostic code"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "package": "node build.mjs && vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@layr-internal/lsp": "workspace:*",
+    "@types/vscode": "^1.95.0",
+    "esbuild": "^0.28.2",
+    "vscode-languageclient": "^10.1.1",
+    "vscode-oniguruma": "^2.0.1",
+    "vscode-textmate": "^9.3.2"
+  }
+}

@@ -1,63 +1,34 @@
-# Contributing to Layr
+# Contributing to LAYR
 
-Thank you for considering contributing to Layr.
+Thank you for helping. Issues, documentation fixes, addons and code are all welcome.
 
-## How to Contribute
+## Report a problem
 
-### Reporting Issues
+Open an issue with the smallest `.layr` file that shows it, what you expected, what happened, and the output of `npx layr doctor`. A playground link (the Share button) is the best reproduction.
 
-- Use the [GitHub issue tracker](https://github.com/nishanbhuinya/layr/issues)
-- Include a minimal reproduction
-- Specify your environment (Node version, React version, OS)
-
-### Submitting Pull Requests
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Make your changes
-4. Run tests: `pnpm test`
-5. Run type check: `pnpm typecheck`
-6. Run linter: `pnpm lint`
-7. Commit with clear messages
-8. Push to your fork
-9. Open a pull request
-
-## Development Setup
+## Work on LAYR
 
 ```bash
-# Clone the repository
-git clone <https://github.com/nishanbhuinya/layr.git>
+git clone https://github.com/nishanbhuinya/layr.git
 cd layr
-
-# Install dependencies
 pnpm install
-
-# Build the package
-pnpm build
-
-# Run tests
-pnpm test
-
-# Run tests in watch mode
-pnpm test:watch
+pnpm test          # every package's unit tests
+pnpm typecheck
+pnpm test:e2e      # Playwright across frames
+pnpm site          # the website, locally
 ```
 
-## Code Style
+Node 22 and pnpm 11. Before a pull request:
 
-- Use TypeScript for all new code
-- Follow existing patterns (Flutter-style API)
-- Add JSDoc comments for public APIs
-- Keep inline styles intentional (this library compiles to inline CSS)
+- `pnpm test` and `pnpm typecheck` pass.
+- New behaviour has a test, and the docs say how to use it. Every `layr` snippet in `docs/content` must compile (`pnpm test` checks this) and be in canonical form (`pnpm check:docs`).
+- The schema (`packages/model/src/schema.ts`) is the single source for widgets, keys and aliases; generated files come from `pnpm gen`.
+- Commits follow Conventional Commits (`feat:`, `fix:`, `docs:`).
 
-## Commit Guidelines
+## List an addon
 
-Use conventional commits:
+Addons are published to npm by their authors. To list one in the Library, add a file under `site/content/addons/`; see [Publish an addon](https://layr.dynshift.com/library/publish).
 
-- `feat: add new component`
-- `fix: resolve alignment issue in Row`
-- `docs: update README examples`
-- `chore: upgrade dependencies`
+## Conduct
 
-## Questions?
-
-Open a [discussion](https://github.com/nishanbhuinya/layr/discussions) or reach out via [Instagram](https://www.instagram.com/nishanbhuinya).
+Be kind and specific. Critique code, not people.

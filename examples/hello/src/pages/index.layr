@@ -1,0 +1,33 @@
+Page(
+  .name(Home)
+  .route('/')
+  .meta(title: 'Hello LAYR')
+
+  var int count = 0
+  var bool big = false
+  const txt title = 'Layout Authoritative Yet Responsive'
+
+  Function(.name(bump) .param(ref int n) .def(.if(.cnd(n >= 9) .exe(n = 0)) .fb(.exe(n++))))
+
+  Scaffold(
+    .config(color: white.shade(1))
+    .body(Mid(Column(
+      .config(gap: 24, padding: all(24), xAlign: mid)
+      Text(.config(size: 56, align: mid, color: ink, type: h1, weight: black) .obj('LAYR'))
+      Text(.config(size: 18, align: mid, color: ink.alpha(70%)) .obj(title))
+      Animate(
+        .eases(w: spring.bounce)
+        .obj(Container(
+          .id(card)
+          .config(w: big ? 320 : 200, h: 120, color: brand, cornerRadius: 20, objAlign: mid)
+          .obj(Text(.config(size: 32, color: white, weight: bold) .obj('$count')))
+        ))
+      )
+      Row(
+        .config(gap: 12)
+        Button(.preset(default) .config(label: 'Count') .fnc(bump(count)))
+        Button(.preset(default) .config(label: 'Grow') .fnc { big = !big })
+      )
+    )))
+  )
+)

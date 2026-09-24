@@ -1,0 +1,11 @@
+import { TopBar } from '../widgets/shell.layr'
+import { MdPage } from '../widgets/mdpage.layr'
+import { loadPage } from '../lib/content.ts'
+
+Page(
+  .name(PrivacyPage)
+  .route('/privacy')
+  .meta(title: '${data.title} · LAYR', description: data.description)
+  .load { return loadPage('privacy') }
+  Scaffold(.config(color: canvas) .bar(TopBar()) .body(MdPage(.config(page: data))))
+)

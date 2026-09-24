@@ -1,0 +1,21 @@
+{
+  "name": "@layr-internal/compiler",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@babel/parser": "^7.29.9",
+    "@layr-internal/model": "workspace:*",
+    "magic-string": "~0.30.21"
+  },
+  "devDependencies": {
+    "@babel/types": "^7.29.8"
+  },
+  "sideEffects": false
+}

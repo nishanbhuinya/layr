@@ -1,30 +1,27 @@
 {
-	"name": "layr-monorepo",
-	"version": "1.0.0",
-	"private": true,
-	"license": "MIT",
-	"description": "Monorepo for Layr - Flutter-inspired layout primitives for React",
-	"scripts": {
-		"build": "pnpm --filter @dynshift/layr build",
-		"dev": "pnpm --parallel --filter @dynshift/layr --filter playground dev",
-		"dev:lib": "pnpm --filter @dynshift/layr dev",
-		"dev:playground": "pnpm --filter playground dev",
-		"test": "pnpm --filter @dynshift/layr test",
-		"test:watch": "pnpm --filter @dynshift/layr test:watch",
-		"lint": "pnpm --filter @dynshift/layr lint",
-		"typecheck": "pnpm --filter @dynshift/layr typecheck",
-		"clean": "pnpm --filter @dynshift/layr exec rm -rf dist",
-		"prepublish": "pnpm build && pnpm test"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
-		"@types/node": "^22.10.2",
-		"@types/react": "^18.3.12",
-		"typescript": "^5.7.2"
-	},
-	"engines": {
-		"node": ">=18.0.0",
-		"pnpm": ">=9.0.0"
-	},
-	"packageManager": "pnpm@9.15.0"
+  "name": "layr-workspace",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.20.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "pnpm -r --filter \"./packages/*\" --if-present run test",
+    "typecheck": "pnpm -r --filter \"./packages/*\" --filter \"!@dynshift/layr\" exec tsc --noEmit -p .",
+    "test:e2e": "playwright test",
+    "gen": "node tools/gen.ts",
+    "check:docs": "node tools/format-docs.ts --check",
+    "site": "pnpm --filter layr-site dev",
+    "site:build": "pnpm --filter layr-site build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@playwright/test": "~1.63.0",
+    "@types/node": "^22.20.4",
+    "playwright": "~1.63.0",
+    "tsup": "^8.5.1",
+    "typescript": "6.0.3",
+    "vitest": "^5.0.1"
+  }
 }

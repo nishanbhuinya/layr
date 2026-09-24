@@ -1,0 +1,52 @@
+import Card from '../widgets/card.layr'
+
+Page(
+  .name(EEI)
+  .route('/eei')
+  var bool injecting = false
+  var int writes = 0
+
+  Extract(.from(EEI.target) .exeOrder(-1) insets original = target.padding)
+  Extract(.from(EEI.target) insets current = target.padding)
+
+  Function(.name(widen) .def { target.w = 360; writes++ })
+  Function(.name(forbidden) .def { target.color = #ff0000 })
+
+  Scaffold(
+    .config(padding: all(24))
+    .body(Column(
+      .config(gap: 12)
+      Text(.config(type: h2) .obj('Export / Extract / Inject'))
+      Container(
+        .id(target)
+        .config(
+          w: 240
+          !mut borderColor: ink
+          borderWidth: 2
+          color: brand
+          cornerRadius: 12
+          padding: all(10)
+        )
+        .obj(Text(.config(color: white) .obj('target')))
+      )
+      Text(.a11y(label: 'original') .obj('original: $original'))
+      Text(.a11y(label: 'current') .obj('current: $current'))
+      Text(.a11y(label: 'writes') .obj('writes: $writes'))
+      Text(.a11y(label: 'sibling') .obj('sibling path: ${EEI.scaffold.body.column.text(0).size}'))
+      Row(
+        .config(gap: 8)
+        Button(.preset(default) .config(label: 'Toggle inject') .fnc { injecting = !injecting })
+        Button(.preset(default) .config(label: 'Widen') .fnc(widen))
+        Button(.preset(default) .config(label: 'Forbidden') .fnc(forbidden))
+      )
+      If(.cnd(injecting) .obj(Injector()))
+    ))
+  )
+)
+
+// While mounted, this widget doubles the target's padding (a reversible layer).
+Widget(
+  .name(Injector)
+  Inject(.into(EEI.target) .exeOrder(0) target.padding = target.padding * 2)
+  .obj(Text(.a11y(label: 'injector') .obj('injector mounted')))
+)

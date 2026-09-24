@@ -1,0 +1,56 @@
+name: Site
+
+# layr.dynshift.com on GitHub Pages: on site, docs or package changes, daily (the Library's npm
+# facts), when an addon is released, and by hand.
+on:
+  push:
+    branches: [main]
+    paths: [site/**, docs/content/**, packages/**, addons/**, skills/**, vscode/syntaxes/**]
+  schedule:
+    - cron: "17 5 * * *"
+  repository_dispatch:
+    types: [addon-released]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build and prerender
+        run: pnpm site:build
+        env:
+          # Ads and analytics exist only when these repository variables are set.
+          VITE_ADSENSE_CLIENT: ${{ vars.LAYR_ADSENSE_CLIENT }}
+          VITE_AD_SLOT_HOME: ${{ vars.LAYR_AD_SLOT_HOME }}
+          VITE_AD_SLOT_LIBRARY: ${{ vars.LAYR_AD_SLOT_LIBRARY }}
+          VITE_AD_SLOT_DOCS: ${{ vars.LAYR_AD_SLOT_DOCS }}
+          VITE_GA_ID: ${{ vars.LAYR_GA_ID }}
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

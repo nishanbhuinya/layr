@@ -1,0 +1,8 @@
+import {{Name}} from '../src/index.layr'
+
+// Examples are rendered at every design frame by `layr dev` (the addon gallery) and `layr test --frames`.
+Page(
+  .name(Basic)
+  .route('/')
+  Scaffold(.body(Mid({{Name}}(.config(label: 'Hello from {{name}}')))))
+)

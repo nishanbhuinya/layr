@@ -1,0 +1,61 @@
+Page(
+  .name(Layout)
+  .route('/layout')
+  Scaffold(
+    .config(padding: all(24))
+    .body(Column(
+      .config(w: fill, gap: 20)
+      Text(.config(type: h2) .obj('Layout'))
+
+      // All children hug: the row wraps when space runs out.
+      Row(
+        .id(chips)
+        .config(gap: 8)
+        Chip(.config(label: 'alpha'))
+        Chip(.config(label: 'bravo'))
+        Chip(.config(label: 'charlie'))
+        Chip(.config(label: 'delta'))
+        Chip(.config(label: 'echo'))
+        Chip(.config(label: 'foxtrot'))
+      )
+
+      // A fill child: the row stacks into a column when it cannot fit.
+      Row(
+        .id(panes)
+        .config(w: fill, gap: 16)
+        Container(.config(w: 280, h: 80, color: brand, cornerRadius: 12))
+        Container(.config(w: fill, h: 80, minW: 240, color: ink, cornerRadius: 12))
+      )
+
+      // Per-frame values: numbers flow between frames.
+      Container(.id(fluid) .config(w: 120, h: 40, color: brand) .at(w, w: 480))
+
+      Stack(
+        .config(size: 160)
+        Container(.config(size: 160, color: ink, cornerRadius: 16))
+        Position(
+          .config(right: -8, top: -8)
+          .obj(Container(.id(badge) .config(size: 32, color: red, cornerRadius: 16)))
+        )
+      )
+
+      Grid(
+        .config(w: fill, cols: 3, gap: 8)
+        Each(
+          .of([1, 2, 3, 4, 5, 6])
+          .as(n)
+          .obj(Container(.config(h: 40, color: brand.alpha(40%)) .obj(Text('$n'))))
+        )
+      )
+    ))
+  )
+)
+
+Widget(
+  .name(Chip)
+  .param(req txt label)
+  .obj(Container(
+    .config(color: ink.alpha(8%), cornerRadius: 999, padding: sym(x: 14, y: 6))
+    .obj(Text(param.label))
+  ))
+)

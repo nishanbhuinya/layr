@@ -1,0 +1,91 @@
+// Home page building blocks.
+import { Icon } from '../react/Chrome.tsx'
+
+// A section heading: one headline, one sentence under it.
+Widget(
+  .name(SectionHead)
+  .param(req txt title, txt sub = '')
+  .obj(
+    Column(
+      .config(w: fill, maxW: 720, gap: 12)
+      Text(.config(type: h2, size: 44, weight: 640, letterSpacing: -1.4, lineHeight: 1.08) .at(m, size: 30) .obj(param.title))
+      If(.cnd(param.sub != '') .obj(Text(.config(size: 17, color: muted, lineHeight: 1.6) .obj(param.sub))))
+    )
+  )
+)
+
+// Page-width band with the site's rhythm.
+Widget(
+  .name(Band)
+  .param(len gap = 32)
+  .obj(
+    Column(
+      .config(w: fill, padding: sym(x: 32, y: 88), xAlign: mid)
+      .at(m, padding: sym(x: 16, y: 56))
+      Column(.config(w: fill, maxW: 1240, gap: param.gap) .obj)
+    )
+  )
+)
+
+// A framed pane, the unit every demo on the page sits in.
+Widget(
+  .name(Pane)
+  .param(txt title = '', txt note = '')
+  .obj(
+    Column(
+      .config(w: fill, color: panel, cornerRadius: 10, clip: true, .border(color: line, width: 1))
+      If(
+        .cnd(param.title != '')
+        .obj(Row(
+          .config(w: fill, h: 40, padding: sym(x: 14), gap: 8, xAlign: between, yAlign: mid, color: sunken, .border(color: line, width: 1, sides: bottom))
+          Text(.config(size: 12.5, weight: medium, color: muted, font: code) .obj(param.title))
+          Text(.config(size: 12, color: faint) .obj(param.note))
+        ))
+      )
+      .obj
+    )
+  )
+)
+
+Widget(
+  .name(PrimaryLink)
+  .param(req txt label, req txt href, txt icon = '')
+  .obj(
+    Link(
+      .config(href: param.href, padding: sym(x: 16, y: 11), cornerRadius: 8, color: accent, underline: false, className: 'btn-primary')
+      .obj(Row(
+        .config(gap: 8, yAlign: mid)
+        If(.cnd(param.icon != '') .obj(Icon(.props(name: param.icon, size: 16, weight: 'fill'))))
+        Text(.config(size: 15, weight: semibold, color: onAccent) .obj(param.label))
+      ))
+    )
+  )
+)
+
+Widget(
+  .name(TextLink)
+  .param(req txt label, req txt href)
+  .obj(
+    Link(
+      .config(href: param.href, underline: false, className: 'text-link')
+      .obj(Row(.config(gap: 6, yAlign: mid) Text(.config(size: 15, weight: medium, color: accent) .obj(param.label)), Icon(.props(name: 'arrow', size: 14))))
+    )
+  )
+)
+
+// One official addon as a package row.
+Widget(
+  .name(AddonRow)
+  .param(req txt id, req txt npm, txt description = '', txt version = '')
+  .obj(
+    Link(
+      .config(w: fill, href: '/library/' + param.id, padding: sym(x: 16, y: 14), underline: false, className: 'row-link', .border(color: line, width: 1, sides: top))
+      .obj(Row(
+        .config(w: fill, gap: 24, yAlign: mid)
+        Column(.config(w: 220, gap: 2) Text(.config(size: 15, weight: semibold) .obj(param.id)), Text(.config(size: 12.5, color: muted, font: code) .obj(param.npm)))
+        Text(.config(w: fill, size: 14.5, color: muted, lineHeight: 1.5) .obj(param.description))
+        Text(.config(size: 12.5, color: faint, font: code) .obj(param.version))
+      ))
+    )
+  )
+)

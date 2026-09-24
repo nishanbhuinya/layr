@@ -1,0 +1,13 @@
+Page(
+  .name(Profile)
+  .route('/')
+  Scaffold(.body(Row(
+    .config(w: fill, gap: 16, padding: all(24), yAlign: mid)
+    Container(.config(size: 56, color: #1a66e8, cornerRadius: 999))
+    Column(
+      .config(w: fill, gap: 4)
+      Text(.config(size: 18, weight: semibold) .obj('Ada Lovelace'))
+      Text(.config(color: #596070) .obj('Analyst, Analytical Engine'))
+    )
+  )))
+)

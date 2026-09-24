@@ -1,0 +1,10 @@
+App(
+  .scale(DesignScale(.m(w: 390, h: 844) .t(w: 834, h: 1194) .w(w: 1440, h: 900) .uw(w: 2560, h: 1080)))
+  .theme(Theme(.colors(brand: #3b82f6, ink: #0d0d0d, paper: #f5f5f4)))
+)
+
+Preset(
+  .name(pill)
+  .for(Button)
+  .config(padding: sym(x: 16, y: 8), cornerRadius: 999, color: brand, borderWidth: 0)
+)

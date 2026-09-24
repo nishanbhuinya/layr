@@ -1,0 +1,11 @@
+import { TopBar } from '../widgets/shell.layr'
+import { MdPage } from '../widgets/mdpage.layr'
+import { loadErrors } from '../lib/content.ts'
+
+Page(
+  .name(ErrorsPage)
+  .route('/errors')
+  .meta(title: 'Diagnostics · LAYR', description: 'Every code the LAYR compiler, analyzer and runtime report, with the explanation and the fix.')
+  .load { return loadErrors() }
+  Scaffold(.config(color: canvas) .bar(TopBar()) .body(MdPage(.config(page: data))))
+)

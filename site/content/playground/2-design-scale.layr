@@ -1,0 +1,25 @@
+// One design, every frame: 48 at m flows to 96 at w. Resize the preview or pick a frame.
+Page(
+  .name(Scale)
+  .route('/')
+  Scaffold(
+    .config(color: #121110)
+    .body(Mid(Column(
+      .config(gap: 12, xAlign: mid, padding: all(24))
+      Text(
+        .config(size: 48, weight: bold, color: #ffc46b)
+        .at(w, size: 96)
+        .obj('Numbers flow')
+      )
+      Text(.config(size: 16, color: #b0a79d) .obj('Structure steps at the frames.'))
+      Row(
+        .config(gap: 8)
+        .at(m, hide: true)
+        .at(t, hide: false)
+        Container(.config(size: 40, color: #ff6a3d, cornerRadius: 8))
+        Container(.config(size: 40, color: #2ed3c4, cornerRadius: 8))
+        Container(.config(size: 40, color: #9b8cff, cornerRadius: 8))
+      )
+    )))
+  )
+)

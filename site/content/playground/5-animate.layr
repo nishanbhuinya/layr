@@ -1,0 +1,19 @@
+// Animate interpolates every change to its object, whatever caused it.
+Page(
+  .name(Motion)
+  .route('/')
+
+  var bool wide = false
+
+  Scaffold(
+    .config(color: #fffcf7)
+    .body(Column(
+      .config(w: fill, padding: all(24), gap: 16)
+      Animate(
+        .eases(w: spring.bounce)
+        .obj(Container(.config(w: wide ? 320 : 120, h: 80, color: #9b8cff, cornerRadius: 16)))
+      )
+      Button(.preset(default) .config(label: 'Animate') .fnc { wide = !wide })
+    ))
+  )
+)

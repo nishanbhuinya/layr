@@ -1,0 +1,29 @@
+// Chips wrap, state drives the view, and every click is one line of TypeScript.
+Page(
+  .name(Picker)
+  .route('/')
+
+  var txt picked = 'Layout'
+  const list<txt> topics = ['Layout', 'Design Scale', 'State', 'Animation', 'Export', 'Extract', 'Inject']
+
+  Scaffold(
+    .config(color: #fffcf7)
+    .body(Column(
+      .config(w: fill, padding: all(24), gap: 16)
+      Text(.config(type: h2, size: 24) .obj('Pick a topic'))
+      Wrap(
+        .config(gap: 8)
+        Each(
+          .of(topics)
+          .as(t)
+          .obj(Button(
+            .config(padding: sym(x: 14, y: 8), cornerRadius: 999, color: picked == t ? #1c1917 : #efe8dd)
+            .fnc { picked = t }
+            .obj(Text(.config(color: picked == t ? white : #1c1917) .obj(t)))
+          ))
+        )
+      )
+      Text(.config(color: #625a50) .obj('You picked $picked.'))
+    ))
+  )
+)

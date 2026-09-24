@@ -1,0 +1,26 @@
+import Card from '../widgets/card.layr'
+
+Page(
+  .name(Home)
+  .route('/')
+  .meta(title: 'LAYR Showcase')
+  Scaffold(
+    .config(color: paper, padding: all(24))
+    .body(Column(
+      .config(w: fill, gap: 16)
+      Text(.config(type: h1) .obj('Showcase'))
+      Wrap(
+        .config(gap: 12)
+        Link(.config(label: 'Export / Extract / Inject', to: EEI))
+        Link(.config(label: 'Layout', to: Layout))
+        Link(.config(label: 'Forms', to: Forms))
+        Link(.config(label: 'Effects', to: Effects))
+        Link(.config(label: 'React interop', to: Interop))
+      )
+      Card(
+        .config(title: 'Widgets')
+        .obj(Text('Params become config keys; this text is forwarded with .obj(.obj).'))
+      )
+    ))
+  )
+)

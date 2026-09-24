@@ -1,0 +1,75 @@
+// A document inside the docs panel: breadcrumb, body, pager, and the "on this page" rail at `xl`.
+import { Toc } from '../react/Toc.tsx'
+import { Ad } from '../react/Ad.tsx'
+
+Widget(
+  .name(Crumbs)
+  .param(txt section = '', txt title = '')
+  .obj(
+    Row(
+      .config(gap: 6, yAlign: mid)
+      Link(.config(href: '/docs', underline: false) .obj(Text(.config(size: 13, color: muted) .obj('Docs'))))
+      If(
+        .cnd(param.section != '')
+        .obj(Row(
+          .config(gap: 6, yAlign: mid)
+          Text(.config(size: 13, color: faint) .obj('/'))
+          Text(.config(size: 13, color: muted) .obj(param.section))
+        ))
+      )
+    )
+  )
+)
+
+Widget(
+  .name(PagerLink)
+  .param(req txt label, req txt title, req txt href, bool next = false)
+  .obj(
+    Link(
+      .config(w: fill, href: param.href, padding: sym(x: 16, y: 14), cornerRadius: 8, underline: false, className: 'pager', .border(color: line, width: 1))
+      .obj(Column(
+        .config(w: fill, gap: 4, xAlign: param.next ? end : start)
+        Text(.config(size: 12.5, color: muted) .obj(param.label))
+        Text(.config(size: 15, weight: medium) .obj(param.title))
+      ))
+    )
+  )
+)
+
+Widget(
+  .name(Article)
+  .param(list<any> toc = [], txt edit = '')
+  .obj(
+    Row(
+      .config(w: fill, minW: 0, gap: 56, padding: sym(x: 48, y: 40), xAlign: mid, yAlign: stretch)
+      .at(m, padding: only(left: 20, right: 20, top: 24, bottom: 40))
+      .at(t, padding: sym(x: 40, y: 36))
+      Column(
+        .config(w: fill, maxW: 760, minW: 0, gap: 0)
+        .obj
+        If(
+          .cnd(param.edit != '')
+          .obj(Row(
+            .config(w: fill, margin: only(top: 40), padding: only(top: 16), .border(color: line, width: 1, sides: top))
+            Link(
+              .config(href: param.edit, external: true, underline: false)
+              .obj(Text(.config(size: 13, color: muted) .obj('Edit this page on GitHub')))
+            )
+          ))
+        )
+      )
+      Column(
+        .config(w: 216, hide: true)
+        .at(xl, hide: false)
+        Position(
+          .config(sticky: true, top: 96)
+          .obj(Column(
+            .config(w: fill, gap: 32)
+            Toc(.props(items: param.toc))
+            Ad(.props(placement: 'docs', height: 600))
+          ))
+        )
+      )
+    )
+  )
+)

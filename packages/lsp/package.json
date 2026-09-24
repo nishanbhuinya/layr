@@ -1,0 +1,19 @@
+{
+  "name": "@layr-internal/lsp",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@layr-internal/compiler": "workspace:*",
+    "@layr-internal/model": "workspace:*",
+    "vscode-languageserver": "^10.1.1",
+    "vscode-languageserver-textdocument": "^1.0.12",
+    "@layr-internal/node": "workspace:*"
+  }
+}

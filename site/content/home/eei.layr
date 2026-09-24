@@ -1,0 +1,13 @@
+Page(
+  .name(Store)
+  .route('/')
+  Scaffold(.body(Container(
+    .id(card)
+    .config(padding: all(16), !mut color: #ffffff)
+    .obj(Text('Order 1042'))
+  )))
+)
+
+Extract(.from(Store.card) insets base = card.padding)
+Inject(.into(Store.card) .exeOrder(0) card.padding = base * 2)
+Inject(.into(Store.card) .exeOrder(1) card.padding = card.padding + all(4))
