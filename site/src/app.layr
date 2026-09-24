@@ -13,7 +13,8 @@ App(
       muted: #625a50
       faint: #938a7e
       accent: #c93f12
-      onAccent: #fffcf7
+      onAccent: #ffffff
+      action: #c93f12
       ember: #e8551f
       gold: #d99a1e
       teal: #0e9f92
@@ -31,7 +32,8 @@ App(
       muted: #b0a79d
       faint: #7f776e
       accent: #ff6a3d
-      onAccent: #1c0c05
+      onAccent: #ffffff
+      action: #e8531f
       ember: #ff6a3d
       gold: #ffc46b
       teal: #2ed3c4

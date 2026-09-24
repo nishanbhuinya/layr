@@ -8,6 +8,6 @@ Page(
   )))
 )
 
-Extract(.from(Store.card) insets base = card.padding)
+Extract(.from(Store.card) .exeOrder(-1) insets base = card.padding)
 Inject(.into(Store.card) .exeOrder(0) card.padding = base * 2)
 Inject(.into(Store.card) .exeOrder(1) card.padding = card.padding + all(4))

@@ -1,0 +1,50 @@
+# Publishes an official addon when its tag is pushed: addon/<folder>@<version>, e.g.
+# addon/google_fonts@3.0.0-next.1. Trusted publishing (no token), with provenance; then the site
+# rebuilds so the Library shows the new version.
+name: Addon release
+
+on:
+  push:
+    tags: ["addon/*"]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - name: Resolve the addon
+        id: a
+        run: |
+          ref="${GITHUB_REF_NAME#addon/}"
+          dir="${ref%@*}"
+          version="${ref##*@}"
+          test -f "addons/$dir/package.json" || { echo "no addon at addons/$dir"; exit 1; }
+          actual="$(node -p "require('./addons/$dir/package.json').version")"
+          if [ "$actual" != "$version" ]; then echo "addons/$dir is $actual but the tag says $version"; exit 1; fi
+          if [[ "$version" == *-* ]]; then echo "dist=next" >> "$GITHUB_OUTPUT"; else echo "dist=latest" >> "$GITHUB_OUTPUT"; fi
+          echo "dir=$dir" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Its examples compile
+        run: pnpm --filter "./addons/${{ steps.a.outputs.dir }}" exec layr analyze
+      - name: Pack and publish
+        run: |
+          mkdir -p out
+          (cd "addons/${{ steps.a.outputs.dir }}" && pnpm pack --pack-destination ../../out)
+          npm publish out/*.tgz --provenance --access public --tag ${{ steps.a.outputs.dist }}
+      - name: Rebuild the site
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api repos/${{ github.repository }}/dispatches -f event_type=addon-released

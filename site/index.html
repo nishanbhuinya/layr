@@ -14,10 +14,17 @@
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="alternate" type="text/plain" href="/llms.txt" title="LAYR documentation for language models" />
     <script>
-      // The reader's theme choice, applied before first paint (no flash).
+      // The reader's theme (a palette and its light or dark base), applied before first paint.
       try {
         var t = localStorage.getItem("layr-theme");
         if (t === "light" || t === "dark") document.documentElement.setAttribute("data-theme", t);
+        var p = JSON.parse(localStorage.getItem("layr-palette") || "null");
+        if (p && p.css) {
+          var s = document.createElement("style");
+          s.id = "layr-palette";
+          s.textContent = p.css;
+          document.head.appendChild(s);
+        }
       } catch (e) {}
     </script>
     %LAYR_HEAD%

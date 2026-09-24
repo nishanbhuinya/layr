@@ -4,7 +4,12 @@
  * real viewport: dragging its corner changes what the page lays out against.
  */
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { type Compiled, compile } from "../lib/runner.ts";
+import { type Compiled, compile, currentTheme } from "../lib/runner.ts";
+
+/** Site theme overrides set inline on <html> (custom themes); the frame does not inherit them. */
+function themeVars(): string {
+  return document.documentElement.getAttribute("style") ?? "";
+}
 
 export const MIN_W = 320;
 /** The canvas around a resized window. */
@@ -39,7 +44,7 @@ export function frameOf(width: number): string {
 }
 
 /** Compiles `code` and runs it in the frame once both are ready. */
-export function useRunner(code: string, active = true) {
+export function useRunner(code: string, active = true, opts: { inspect?: boolean; transparent?: boolean; app?: string } = {}) {
   const frame = useRef<HTMLIFrameElement>(null);
   const [ready, setReady] = useState(false);
   const [height, setHeight] = useState(160);
@@ -65,18 +70,25 @@ export function useRunner(code: string, active = true) {
   useEffect(() => {
     if (!active) return;
     let alive = true;
-    void compile(code).then((c) => {
+    void compile(code, opts).then((c) => {
       if (alive) setCompiled(c);
     });
     return () => {
       alive = false;
     };
-  }, [code, active]);
+  }, [code, active, opts.inspect, opts.app]);
+
+  // The page inside follows the site's theme, including a choice made while it is open.
+  useEffect(() => {
+    const mo = new MutationObserver(() => frame.current?.contentWindow?.postMessage({ type: "theme", theme: currentTheme() ?? null, vars: themeVars() }, location.origin));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style"] });
+    return () => mo.disconnect();
+  }, []);
 
   useEffect(() => {
     if (!ready || !compiled || compiled.errors) return;
-    frame.current?.contentWindow?.postMessage({ type: "run", js: compiled.js, css: compiled.css }, location.origin);
-  }, [ready, compiled]);
+    frame.current?.contentWindow?.postMessage({ type: "run", js: compiled.js, css: compiled.css, modules: compiled.modules, aliases: compiled.aliases, theme: currentTheme(), transparent: !!opts.transparent }, location.origin);
+  }, [ready, compiled, opts.transparent]);
 
   const onLoad = useCallback(() => setReady(true), []);
   return { frame, onLoad, ready, height, runtimeError, compiled, ran };
@@ -100,6 +112,7 @@ export function Viewport({
   maxShownH = 720,
   fillHeight = 0,
   loading = false,
+  overlay,
   children,
 }: {
   frame: React.RefObject<HTMLIFrameElement | null>;
@@ -118,6 +131,8 @@ export function Viewport({
   fillHeight?: number;
   /** Until the page has rendered, the window shows a calm loading state instead of an empty box. */
   loading?: boolean;
+  /** Drawn over the page, in the window's own coordinates (the page's CSS px times `scale`). */
+  overlay?: (scale: number) => ReactNode;
   children?: ReactNode;
 }) {
   const [dragging, setDragging] = useState(false);
@@ -131,6 +146,9 @@ export function Viewport({
   const fixedH = h || (fit && fillHeight ? Math.max(MIN_H, Math.round(fillHeight)) : 0);
   const shown = fixedH || Math.min(contentH, maxShownH);
   const viewportH = fixedH || Math.max(900, contentH);
+  // A pane that owns its height (the playground) keeps the canvas full height and centres the
+  // window in it; elsewhere the canvas is the window plus its margin.
+  const stageH = Math.max(fillHeight, shown * scale + 2 * pad);
 
   useEffect(() => {
     frame.current?.contentWindow?.postMessage({ type: "height", auto: fixedH === 0 }, location.origin);
@@ -179,7 +197,7 @@ export function Viewport({
       className="live-stage"
       data-fit={fit ? "" : undefined}
       data-dragging={dragging ? "" : undefined}
-      style={{ height: shown * scale + 2 * pad, padding: pad, ...(fit ? {} : dots(stageW, shown * scale + 2 * pad)) }}
+      style={{ height: stageH, padding: pad, ...(fit ? {} : dots(stageW, stageH)) }}
     >
       <div className="live-window" style={{ width: width * scale, height: shown * scale }}>
         <div className="live-clip" data-loading={loading ? "" : undefined}>
@@ -193,6 +211,7 @@ export function Viewport({
             />
           ) : null}
         </div>
+        {overlay ? <div className="live-overlay">{overlay(scale)}</div> : null}
         <Arc fit={fit} w={width * scale} h={shown * scale} />
         <button
           type="button"

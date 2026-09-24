@@ -51,7 +51,7 @@ Or try it without installing anything in the [playground](https://layr.dynshift.
 | Path | What it is |
 |---|---|
 | `packages/` | the compiler, runtime, React target, CLI, language server, and `@dynshift/layr` |
-| `addons/` | official addons: `kit`, `icons`, `liquid_drop` |
+| `addons/` | official addons: `kit`, `google_fonts` |
 | `docs/content/` | the documentation (every snippet compiles in CI) |
 | `site/` | layr.dynshift.com, built with LAYR |
 | `skills/layr/` | the LAYR Skill for AI agents |

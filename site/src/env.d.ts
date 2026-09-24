@@ -41,3 +41,7 @@ declare module "virtual:site/page/*" {
   const page: { slug: string; title: string; description: string; section: string; html: string; toc: Array<{ id: string; text: string; depth: number }>; edit: string };
   export default page;
 }
+declare module "virtual:site/addons-src" {
+  const src: { addons: Record<string, string>; files: Array<{ path: string; text: string }> };
+  export default src;
+}

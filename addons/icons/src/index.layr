@@ -1,2 +1,0 @@
-// @dynshift/layr-icons: import it once, then use the core Icon widget by name: Icon('star').
-import './set.ts'

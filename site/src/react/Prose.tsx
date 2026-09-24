@@ -35,6 +35,9 @@ export function followLink(href: string): boolean {
 }
 
 /** Build-time HTML with working links and copy buttons; `className` sets how it is styled. */
+/** Live previews mounted into generated HTML, by their placeholder element. */
+const LIVE_ROOTS = new WeakMap<HTMLElement, { root: Root; codeHtml: string; unmount?: ReturnType<typeof setTimeout> }>();
+
 export function Html({ html, className }: { html: string; className?: string }) {
   const onClick = useCallback((e: MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement;
@@ -51,15 +54,26 @@ export function Html({ html, className }: { html: string; className?: string }) 
   const ref = useRef<HTMLDivElement>(null);
   // Runnable snippets become live examples once the page is interactive.
   useEffect(() => {
-    const roots: Root[] = [];
-    for (const el of ref.current?.querySelectorAll<HTMLElement>(".live[data-run]") ?? []) {
-      const codeHtml = el.innerHTML;
-      const root = createRoot(el);
-      root.render(<Live code={decodeCode(el.dataset.run ?? "")} codeHtml={codeHtml} playground={el.dataset.play ?? "/playground"} />);
-      roots.push(root);
+    const els = [...(ref.current?.querySelectorAll<HTMLElement>(".live[data-run]") ?? [])];
+    for (const el of els) {
+      // A re-run (same HTML) reuses the element's root and its original code markup.
+      let mounted = LIVE_ROOTS.get(el);
+      if (!mounted) {
+        mounted = { root: createRoot(el), codeHtml: el.innerHTML };
+        LIVE_ROOTS.set(el, mounted);
+      }
+      clearTimeout(mounted.unmount);
+      mounted.root.render(<Live code={decodeCode(el.dataset.run ?? "")} codeHtml={mounted.codeHtml} playground={el.dataset.play ?? "/playground"} />);
     }
     return () => {
-      for (const r of roots) setTimeout(() => r.unmount());
+      for (const el of els) {
+        const m = LIVE_ROOTS.get(el);
+        if (!m) continue;
+        m.unmount = setTimeout(() => {
+          m.root.unmount();
+          LIVE_ROOTS.delete(el);
+        });
+      }
     };
   }, [html]);
   // biome-ignore lint/a11y/useKeyWithClickEvents: delegation for the real links and buttons inside the HTML

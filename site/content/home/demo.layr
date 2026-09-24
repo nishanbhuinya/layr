@@ -1,5 +1,33 @@
-// The page inside the home page's inspector. Plain LAYR: resize the frame and the row stacks,
-// the chips wrap and every number scales, with no media queries written here.
+// A studio booking page, the one in the home page's hero. Its App carries its own theme, so the
+// file runs as is in the playground. Resize the window: the row stacks when a pane would be
+// squeezed, the chips wrap and every number scales, with no media queries written here.
+App(
+  .theme(Theme(
+    .colors(
+      canvas: #f4efe7
+      panel: #fffcf7
+      sunken: #efe8dd
+      line: #e4dbcd
+      lineStrong: #cdc1af
+      ink: #1c1917
+      muted: #625a50
+      accent: #c93f12
+      onAccent: #ffffff
+    )
+    .dark(
+      canvas: #121110
+      panel: #1a1816
+      sunken: #221f1c
+      line: #2e2a26
+      lineStrong: #433d37
+      ink: #f3ede6
+      muted: #b0a79d
+      accent: #ff6a3d
+      onAccent: #ffffff
+    )
+  ))
+)
+
 Widget(
   .name(DayBar)
   .param(req txt day, req num load)
@@ -44,11 +72,11 @@ Widget(
 )
 
 Page(
-  .name(Demo)
-  .route('/inspect/demo')
-  .meta(title: 'LAYR inspector demo')
+  .name(Room)
+  .route('/')
+  .meta(title: 'Room B')
   Scaffold(
-    .config(color: canvas)
+    .config(color: canvas, textColor: ink)
     .body(Column(
       .config(w: fill, padding: all(24), gap: 20)
       Row(
@@ -108,7 +136,6 @@ Page(
         Booking(.config(day: 'Thu', time: '14:30', who: 'Podcast recording', hours: '1 hour'))
         Booking(.config(day: 'Fri', time: '09:00', who: 'Band rehearsal', hours: '3 hours'))
       )
-      Text(.config(size: 12, color: faint) .obj('Sample page, compiled from LAYR. Drag the frame to see it adapt.'))
     ))
   )
 )

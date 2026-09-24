@@ -35,7 +35,7 @@ If the `layr` MCP server is available, `check_snippet`, `get_widget` and `explai
 - **Conditions and lists:** `If(.cnd(test) .obj(A) .fb(B))`, `Each(.of(list) .as(item, i) .obj(…))`. Never `.map()` or ternaries that return objects in layout.
 - **Pages:** `Page(.name(X) .route('/x') … Scaffold(.body(…)))`, one root object. Navigation: `Link(.config(to: Page))`, `go(Page)`.
 - **Widgets:** `Widget(.name(Card) .param(req txt title, color tint = blue) .obj(…))`; read `param.title`; `.obj` alone forwards the caller's object.
-- **Export/Extract/Inject:** address objects by `Page.id` or lookup path (`Page.scaffold.body.column.text(1)`). `Extract(.from(Page.card) insets pad = card.padding)` reads; `Inject(.into(Page.card) .exeOrder(0) card.padding = card.padding * 2)` adds a reversible layer. Give Injects on the same feature different `exeOrder`s. Never mutate `!mut` features.
+- **Export/Extract/Inject:** address objects by `Page.id` or lookup path (`Page.scaffold.body.column.text(1)`); a path continues into a widget instance (`Page.….card(1).text(0)` reaches that one instance, `Card.text(0)` every instance). `Extract(.from(Page.card) .exeOrder(-1) insets pad = card.padding)` reads the declared value (without an order it reads the final value, after every Inject); `Inject(.into(Page.card) .exeOrder(0) card.padding = card.padding * 2)` adds a reversible layer. Give Injects on the same feature different `exeOrder`s. Never mutate `!mut` features.
 - **Accessibility is required:** `alt` (or `decorative: true`) on Image, `label` on Input/Toggle/Select/Slider and Buttons without content.
 - **React packages:** import the component and use it as an object with `.props(...)`; hooks only inside `.react { }`.
 

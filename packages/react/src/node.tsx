@@ -3,7 +3,7 @@
  * config, injected layers and per-frame values are lowered here at runtime with the same lowering
  * the compiler uses.
  */
-import { type Decls, lower, PRIMARY_ACTIONS, runtimeWidget, size as makeSize } from "@layr-internal/model";
+import { type Decls, lengthCss, lower, PRIMARY_ACTIONS, runtimeWidget, size as makeSize } from "@layr-internal/model";
 import { type Action, atFrame, registry, router, run, type Signal } from "@layr-internal/runtime";
 import { Children, type CSSProperties, createElement, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { applyMotion, exitAnimation, type MotionSpec } from "./motion.ts";
@@ -29,6 +29,8 @@ export interface NodeProps {
   p?: string;
   /** Source line of the object, with `inspect: true`. */
   ln?: number;
+  /** Inspect mode, on a widget's root: the lookup path of the instance it renders. */
+  ip2?: string;
   /** Instance address prefix inside widgets. */
   ip?: string;
   /** Outer config from a widget's usage site (margin, w, flex…). */
@@ -367,8 +369,11 @@ export function N(props: NodeProps): ReactNode {
       }
       case "Blur": {
         if (beh.type === "progressive") {
-          children = [progressiveBlur(beh), createElement("div", { key: "c", style: { position: "relative" } }, children)];
-          style = { ...(style ?? {}), position: "relative", backdropFilter: undefined, WebkitBackdropFilter: undefined } as CSSProperties;
+          // Blurring the content: the layers sit over it. Blurring what is behind: under it.
+          const over = beh.blurOn === "object";
+          const content = createElement("div", { key: "c", style: { position: "relative" } }, children);
+          children = over ? [content, progressiveBlur(beh, true)] : [progressiveBlur(beh, false), content];
+          style = { ...(style ?? {}), position: "relative", backdropFilter: undefined, WebkitBackdropFilter: undefined, filter: undefined } as CSSProperties;
         }
         break;
       }
@@ -394,10 +399,34 @@ export function N(props: NodeProps): ReactNode {
         break;
     }
 
-    return createElement(tag, { ref: setRef, className, style, ...handlers, ...attrs, "data-l": w, "data-a": a, "data-path": props.p, "data-line": props.ln }, children);
+    return createElement(tag, { ref: setRef, className, style, ...handlers, ...attrs, "data-l": w, "data-a": a, "data-path": props.p, "data-line": props.ln, "data-instance": props.ip2 }, children);
   } finally {
     t.done();
   }
+}
+
+/** Prose may wrap once it has this many ems; narrower than its natural width up to here is squeezed. */
+const COMFORT_EM = 15;
+
+/**
+ * The width a fill child needs to look right side by side: its natural (max-content) width, capped
+ * at COMFORT_EM so text can still wrap, never below its min-content. Measured by laying the child
+ * out once at max-content and restoring it in the same frame (nothing paints in between).
+ */
+function comfortable(el: HTMLElement): number {
+  // A declared maxW caps what the child can want: it never needs more room than it may take.
+  const cap = Number.parseFloat(getComputedStyle(el).maxWidth) || Number.POSITIVE_INFINITY;
+  const { flex, width, minWidth, maxWidth } = el.style;
+  el.style.flex = "0 0 auto";
+  el.style.width = "max-content";
+  el.style.minWidth = "0";
+  el.style.maxWidth = "none";
+  const natural = el.getBoundingClientRect().width;
+  el.style.width = "min-content";
+  const least = el.getBoundingClientRect().width;
+  Object.assign(el.style, { flex, width, minWidth, maxWidth });
+  const em = Number.parseFloat(getComputedStyle(el).fontSize) || 16;
+  return Math.min(cap, Math.max(least, Math.min(natural, COMFORT_EM * em)));
 }
 
 /** Unstack only with a little room to spare, so sub-pixel rounding cannot flip a row back and forth. */
@@ -412,8 +441,17 @@ const UNSTACK_SLACK = 4;
 function adapt(node: HTMLElement, setStacked: (v: boolean) => void) {
   const stacked = node.classList.contains("l-stacked");
   if (!stacked) {
-    if (node.scrollWidth > node.clientWidth + 1) {
-      node.dataset.stackAt = String(node.scrollWidth);
+    // Fitting is not enough: a fill child squeezed below its comfortable width (a button label
+    // wrapping, chips one per line, prose a few words wide) also stacks the row.
+    let short = 0;
+    for (const child of node.children) {
+      if (!(child instanceof HTMLElement) || !child.classList.contains("l-wfill")) continue;
+      const want = comfortable(child);
+      const has = child.getBoundingClientRect().width;
+      if (has + 0.5 < want) short += want - has;
+    }
+    if (short > 0 || node.scrollWidth > node.clientWidth + 1) {
+      node.dataset.stackAt = String(Math.ceil(node.scrollWidth + short));
       setStacked(true);
     }
     return;
@@ -529,7 +567,8 @@ function Dialog(props: { beh: Record<string, unknown>; className: string; style?
     {
       ref,
       className: props.className,
-      style: { ...(props.style ?? {}), ...(beh.backdrop ? { "--l-backdrop": String(beh.backdrop) } : {}), margin: "auto", padding: 0, border: "none", background: "transparent", maxWidth: "none", maxHeight: "none", color: "inherit" },
+      // Resets for <dialog> live in the base CSS layer, so the Overlay's own color/padding win.
+      style: { ...(props.style ?? {}), ...(beh.backdrop ? { "--l-backdrop": String(beh.backdrop) } : {}), margin: placementMargin(beh.placement) },
       "aria-label": beh.label as string | undefined,
       "data-l": "Overlay",
       onCancel: (e: Event) => {
@@ -545,27 +584,74 @@ function Dialog(props: { beh: Record<string, unknown>; className: string; style?
   );
 }
 
-function progressiveBlur(beh: Record<string, unknown>): ReactNode {
-  const values = (beh.values as number[] | undefined) ?? [0, 24];
-  const [from = 0, to = 24] = values;
-  const dir = (beh.direction as string[] | undefined) ?? ["topMid", "bottomMid"];
-  const angle = dir[0]?.startsWith("bottom") ? "to top" : dir[0]?.endsWith("Left") ? "to right" : dir[0]?.endsWith("Right") ? "to left" : "to bottom";
-  const steps = 6;
-  const layers: ReactNode[] = [];
-  for (let i = 0; i < steps; i++) {
-    const v = from + ((to - from) * (i + 1)) / steps;
-    const start = (i / steps) * 100;
-    const end = ((i + 2) / steps) * 100;
-    const mask = `linear-gradient(${angle}, transparent ${start}%, #000 ${Math.min(100, (start + end) / 2)}%, #000 ${Math.min(100, end)}%, transparent ${Math.min(100, end + 100 / steps)}%)`;
-    layers.push(
-      createElement("div", {
-        key: i,
-        "aria-hidden": true,
-        style: { position: "absolute", inset: 0, pointerEvents: "none", backdropFilter: `blur(calc(${v} * var(--ds) / 1000))`, WebkitBackdropFilter: `blur(calc(${v} * var(--ds) / 1000))`, maskImage: mask, WebkitMaskImage: mask },
-      }),
-    );
+/** `placement` as dialog margins: an edge the placement names gets 0, the others stay auto. */
+function placementMargin(placement: unknown): string {
+  const p = typeof placement === "string" ? placement : "mid";
+  const top = p.startsWith("top") ? "0" : "auto";
+  const bottom = p.startsWith("bottom") ? "0" : "auto";
+  const left = /Left$/.test(p) ? "0" : "auto";
+  const right = /Right$/.test(p) ? "0" : "auto";
+  return `${top} ${right} ${bottom} ${left}`;
+}
+
+/** Where the progressive blur is strongest: `edge`, or the older `direction: (from, to)`. */
+function blurEdge(beh: Record<string, unknown>): "bottom" | "top" | "left" | "right" {
+  const e = beh.edge;
+  if (e === "top" || e === "left" || e === "right" || e === "bottom") return e;
+  const to = (beh.direction as string[] | undefined)?.[1];
+  if (typeof to === "string") {
+    if (to.startsWith("top")) return "top";
+    if (to.endsWith("Left")) return "left";
+    if (to.endsWith("Right")) return "right";
   }
-  return createElement("div", { key: "blur", "aria-hidden": true, style: { position: "absolute", inset: 0, pointerEvents: "none" } }, layers);
+  return "bottom";
+}
+
+const BLUR_CURVES: Record<string, (t: number) => number> = {
+  linear: (t) => t,
+  ease: (t) => t * t * (3 - 2 * t),
+  // Stays nearly clear for the first part, then deepens quickly: what the eye reads as "soft".
+  exponential: (t) => (2 ** (5 * t) - 1) / (2 ** 5 - 1),
+};
+
+/**
+ * A progressive blur: `layers` thin backdrop-blur layers, each masked to a band that overlaps its
+ * neighbours, with the radius rising along `curve` to `value` at `edge`. Overlapping bands hide
+ * the steps; the exponential curve keeps the clear side clear. `fade` adds a colour that the edge
+ * melts into. The bands cover `extent` from the edge (a length or a percentage).
+ */
+function progressiveBlur(beh: Record<string, unknown>, over: boolean): ReactNode {
+  const edge = blurEdge(beh);
+  const vals = beh.values as unknown[] | undefined;
+  const radius = (v: unknown, d: number) => (typeof v === "number" ? v : typeof v === "string" && v ? Number.parseFloat(v) || d : d);
+  const from = vals ? radius(vals[0], 0) : 0;
+  const to = vals ? radius(vals[1], 24) : radius(beh.value, 24);
+  const n = Math.max(2, Math.min(24, Math.round(Number(beh.layers ?? 8)) || 8));
+  const curve = BLUR_CURVES[String(beh.curve ?? "exponential")] ?? (BLUR_CURVES.exponential as (t: number) => number);
+  const dir = { bottom: "to bottom", top: "to top", left: "to left", right: "to right" }[edge];
+  const size = edge === "bottom" || edge === "top" ? "height" : "width";
+  const ext = beh.extent;
+  const extent = typeof ext === "number" ? `calc(${ext} * var(--ds) / 1000)` : typeof ext === "string" && ext ? ext : typeof ext === "object" && ext ? lengthCss(ext as never) : "100%";
+  const layers: ReactNode[] = [];
+  const step = 100 / n;
+  for (let i = 0; i < n; i++) {
+    const v = from + (to - from) * curve((i + 1) / n);
+    // Each band fades in over one step, holds for one, and fades out over the next.
+    const a = Math.max(0, (i - 1) * step);
+    const b = i * step;
+    const c = Math.min(100, (i + 1) * step);
+    const d = Math.min(100, (i + 2) * step);
+    const mask = i === n - 1 ? `linear-gradient(${dir}, transparent ${a}%, #000 ${b}%)` : `linear-gradient(${dir}, transparent ${a}%, #000 ${b}%, #000 ${c}%, transparent ${d}%)`;
+    const blur = `blur(calc(${v.toFixed(2)} * var(--ds) / 1000))`;
+    layers.push(createElement("div", { key: i, style: { position: "absolute", inset: 0, backdropFilter: blur, WebkitBackdropFilter: blur, maskImage: mask, WebkitMaskImage: mask } }));
+  }
+  const fade = beh.fade === undefined || beh.fade === null ? null : typeof beh.fade === "string" ? beh.fade : ((beh.fade as { toCss?: () => string }).toCss?.() ?? String(beh.fade));
+  if (fade) layers.push(createElement("div", { key: "fade", style: { position: "absolute", inset: 0, background: `linear-gradient(${dir}, transparent 20%, ${fade})` } }));
+  return createElement(
+    "div",
+    { key: "blur", "aria-hidden": true, "data-l": "ProgressiveBlur", style: { position: "absolute", [edge]: 0, left: size === "height" ? 0 : undefined, right: size === "height" ? 0 : undefined, top: size === "width" ? 0 : undefined, bottom: size === "width" ? 0 : undefined, [size]: extent, pointerEvents: "none", zIndex: over ? 1 : undefined } },
+    layers,
+  );
 }
 
 /** Mask and Subtract: the lowest-order layer is the mask (Mask) or the base (Subtract). */

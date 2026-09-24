@@ -7,8 +7,9 @@ import { layrVersion } from "./version.ts";
 
 type Command = { run: (a: Args) => Promise<void>; summary: string; usage?: string };
 
-const lazy = (path: string, name: string) => async (a: Args) => {
-  const m = (await import(path)) as Record<string, (a: Args) => Promise<void>>;
+/** A command loaded on first use. The import is written out so a bundler can follow it. */
+const lazy = (load: () => Promise<unknown>, name: string) => async (a: Args) => {
+  const m = (await load()) as Record<string, (a: Args) => Promise<void>>;
   await (m[name] as (a: Args) => Promise<void>)(a);
 };
 
@@ -20,7 +21,7 @@ export const COMMANDS: Record<string, Command> = {
   format: { run: fmt, summary: "Rewrite .layr files in canonical form", usage: "layr format [--check] [paths...]" },
   analyze: { run: analyze, summary: "Check the project; explain a feature's cascade", usage: "layr analyze [--json] [--info] [--explain Page.id.feature]" },
   explain: { run: explain, summary: "Explain a diagnostic code", usage: "layr explain [L3102]" },
-  test: { run: lazy("./commands/test.ts", "test"), summary: "Screenshot every page at every design frame", usage: "layr test [--frames m,t,w,uw] [--update]" },
+  test: { run: lazy(() => import("./commands/test.ts"), "test"), summary: "Screenshot every page at every design frame", usage: "layr test [--frames m,t,w,uw] [--update]" },
   add: { run: add, summary: "Install addons", usage: "layr add <addon>[@range] ..." },
   remove: { run: remove, summary: "Uninstall addons", usage: "layr remove <addon> ..." },
   update: { run: update, summary: "Update addons", usage: "layr update [addon ...]" },
@@ -31,10 +32,10 @@ export const COMMANDS: Record<string, Command> = {
   publish: { run: publish, summary: "Validate and publish an addon to npm", usage: "layr publish [--dry-run] [--tag next]" },
   eject: { run: eject, summary: "Copy an addon's source into your project", usage: "layr eject <addon>" },
   docs: { run: docs, summary: "Generate API docs for an addon's widgets" },
-  skills: { run: lazy("./commands/skills.ts", "skills"), summary: "Install the LAYR Skill for AI agents", usage: "layr skills [install|update|path]" },
+  skills: { run: lazy(() => import("./commands/skills.ts"), "skills"), summary: "Install the LAYR Skill for AI agents", usage: "layr skills [install|update|path]" },
   doctor: { run: doctor, summary: "Check the environment and project" },
-  lsp: { run: lazy("@layr-internal/lsp", "start"), summary: "Start the language server (stdio)" },
-  mcp: { run: lazy("./commands/mcp.ts", "mcp"), summary: "Start the MCP server for AI agents (stdio)" },
+  lsp: { run: lazy(() => import("@layr-internal/lsp"), "start"), summary: "Start the language server (stdio)" },
+  mcp: { run: lazy(() => import("./commands/mcp.ts"), "mcp"), summary: "Start the MCP server for AI agents (stdio)" },
 };
 
 const ALIASES: Record<string, string> = { fmt: "format", i: "add", install: "add", rm: "remove", uninstall: "remove", upgrade: "update", check: "analyze" };

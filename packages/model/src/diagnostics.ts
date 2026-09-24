@@ -77,6 +77,13 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
   d("L3105", "error", "Force outside access.force", "`Inject(.force …)` is only allowed in files matched by `access.force` in layr.yaml (or everywhere with `access.inject: open`)."),
   d("L3201", "error", "Layout cycle", "An object's size depends on a rendered feature that depends on the object itself. Break the cycle."),
   d("L3202", "warning", "Runtime layout cycle capped", "A dynamic rendered-feature dependency did not settle within two passes; the last value was kept."),
+  d(
+    "L3203",
+    "error",
+    "Extract reads its own Inject",
+    "An Extract without `.exeOrder` reads the final value, after every Inject. An Inject that uses that value to change the same feature would read its own output. Give the Extract an order below the Inject's (`.exeOrder(-1)` reads the declared value).",
+    { bad: "Extract(.from(Store.card) insets base = card.padding)\nInject(.into(Store.card) .exeOrder(0) card.padding = base * 2)", good: "Extract(.from(Store.card) .exeOrder(-1) insets base = card.padding)\nInject(.into(Store.card) .exeOrder(0) card.padding = base * 2)" },
+  ),
   d("L3301", "error", "Unresolved lookup path", "No object matches this lookup path. Paths descend by widget name (lowercase), slot name or id."),
   d("L3302", "error", "Private name", "Names starting with `_` are not reachable from outside their file."),
   d(

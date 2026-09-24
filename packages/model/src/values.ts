@@ -362,3 +362,17 @@ export const ease = {
   emphasized: { $: "ease", css: "cubic-bezier(0.2, 0, 0, 1)" } as Ease,
   bezier: (a: number, b: number, c: number, d: number): Ease => ({ $: "ease", css: `cubic-bezier(${a}, ${b}, ${c}, ${d})` }),
 };
+
+/**
+ * A font an addon provides (Google Fonts, a self-hosted family): the family name and its fallback
+ * stack. `font:` accepts one wherever it accepts a family name; the addon loads the files.
+ */
+export interface FontValue {
+  $: "font";
+  family: string;
+  fallback: string;
+}
+
+export function isFontValue(v: unknown): v is FontValue {
+  return typeof v === "object" && v !== null && (v as { $?: unknown }).$ === "font";
+}

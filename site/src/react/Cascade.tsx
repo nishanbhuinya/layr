@@ -59,10 +59,10 @@ export function Cascade() {
   );
 
   return (
-    <div className="cascade" aria-label="Injection layers on Home.card">
+    <div className="cascade" aria-label="Injection layers on Store.card">
       <div className="cascade-rule">
         <header>
-          <b>Home.card</b>
+          <b>Store.card</b>
           <span>declared</span>
         </header>
         <div className="cascade-row">

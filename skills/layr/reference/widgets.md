@@ -567,6 +567,7 @@ Slots: `.bar` (one), `.body` (one, default), `.footer` (one).
 | Key | Type | Default | Aliases | Meaning |
 |---|---|---|---|---|
 | `color` | paint |  | colorBG, bg, background | Page background. |
+| `textColor` | color |  | fg, foreground | The page's text colour: every Text without its own `color` uses it. Without it, text follows the colour scheme (dark text on light, light on dark). |
 | `scroll` | y \| none | y |  | `y` scrolls the page (default); `none` makes a fixed, app-like screen. |
 | `fit` | width \| contain \| cover \| canvas |  |  | Design Scale fit: `width` (default for scrolling), `contain` (default for fixed screens), `cover` or `canvas`. |
 | `padding` | insets |  |  | Space inside the page. |
@@ -794,22 +795,26 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 
 ### Blur
 
-Blurs what is behind the object (`blurOn: background`) or the object itself, uniformly or progressively.
+Blurs what is behind the object (`blurOn: background`, frosted glass) or the object's own content (`blurOn: object`), uniformly or progressively: a progressive blur rises smoothly toward one `edge`, the way content dissolves under a header or at the end of a list.
 
 ```layr
-Blur(.config(blurOn: background, value: 20) .obj(Container(.config(size: 200, color: black.alpha(25%)))))
+Stack(.config(w: fill, h: 220, cornerRadius: 16, clip: true), Container(.config(w: fill, h: fill, color: LinearGradient(.colors(#ff6a3d, #9b8cff, #2ed3c4)))), Row(.config(w: fill, h: fill, gap: 16, padding: all(24), yAlign: mid), Container(.config(size: 64, cornerRadius: 32, color: #ffc46b)), Container(.config(size: 96, cornerRadius: 20, color: #1c1917))), Position(.config(left: 40, right: 40, top: 50, bottom: 50) .obj(Blur(.config(w: fill, h: fill, value: 18, cornerRadius: 14, color: #fffcf7.alpha(35%)) .obj(Mid(Text(.config(size: 18, weight: semibold, color: #1c1917) .obj('Frosted glass'))))))))
 ```
 
 Slots: `.obj` (one, default).
 
 | Key | Type | Default | Aliases | Meaning |
 |---|---|---|---|---|
-| `blurOn` | background \| object | background |  | What to blur. |
-| `type` | uniform \| progressive | uniform |  | Uniform or progressive (a gradient of blur). |
-| `value` | len | 12 |  | Blur radius (uniform). |
-| `values` | any |  |  | Progressive: blur radii at the stops, e.g. `(0, 25)`. |
-| `stops` | any |  |  | Progressive: stop positions 0–1, e.g. `(0, 1)`. |
-| `direction` | any |  |  | Progressive: from/to alignment, e.g. `(t, b)`. |
+| `blurOn` | background \| object | background |  | What to blur: what shows through from behind (`background`), or the content inside (`object`). |
+| `type` | uniform \| progressive | uniform |  | Uniform, or progressive (clear at one side, strongest at `edge`). |
+| `value` | len | 12 |  | Blur radius; for a progressive blur, the radius at `edge`. |
+| `edge` | bottom \| top \| left \| right | bottom |  | Progressive: the side where the blur is strongest. |
+| `extent` | any | 100% |  | Progressive: how far from `edge` the blur reaches, as a length or a percentage of the object. |
+| `layers` | num | 8 |  | Progressive: blur layers. More is smoother and costs more to paint. |
+| `curve` | linear \| ease \| exponential | exponential |  | Progressive: how the blur grows toward `edge`. `exponential` stays clear longest and feels most natural. |
+| `fade` | color |  |  | Progressive: a colour the blurred edge fades into, e.g. the page background, so text over it stays readable. |
+| `values` | any |  |  | Progressive: blur radii at the clear side and at `edge`, e.g. `(0, 25)` (instead of `value`). |
+| `direction` | any |  |  | Progressive: from/to alignment, e.g. `(t, b)` (the older form of `edge`). |
 | `w` | len \| fill \| hug |  | width | Width: a length, `fill` (share the remaining space) or `hug` (fit content, default). |
 | `h` | len \| fill \| hug |  | height | Height: a length, `fill` or `hug` (default). |
 | `size` | size |  | s | Width and height together: `size: 200` or `size: (200, 120)`. |

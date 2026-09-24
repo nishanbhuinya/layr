@@ -1,23 +1,27 @@
 {
-  "name": "@dynshift/layr-liquid-drop",
+  "name": "@dynshift/layr-google-fonts",
   "version": "3.0.0-next.0",
-  "description": "A living liquid drop: an animated showpiece made entirely of LAYR Animate, springs and a looping action.",
+  "description": "Every Google Font as a LAYR font value: font: GoogleFonts.Fraunces loads the family on first use.",
   "type": "module",
   "license": "MIT",
   "keywords": [
     "layr",
     "layr-addon",
-    "animation",
-    "showcase"
+    "fonts",
+    "google-fonts",
+    "typography"
   ],
-  "homepage": "https://layr.dynshift.com/library/liquid_drop",
+  "homepage": "https://layr.dynshift.com/library/google_fonts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/nishanbhuinya/layr.git",
-    "directory": "addons/liquid_drop"
+    "directory": "addons/google_fonts"
   },
   "exports": {
-    ".": "./src/index.layr",
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
@@ -27,18 +31,18 @@
     "CHANGELOG.md",
     "LICENSE"
   ],
+  "sideEffects": false,
   "layr": {
-    "id": "liquid_drop",
-    "kind": "component",
+    "id": "google_fonts",
+    "kind": "utility",
     "layr": "^3.0.0-0",
-    "entry": "./src/index.layr",
     "categories": [
-      "animations",
-      "components"
+      "utilities",
+      "typography"
     ],
     "tags": [
-      "animation",
-      "showcase"
+      "fonts",
+      "google-fonts"
     ],
     "examples": "./examples"
   },

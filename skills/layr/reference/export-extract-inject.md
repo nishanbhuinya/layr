@@ -34,6 +34,16 @@ DemoPage.scaffold.body.mid.column.text(1) // the second of several Texts (zero-b
 SomePage.card.column.text(0) // mix ids and paths
 ```
 
+A path continues **into a widget instance**: past the instance, it names objects inside that widget, so it reaches one instance and leaves the others alone. Naming the widget's root is optional, since the instance is its root:
+
+```layr noexec
+Room.scaffold.body.column.booking(1).text(0) // the first Text in the second Booking only
+
+Room.scaffold.body.column.booking(1).row.text(0) // the same object, naming Booking's root Row
+
+Booking.row.text(0) // from the widget's definition: that Text in every Booking
+```
+
 The compiler resolves every address. A path that breaks after an edit is an error (L3301), and a bare name with several matches is ambiguous (L3303) with fixes listing the `(n)` choices. Ids survive edits; paths are handy for objects you did not name.
 
 ## Extract: read

@@ -1,6 +1,7 @@
 // The site shell: top bar, docs rail, and the framed content panel (an app you work in).
 import { docsNav } from '../lib/content.ts'
-import { Icon, Palette, SearchButton, ThemeToggle } from '../react/Chrome.tsx'
+import { Icon, Palette, SearchButton } from '../react/Chrome.tsx'
+import { ThemePicker } from '../react/Themes.tsx'
 
 // Open state of the small-screen menu; links close it as they navigate.
 var bool menuOpen = false
@@ -59,7 +60,7 @@ Widget(
         .config(gap: 6, yAlign: mid)
         Container(.config(w: 280, hide: true) .at(t, hide: false) SearchButton())
         Container(.config(hide: false) .at(t, hide: true) SearchButton(.props(compact: true)))
-        ThemeToggle()
+        ThemePicker()
         Link(
           .config(href: 'https://github.com/nishanbhuinya/layr', external: true, size: 34, cornerRadius: 8, objAlign: mid, underline: false, className: 'icon-btn')
           .a11y(label: 'LAYR on GitHub')
@@ -75,7 +76,7 @@ Widget(
       )
       Palette()
       Overlay(
-        .config(open: menuOpen, label: 'Menu', placement: midRight, color: panel, padding: all(16), backdrop: black.alpha(35%))
+        .config(h: 100vh, open: menuOpen, label: 'Menu', placement: midRight, color: panel, padding: all(16), backdrop: black.alpha(45%), .border(color: line, width: 1, sides: left))
         .on(close: { menuOpen = false })
         .obj(Column(
           .config(w: 300, gap: 20)

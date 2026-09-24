@@ -194,6 +194,16 @@ function resolvePath(from: string, spec: string): string {
   return base.join("/");
 }
 
+/** The relative specifier that imports `to` from the file `from` (`src/pages/a.layr` → `../widgets/b.layr`). */
+function importSpec(from: string, to: string): string {
+  const a = from.split("/").slice(0, -1);
+  const b = to.split("/");
+  let i = 0;
+  while (i < a.length && i < b.length - 1 && a[i] === b[i]) i++;
+  const up = a.length - i;
+  return `${up ? "../".repeat(up) : "./"}${b.slice(i).join("/")}`;
+}
+
 function typeName(d: Decl): string | null {
   return d.typeRef?.name ?? null;
 }
@@ -546,6 +556,14 @@ function buildTree(project: Project, mod: Module, comp: CompDef, call: Call, par
     const s = suggest(name, candidates);
     report(mod, "L1001", `Unknown widget \`${name}\`.${s.length ? ` Did you mean ${s.map((x) => `\`${x}\``).join(", ")}?` : ""}`, call.callee.span);
     return null;
+  }
+  // A widget from another file must be imported: the generated module only sees what it imports.
+  if (cls.kind === "user" && cls.user && cls.user.module !== mod && !mod.layrImports.has(name)) {
+    const from = importSpec(mod.path, cls.user.module.path);
+    const line = `import { ${cls.user.name} } from '${from}'`;
+    report(mod, "L1005", `\`${name}\` is defined in ${cls.user.module.path}; import it: \`${line}\`.`, call.callee.span, "error", {
+      fixes: [{ title: `Import ${cls.user.name}`, edits: [{ span: { start: 0, end: 0 }, text: `${line}\n` }] }],
+    });
   }
   if (cls.kind === "core" && name !== cls.name) {
     report(mod, "L1011", `\`${name}\` is written \`${cls.name}\`.`, call.callee.span, "info", {

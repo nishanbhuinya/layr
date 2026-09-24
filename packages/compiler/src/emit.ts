@@ -70,10 +70,12 @@ export interface Graph {
   immutable: Map<string, Set<string>>;
   /** address → declaration site of each immutable key. */
   immutableSites: Map<string, { file: string; span: Span }>;
+  /** Objects reached through a widget instance: the instance and the node inside the widget must pass their addresses on. */
+  via: Set<string>;
 }
 
 export function newGraph(): Graph {
-  return { entries: [], immutable: new Map(), immutableSites: new Map() };
+  return { entries: [], immutable: new Map(), immutableSites: new Map(), via: new Set() };
 }
 
 // ------------------------------------------------------------------ scope
@@ -82,7 +84,7 @@ type Binding =
   | { kind: "signal"; code: string; type: string | null; immutable?: boolean; address?: string }
   | { kind: "computed"; code: string; type: string | null }
   | { kind: "value"; code: string; type: string | null }
-  | { kind: "object"; node: ObjNode; comp: CompDef }
+  | { kind: "object"; node: ObjNode; comp: CompDef; address?: string }
   | { kind: "function"; fn: FunctionDef; code: string }
   | { kind: "comp"; comp: CompDef; code: string }
   | { kind: "params"; comp: CompDef }
@@ -449,6 +451,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
     if (n === comp.root && comp.kind === "widget") props.push("o: $p.$o", "oe: $p.$on");
     if (this.project.config.inspect) props.push(`p: ${JSON.stringify(lookupPath(comp, n))}`, `ln: ${this.mod.source.position(n.call.span.start).line}`);
+    // A widget's root also carries the path of the instance it renders, so inspectors can tell instances apart.
+    if (this.project.config.inspect && n === comp.root && comp.kind === "widget") props.push("ip2: $p.$ip");
     void keysSeen;
 
     // Events
@@ -536,6 +540,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       const rendered = kids.map((c) => this.child(c, sc, comp, false));
       props.push(`children: ${rendered.length === 1 ? rendered[0] : `$js($Fr, { children: [${rendered.join(", ")}] })`}`);
     }
+    if (this.project.config.inspect) props.push(`$ip: ${JSON.stringify(lookupPath(comp, n))}`);
     if (n.id || this.isAddressable(n)) props.push(`$a: ${comp.kind === "widget" ? `(($p.$a ?? ${JSON.stringify(comp.name)}) + ">" + ${JSON.stringify(n.address)})` : JSON.stringify(runtimeAddress(comp, n))}`);
     const events = this.events(n, null, sc);
     if (events) props.push(`$on: ${events}`);
@@ -989,7 +994,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       this.mod.diagnostics.push({
         code: "L3101",
         severity: "error",
-        message: `\`${key}\` of \`${address}\` is \`!mut\` and refuses Export/Extract/Inject mutation.`,
+        message: `\`${key}\` of \`${address.replace("::", ".")}\` is \`!mut\` and refuses Export/Extract/Inject mutation.`,
         span,
         file: this.mod.path,
         related: site ? [{ message: "Declared !mut here.", span: site.span, file: site.file }] : [],
@@ -1026,7 +1031,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     const force = !!firstModifier(call.items, "force");
     if (force && !this.forceAllowed()) this.err("L3105", "`Inject(.force …)` is only allowed in files matched by `access.force` in layr.yaml.", call.span);
     const tsc = new Scope(sc);
-    if (target) tsc.set(target.local, { kind: "object", node: target.node as ObjNode, comp: target.comp });
+    if (target) tsc.set(target.local, { kind: "object", node: target.node as ObjNode, comp: target.comp, address: target.address });
     const out: string[] = [];
 
     if (e.kind === "Extract" || e.kind === "Export") {
@@ -1035,6 +1040,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         const ref = it.init ? this.resolveRef(it.init, tsc) : null;
         if (ref?.key) {
           this.graph.entries.push({ kind: "extract", address: ref.address, key: ref.key, order, file: this.mod.path, span: it.init?.span ?? it.span, owner: this.currentComp?.name ?? null });
+          if (order === null) this.finalExtracts.set(it.name, { address: ref.address, key: ref.key, span: it.span });
           const read = `$.read(${JSON.stringify(ref.address)}, ${JSON.stringify(ref.key)}${order !== null ? `, ${order}` : ""})${ref.rest}`;
           out.push(`const ${it.name} = $.computed(() => ${read});`);
         } else {
@@ -1065,6 +1071,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         this.prevTarget = { address: ref.address, key: ref.key };
         const v = this.expr(ex.value, psc).code;
         this.prevTarget = null;
+        this.checkSelfRead(ex.value, ref.address, ref.key as string);
         valueFn = ex.op === "=" ? `($prev) => ${v}` : `($prev) => $V.arith(${JSON.stringify(ex.op.slice(0, -1))}, $prev, ${v})`;
         this.injectLayer({ address: ref.address, key: ref.key as string }, order, force, ex.target.span, valueFn, layers);
       } else if (ex.type === "Update" || (ex.type === "Unary" && (ex.op === "++" || ex.op === "--"))) {
@@ -1085,6 +1092,34 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
 
   private prevTarget: { address: string; key: string } | null = null;
 
+  /** Extracts without an order, by local name: they read the final value (every layer included). */
+  private finalExtracts = new Map<string, { address: string; key: string; span: Span }>();
+
+  /** An Inject whose value reads an unordered Extract of the very feature it writes reads its own output. */
+  private checkSelfRead(value: Expr, address: string, key: string) {
+    const seen = new Set<string>();
+    const visit = (n: unknown) => {
+      if (!n || typeof n !== "object") return;
+      if (Array.isArray(n)) return n.forEach(visit);
+      const o = n as { type?: string; name?: string };
+      if (o.type === "Ident" && o.name) seen.add(o.name);
+      for (const [k, v] of Object.entries(o)) if (k !== "span") visit(v);
+    };
+    visit(value);
+    for (const name of seen) {
+      const x = this.finalExtracts.get(name);
+      if (!x || x.address !== address || x.key !== key) continue;
+      this.mod.diagnostics.push({
+        code: "L3203",
+        severity: "error",
+        message: `\`${name}\` is extracted without \`.exeOrder\`, so it reads the final \`${key}\`, which this Inject writes. Give the Extract \`.exeOrder(-1)\` to read the declared value.`,
+        span: value.span,
+        file: this.mod.path,
+        related: [{ message: "Extracted here.", span: x.span, file: this.mod.path }],
+      });
+    }
+  }
+
   private injectLayer(ref: { address: string; key: string }, order: number | null, force: boolean, span: Span, fn: string, layers: string[]) {
     this.checkMutation(ref.address, ref.key, span, force);
     this.graph.entries.push({ kind: force ? "force" : "inject", address: ref.address, key: ref.key, order, file: this.mod.path, span, owner: this.currentComp?.name ?? null });
@@ -1098,7 +1133,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   }
 
   /** `.from(SomePage.card)` / `.into(...)` / `.lookUp(page: SomePage, id: card)`. */
-  private eeiTarget(call: Call, sc: Scope): { comp: CompDef; node: ObjNode | null; local: string } | null {
+  private eeiTarget(call: Call, sc: Scope): { comp: CompDef; node: ObjNode | null; local: string; address?: string } | null {
     const m = firstModifier(call.items, "from") ?? firstModifier(call.items, "into") ?? firstModifier(call.items, "lookUp");
     if (!m) return null;
     if (m.name === "lookUp") {
@@ -1124,7 +1159,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
     const segs = flatten(e);
     const local = ref.node.id ?? segs?.[segs.length - 1]?.name ?? ref.node.seg;
-    return { comp: ref.comp, node: ref.node, local };
+    return { comp: ref.comp, node: ref.node, local, address: ref.address };
   }
 
   // -------------------------------------------------------------- references (ids, paths)
@@ -1141,9 +1176,12 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     let node: ObjNode | null = null;
     let i = 1;
     const b = sc.lookup(first.name);
+    let bound: string | null = null;
     if (b?.kind === "object") {
       comp = b.comp;
       node = b.node;
+      // A name bound through a widget instance keeps that instance's prefix.
+      if (b.address?.includes(">")) bound = b.address.slice(0, b.address.lastIndexOf(">"));
     } else if (b?.kind === "group") {
       const mem = segs[1] ? b.members.get((segs[1] as Seg).name) : undefined;
       if (!mem) return null;
@@ -1179,6 +1217,9 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
 
     let pendingSlot: string | null = null;
+    // Set once the path enters a widget instance: its runtime address, joined to inner addresses by `>`.
+    let prefix: string | null = bound;
+    const addressOf = (c: CompDef, n: ObjNode) => (prefix ? `${prefix}>${n.address}` : runtimeAddress(c, n));
     for (; i < segs.length; i++) {
       const s = segs[i] as Seg;
       const cur = node as ObjNode;
@@ -1218,6 +1259,22 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         node = deep;
         continue;
       }
+      // Into a widget instance: `booking(1).row.text(0)`, or `booking(1).text(0)` (the instance is its root).
+      const inner = cur.kind === "user" ? cur.user : null;
+      if (inner?.root && (inner.root.seg === s.name || inner.ids.has(s.name) || [...inner.root.children.values()].flat().some((c) => c.kind === "node" && c.node.seg === s.name))) {
+        const instance = addressOf(comp as CompDef, cur);
+        this.graph.via.add(instance);
+        prefix = instance;
+        comp = inner;
+        if (inner.ids.has(s.name)) node = inner.ids.get(s.name) as ObjNode;
+        else if (inner.root.seg === s.name && (s.index === undefined || s.index === 0)) node = inner.root;
+        else {
+          node = inner.root;
+          i--;
+        }
+        this.graph.via.add(runtimeAddress(inner, node));
+        continue;
+      }
       // Remaining segments: feature (+ member access on its value).
       const keyName = featureKey(cur, s.name);
       if (!keyName) {
@@ -1234,10 +1291,12 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         .slice(i + 1)
         .map((x) => `.${x.name}`)
         .join("");
-      return { address: runtimeAddress(comp as CompDef, cur), key: keyName, rest, node: cur, comp: comp as CompDef };
+      if (prefix) this.graph.via.add(runtimeAddress(comp as CompDef, cur));
+      return { address: addressOf(comp as CompDef, cur), key: keyName, rest, node: cur, comp: comp as CompDef };
     }
     if (!node) return null;
-    return { address: runtimeAddress(comp as CompDef, node), key: null, rest: "", node, comp: comp as CompDef };
+    if (prefix) this.graph.via.add(runtimeAddress(comp as CompDef, node));
+    return { address: addressOf(comp as CompDef, node), key: null, rest: "", node, comp: comp as CompDef };
   }
 
   // -------------------------------------------------------------- expressions
@@ -1391,6 +1450,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         case "function":
           return { code: b.code, type: "fn" };
         case "comp":
+          // Where a page is expected (`Link(.config(to: Home))`), a page names itself for the router.
+          if (expect.type === "page" && b.comp.kind === "page") return { code: JSON.stringify(b.comp.name), type: "page", konst: b.comp.name };
           return { code: b.code, type: "obj" };
         case "object":
           return { code: JSON.stringify(runtimeAddress(b.comp, b.node)), type: "object" };
@@ -1545,6 +1606,14 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     return b?.kind === "object" || b?.kind === "group" || (!b && (this.project.pages.has(first.name) || this.project.widgets.has(first.name))) || b?.kind === "comp";
   }
 
+  /** Arguments of a call into JavaScript: positional values, then named ones as one options object. */
+  private foreignArgs(items: Item[], sc: Scope): string {
+    const args = exprItems(items).map((x) => this.expr(x, sc).code);
+    const named = items.filter((i): i is Prop => i.type === "Prop");
+    if (named.length) args.push(`{ ${named.map((p) => `${JSON.stringify(p.key)}: ${this.expr(p.value, sc).code}`).join(", ")} }`);
+    return args.join(", ");
+  }
+
   private call(e: Call, sc: Scope, expect: Expect): Gen {
     const callee = e.callee;
     // Method calls on values: #fff.alpha(50%), white.shade(2), color.mix(x, .3)
@@ -1568,7 +1637,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         const fn = (c as unknown as Record<string, (...a: unknown[]) => unknown>)[method];
         if (typeof fn === "function") konst = fn.apply(c, args.map((a) => a.konst));
       }
-      const code = `${obj.code}.${method}(${args.map((a) => a.code).join(", ")})`;
+      // A method of a foreign value (a JS object) takes named arguments as a trailing options object.
+      const code = `${obj.code}.${method}(${obj.type === "color" ? args.map((a) => a.code).join(", ") : this.foreignArgs(e.items, sc)})`;
       if (konst instanceof Color) return { code: this.colorCode(konst), type: "color", konst };
       return { code, type: obj.type === "color" ? "color" : "any", konst };
     }
@@ -1577,8 +1647,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     const b = sc.lookup(name);
     if (b?.kind === "function") return { code: `${this.inAction ? "await " : ""}${b.code}(${this.fnArgs(b.fn, e.items, sc)})`, type: "any" };
     if (b?.kind === "value") {
-      const args = e.items.map((it) => (it.type === "ExprItem" ? this.expr(it.expr, sc).code : it.type === "Prop" ? `${this.expr(it.value, sc).code}` : "undefined"));
-      return { code: `${b.code}(${args.join(", ")})`, type: "any" };
+      return { code: `${b.code}(${this.foreignArgs(e.items, sc)})`, type: "any" };
     }
     if (b?.kind === "comp") {
       this.err("L1003", `\`${name}\` is a ${b.comp.kind === "page" ? "Page" : "Widget"}; use it as an object in the layout.`, e.span);
@@ -1764,6 +1833,7 @@ const BEHAVIOUR_KEYS = new Set([
   "min", "max", "step", "required", "src", "poster", "captions", "autoplay", "loop", "muted", "controls", "name",
   "to", "href", "external", "submit", "auto", "ring", "trap", "backdrop", "placement", "duration", "ease", "delay",
   "motion", "resize", "alt", "decorative", "lazy", "type", "overflow", "stackAt", "values", "stops", "direction", "blurOn", "mode", "selectable",
+  "edge", "extent", "layers", "curve", "fade",
 ]);
 
 interface Seg {

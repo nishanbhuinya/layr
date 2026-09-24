@@ -21,3 +21,6 @@ preview.log
 *.vsix
 addons/*/dist/
 examples/*/dist/
+
+# Local probe scripts
+tools/_*.ts

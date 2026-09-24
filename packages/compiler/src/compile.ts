@@ -29,7 +29,7 @@ export function compileProject(files: Array<{ path: string; text: string }>, con
   // Pass 1: discover the E/E/I graph and immutable features.
   const probe = newGraph();
   for (const mod of project.modules.values()) new ModuleEmitter(project, mod, probe).emit();
-  const targets = new Set(probe.entries.map((e) => e.address));
+  const targets = new Set([...probe.entries.map((e) => e.address), ...probe.via]);
 
   // Pass 2: real emission with the full graph known.
   const graph = newGraph();
@@ -82,7 +82,8 @@ function checkGraph(project: Project, graph: Graph) {
       for (const e of rest) {
         const mod = project.modules.get(e.file);
         if (!mod || !first) continue;
-        const [addr, key] = target.split("#");
+        const [raw, key] = target.split("#");
+        const addr = raw?.replace("::", ".");
         if (order === "auto") {
           mod.diagnostics.push({
             code: "L3103",

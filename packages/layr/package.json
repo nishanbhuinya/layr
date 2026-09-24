@@ -43,23 +43,95 @@
     "./styles.css": "./styles.css"
   },
   "dependencies": {
+    "@babel/parser": "^7.29.9",
+    "magic-string": "~0.30.21",
+    "yaml": "^2.9.1",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "zod": "^3.25.76",
+    "semver": "^7.8.5",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "vscode-languageserver": "^10.1.1",
+    "vscode-languageserver-textdocument": "^1.0.12"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vite": "^8.0.0",
+    "playwright": "^1.50.0"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    },
+    "playwright": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "gen": "node scripts/gen-css.ts",
+    "build": "node scripts/gen-css.ts && tsup && node scripts/assets.ts",
+    "prepack": "pnpm run build"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "templates",
+    "styles.css",
+    "README.md",
+    "LICENSE"
+  ],
+  "devDependencies": {
     "@layr-internal/cli": "workspace:*",
     "@layr-internal/compiler": "workspace:*",
     "@layr-internal/model": "workspace:*",
     "@layr-internal/react": "workspace:*",
     "@layr-internal/runtime": "workspace:*"
   },
-  "peerDependencies": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "vite": "^8.0.0"
-  },
-  "peerDependenciesMeta": {
-    "vite": {
-      "optional": true
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "bin": {
+      "layr": "./dist/bin.js"
+    },
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./react": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.js"
+      },
+      "./runtime": {
+        "types": "./dist/runtime.d.ts",
+        "default": "./dist/runtime.js"
+      },
+      "./vite": {
+        "types": "./dist/vite.d.ts",
+        "default": "./dist/vite.js"
+      },
+      "./ssr": {
+        "types": "./dist/ssr.d.ts",
+        "default": "./dist/ssr.js"
+      },
+      "./compiler": {
+        "types": "./dist/compiler.d.ts",
+        "default": "./dist/compiler.js"
+      },
+      "./schema": {
+        "types": "./dist/schema.d.ts",
+        "default": "./dist/schema.js"
+      },
+      "./tsx": {
+        "types": "./dist/tsx.d.ts",
+        "default": "./dist/tsx.js"
+      },
+      "./styles.css": "./styles.css",
+      "./package.json": "./package.json"
     }
-  },
-  "engines": {
-    "node": ">=20"
   }
 }

@@ -1,0 +1,34 @@
+import { GoogleFonts } from '@dynshift/layr-google-fonts'
+
+Page(
+  .name(Specimen)
+  .route('/')
+
+  Scaffold(
+    .config(color: #fffcf7)
+    .body(Column(
+      .config(w: fill, padding: all(32), gap: 28)
+      Column(
+        .config(gap: 6)
+        Text(.config(size: 13, color: #938a7e, font: GoogleFonts.JetBrainsMono) .obj('Fraunces · 600'))
+        Text(
+          .config(size: 56, weight: 600, letterSpacing: -1.5, lineHeight: 1, color: #1c1917, font: GoogleFonts.Fraunces)
+          .obj('Layout, authored.')
+        )
+      )
+      Row(
+        .config(w: fill, gap: 24, yAlign: stretch)
+        Column(
+          .config(w: fill, gap: 8, padding: all(20), cornerRadius: 12, color: #efe8dd)
+          Text(.config(size: 13, color: #625a50, font: GoogleFonts.JetBrainsMono) .obj('Space Grotesk'))
+          Text(.config(size: 26, weight: 500, color: #1c1917, font: GoogleFonts.SpaceGrotesk) .obj('Numbers flow, structure steps.'))
+        )
+        Column(
+          .config(w: fill, gap: 8, padding: all(20), cornerRadius: 12, color: #1c1917)
+          Text(.config(size: 13, color: #b0a79d, font: GoogleFonts.JetBrainsMono) .obj('Instrument Serif'))
+          Text(.config(size: 30, color: #ff6a3d, font: GoogleFonts.InstrumentSerif) .obj('One meaning per line.'))
+        )
+      )
+    ))
+  )
+)

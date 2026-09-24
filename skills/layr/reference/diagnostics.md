@@ -200,6 +200,24 @@ An object's size depends on a rendered feature that depends on the object itself
 
 A dynamic rendered-feature dependency did not settle within two passes; the last value was kept.
 
+## L3203: Extract reads its own Inject (error)
+
+An Extract without `.exeOrder` reads the final value, after every Inject. An Inject that uses that value to change the same feature would read its own output. Give the Extract an order below the Inject's (`.exeOrder(-1)` reads the declared value).
+
+Wrong:
+
+```layr
+Extract(.from(Store.card) insets base = card.padding)
+Inject(.into(Store.card) .exeOrder(0) card.padding = base * 2)
+```
+
+Right:
+
+```layr
+Extract(.from(Store.card) .exeOrder(-1) insets base = card.padding)
+Inject(.into(Store.card) .exeOrder(0) card.padding = base * 2)
+```
+
 ## L3301: Unresolved lookup path (error)
 
 No object matches this lookup path. Paths descend by widget name (lowercase), slot name or id.

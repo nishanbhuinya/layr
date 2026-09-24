@@ -9,8 +9,10 @@ import type { LayoutKind } from "./schema.ts";
 import { runtimeWidget } from "./table.ts";
 import {
   alignPoint,
+  type FontValue,
   type Insets,
   insetsCss,
+  isFontValue,
   isInsets,
   isSize,
   type Length,
@@ -75,7 +77,9 @@ const BASE_RULES = `
 .l-row.l-adapt.l-stacked>.l-wfill{min-width:0}
 .l-row.l-wrap-auto{flex-wrap:wrap}
 .l-row.l-stackable>*,.l-row.l-stackable>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
-.l-root{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / ${UNIT});line-height:1.5}
+.l-root{color:CanvasText;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / ${UNIT});line-height:1.5}
+dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
+dialog.l:not([open]){display:none}
 dialog.l::backdrop{background:var(--l-backdrop,rgb(0 0 0 / .35))}
 button.l{cursor:pointer}
 button.l:disabled{cursor:not-allowed}
@@ -339,7 +343,8 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
         if (cfg.shape === "circle") d["clip-path"] = "circle(50%)";
         else if (cfg.shape === "ellipse") d["clip-path"] = "ellipse(50% 50%)";
       }
-      if (name === "Blur") {
+      // A progressive blur is drawn by the renderer as masked layers; only a uniform one is CSS here.
+      if (name === "Blur" && cfg.type !== "progressive") {
         const v = lengthCss((cfg.value as Length | undefined) ?? 12);
         if (cfg.blurOn === "object") d.filter = `blur(${v})`;
         else {
@@ -374,6 +379,7 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
           if (p.color) d["background-color"] = p.color;
           if (p.image) d["background-image"] = p.image;
         }
+        if (has("textColor")) d.color = (toColor(cfg.textColor) ?? new Color(0, 0, 0)).toCss();
       }
       const overflow = (cfg.overflow as string | undefined) ?? "auto";
       if (layout === "row") {
@@ -436,7 +442,7 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
       if (size !== undefined) d["font-size"] = typeof size === "number" ? lengthCss(size, true) : lengthCss(size);
       if (type && TEXT_TYPE_SIZE[type] && !has("weight")) d["font-weight"] = "700";
       if (type === "code") d["font-family"] = "var(--layr-font-code, ui-monospace, SFMono-Regular, Menlo, Consolas, monospace)";
-      if (has("font")) d["font-family"] = fontFamily(cfg.font as string);
+      if (has("font")) d["font-family"] = fontFamily(cfg.font as string | FontValue);
       if (has("weight")) d["font-weight"] = WEIGHTS[String(cfg.weight)] ?? String(cfg.weight);
       if (cfg.italic === true) d["font-style"] = "italic";
       if (has("color")) {
@@ -565,8 +571,10 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
   }
 }
 
-function fontFamily(f: string): string {
+function fontFamily(f: string | FontValue): string {
   const generic = ["serif", "sans-serif", "monospace", "cursive", "system-ui", "ui-monospace", "ui-sans-serif", "ui-serif"];
+  if (isFontValue(f)) return `"${f.family}", ${f.fallback}`;
+  f = String(f);
   if (f.startsWith("var(")) return f;
   return generic.includes(f) ? f : `"${f}", system-ui, sans-serif`;
 }

@@ -9,6 +9,7 @@
  */
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { basename, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 import { Marked, type Tokens } from "marked";
 import { createCssVariablesTheme, createHighlighter, type Highlighter } from "shiki";
@@ -16,7 +17,7 @@ import type { Plugin } from "vite";
 import { parse as parseYaml } from "yaml";
 import { COMMANDS } from "../../packages/cli/src/cli.ts";
 import { formatDiagnostic } from "../../packages/cli/src/vite.ts";
-import { compileProject, format } from "../../packages/compiler/src/index.ts";
+import { compileProject, format, readAppConfig } from "../../packages/compiler/src/index.ts";
 import { CONSTRUCTS, DIAGNOSTICS, WIDGETS } from "../../packages/model/src/index.ts";
 
 export const SITE_URL = "https://layr.dynshift.com";
@@ -87,9 +88,14 @@ export function playgroundHref(code: string): string {
 export function codeBlock(h: Highlighter, code: string, lang: string, title?: string): string {
   const l = LANG_ALIASES[lang] ?? lang;
   const label = title ?? (l === "typescript" ? "TypeScript" : l === "layr" ? "LAYR" : l === "bash" ? "Terminal" : l ? l.toUpperCase() : "Text");
-  const runnable = l === "layr" && /\bPage\s*\(/.test(code);
+  const runnable = l === "layr" && /\bPage\s*\(/.test(code) && [...code.matchAll(/^import\s[^'"]*['"]([^'"]+)['"]/gm)].every((m) => previewable(m[1] as string));
   const open = runnable ? `<a class="open" href="${playgroundHref(code)}">Open in playground</a>` : "";
   return `<figure class="code" data-lang="${escapeHtml(l || "text")}"><figcaption><span>${escapeHtml(label)}</span>${open}<button type="button" class="copy" aria-label="Copy code">Copy</button></figcaption>${highlight(h, code, lang)}</figure>`;
+}
+
+/** A code block the Prose component turns into a live preview (the block stays readable without JS). */
+export function liveBlock(block: string, run: string): string {
+  return `<div class="live" data-run="${Buffer.from(run, "utf8").toString("base64url")}" data-play="${playgroundHref(run)}">${block}</div>`;
 }
 
 export function slugify(s: string): string {
@@ -102,26 +108,72 @@ export function slugify(s: string): string {
     .replace(/^-|-$/g, "");
 }
 
+/** The official addons' LAYR sources: examples that import `@dynshift/layr-<name>` compile against them. */
+export interface AddonSources {
+  /** npm name → project path of the entry file. */
+  addons: Record<string, string>;
+  files: Array<{ path: string; text: string }>;
+}
+
+let addonCache: AddonSources | null = null;
+/** The repository root; the plugin sets it from Vite's root, scripts get it from this file's location. */
+let repoRoot = resolve(fileURLToPath(new URL(".", import.meta.url)), "..", "..");
+export function addonSources(repo = repoRoot): AddonSources {
+  if (addonCache) return addonCache;
+  const out: AddonSources = { addons: {}, files: [] };
+  const dir = join(repo, "addons");
+  for (const name of existsSync(dir) ? readdirSync(dir) : []) {
+    const pkgFile = join(dir, name, "package.json");
+    if (!existsSync(pkgFile)) continue;
+    const pkg = JSON.parse(readFileSync(pkgFile, "utf8"));
+    if (!pkg.layr?.entry) continue;
+    const entry = String(pkg.layr.entry).replace(/^\.\//, "");
+    out.addons[pkg.name] = `addons/${name}/${entry}`;
+    for (const f of walk(join(dir, name, "src"), ".layr")) out.files.push({ path: relative(repo, f).replace(/\\/g, "/"), text: readFileSync(f, "utf8").replace(/\r\n/g, "\n") });
+  }
+  addonCache = out;
+  return out;
+}
+
+/** Compiles a snippet as the page of a project that has the official addons installed. */
+export function compileSnippet(code: string, appSource?: string) {
+  const src = addonSources();
+  const path = "src/pages/index.layr";
+  // A snippet may carry its own App (theme, Design Scale), as src/app.layr does for a project, or
+  // be given one (`appSource`).
+  const app = appSource ? readAppConfig(appSource) : /\b(App|Theme|DesignScale)\s*\(/.test(code) ? readAppConfig(code, path) : null;
+  const r = compileProject([{ path, text: code }, ...src.files], { addons: src.addons, ...(app ? { theme: app.theme, designScale: app.designScale } : {}) });
+  return { ...r, diagnostics: r.diagnostics.filter((d) => !d.file || d.file === path) };
+}
+
 const DEFINITIONS = /^(Widget|Function|App|Preset|Inject|Extract|Export|Theme|DesignScale|import|var|const|bind)\b/m;
 
 /**
  * The code a docs preview runs: the snippet itself when it declares a Page, or a lone object
  * wrapped in a minimal page. Only code that compiles cleanly gets a preview.
  */
+/** Modules a preview can load: LAYR, React and the official addons. */
+function previewable(spec: string): boolean {
+  return spec === "react" || spec.startsWith("react/") || spec === "@dynshift/layr" || spec.startsWith("@dynshift/layr/") || spec.startsWith("@dynshift/layr-");
+}
+
 export function runnable(code: string): string | null {
+  // A snippet that imports your own files or other packages is shown, not run.
+  for (const m of code.matchAll(/^import\s[^'"]*['"]([^'"]+)['"]/gm)) if (!previewable(m[1] as string)) return null;
   let run: string | null = null;
+  // Leading imports stay at the top of the wrapped page (`import { LiquidDrop } from '…'` + one object).
+  const lines = code.trim().split("\n");
+  const imports: string[] = [];
+  while (lines.length && (/^import\b/.test(lines[0] as string) || !(lines[0] as string).trim())) imports.push(lines.shift() as string);
+  const rest = lines.join("\n");
   if (/\bPage\s*\(/.test(code)) run = code;
-  else if (!DEFINITIONS.test(code) && /^[A-Z]\w*\s*\(/.test(code.trim())) {
-    const body = code
-      .trim()
-      .split("\n")
-      .map((l) => `      ${l}`)
-      .join("\n");
-    run = `Page(\n  .name(Preview)\n  .route('/')\n  Scaffold(.body(\n    Column(\n      .config(w: fill, padding: all(24), gap: 16)\n${body}\n    )\n  ))\n)\n`;
+  else if (!DEFINITIONS.test(rest) && /^[A-Z]\w*\s*\(/.test(rest)) {
+    const body = lines.map((l) => `      ${l}`).join("\n");
+    const head = imports.filter((l) => l.trim()).join("\n");
+    run = `${head ? `${head}\n\n` : ""}Page(\n  .name(Preview)\n  .route('/')\n  Scaffold(.body(\n    Column(\n      .config(w: fill, padding: all(24), gap: 16)\n${body}\n    )\n  ))\n)\n`;
   }
   if (!run) return null;
-  const r = compileProject([{ path: "src/pages/index.layr", text: run }]);
-  return r.diagnostics.some((d) => d.severity === "error") ? null : run;
+  return compileSnippet(run).diagnostics.some((d) => d.severity === "error") ? null : run;
 }
 
 /** Markdown → HTML with anchored headings, a table of contents and highlighted code. */
@@ -137,7 +189,15 @@ export function renderMarkdown(h: Highlighter, md: string): { html: string; toc:
         const n = used.get(base) ?? 0;
         used.set(base, n + 1);
         const id = n ? `${base}-${n}` : base;
-        if (depth === 2 || depth === 3) toc.push({ id, text: inner.replace(/<[^>]+>/g, ""), depth });
+        // The rail renders plain text, so entities from the Markdown renderer are decoded here.
+        const plain = inner
+          .replace(/<[^>]+>/g, "")
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"')
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&amp;/g, "&");
+        if (depth === 2 || depth === 3) toc.push({ id, text: plain, depth });
         if (depth === 1) return `<h1 id="${id}">${inner}</h1>\n`;
         return `<h${depth} id="${id}"><a class="anchor" href="#${id}" aria-hidden="true" tabindex="-1">#</a>${inner}</h${depth}>\n`;
       },
@@ -147,7 +207,7 @@ export function renderMarkdown(h: Highlighter, md: string): { html: string; toc:
         const run = l === "layr" && !flags.includes("noexec") ? runnable(text) : null;
         // noexec blocks are shown as written (deliberate mistakes in the diagnostics reference).
         // A runnable snippet becomes a live preview (the Prose component mounts it); the code stays readable without JS.
-        return run ? `<div class="live" data-run="${Buffer.from(run, "utf8").toString("base64url")}" data-play="${playgroundHref(run)}">${block}</div>` : block;
+        return run ? liveBlock(block, run) : block;
       },
       table(this: { parser: { parseInline: (t: Tokens.Generic[]) => string } }, token: Tokens.Table) {
         const cell = (c: Tokens.TableCell, tag: string) => `<${tag}${c.align ? ` style="text-align:${c.align}"` : ""}>${this.parser.parseInline(c.tokens)}</${tag}>`;
@@ -368,9 +428,17 @@ async function library(repo: string, siteRoot: string): Promise<LibraryEntry[]> 
     const m = pkg.layr ?? {};
     const readmeFile = join(addonsDir, dir, "README.md");
     const readme = existsSync(readmeFile) ? renderMarkdown(h, readFileSync(readmeFile, "utf8").replace(/\r\n/g, "\n").replace(/^# .*\n/, "")).html : "";
-    const examples = walk(join(addonsDir, dir, "examples"), ".layr").map((f) => ({ name: basename(f), html: codeBlock(h, readFileSync(f, "utf8").replace(/\r\n/g, "\n").trimEnd(), "layr", `examples/${basename(f)}`) }));
-    const entry = readFileSync(join(addonsDir, dir, (m.entry ?? "./src/index.layr").replace(/^\.\//, "")), "utf8");
-    const widgets = [...entry.matchAll(/\.name\((\w+)\)/g)].map((x) => x[1] as string);
+    // Examples import the addon by its npm name, as a project using it would, and run live.
+    const examples = walk(join(addonsDir, dir, "examples"), ".layr").map((f) => {
+      const code = readFileSync(f, "utf8").replace(/\r\n/g, "\n").trimEnd().replace(/from '\.\.\/src\/index\.layr'/g, `from '${pkg.name}'`);
+      const block = codeBlock(h, code, "layr", `examples/${basename(f)}`);
+      const run = runnable(code);
+      return { name: basename(f), html: run ? liveBlock(block, run) : block };
+    });
+    // Widget addons list their widgets; a utility addon (fonts, helpers) has no LAYR entry.
+    const entryFile = m.entry ? join(addonsDir, dir, String(m.entry).replace(/^\.\//, "")) : "";
+    const entry = entryFile && existsSync(entryFile) ? readFileSync(entryFile, "utf8") : "";
+    const widgets = [...entry.matchAll(/Widget\(\s*\.name\((\w+)\)/g)].map((x) => x[1] as string);
     out.push({
       id: m.id ?? dir,
       npm: pkg.name,
@@ -445,7 +513,9 @@ async function home(repo: string, siteRoot: string) {
     const r = format(code, { width: 44 });
     return r.errors ? code : r.text.trimEnd();
   };
-  const demo = read("src/pages/inspect/demo.layr");
+  // The hero's page: compiled and run in the browser like every other example on the site.
+  const demo = read("content/home/demo.layr");
+  if (compileSnippet(demo).diagnostics.some((d) => d.severity === "error")) throw new Error("content/home/demo.layr must compile cleanly");
 
   // Real compiler output for a small file: the CSS and the React module it becomes.
   const shape = read("content/home/shape.layr");
@@ -468,10 +538,13 @@ async function home(repo: string, siteRoot: string) {
   if (eeiCheck.diagnostics.some((d) => d.severity === "error")) throw new Error("content/home/eei.layr must compile cleanly");
 
   return {
-    demo: { lines: highlightLines(h, demo, "layr"), playground: playgroundHref(demo), file: "src/pages/demo.layr" },
+    // The hero's ground: this page's own source (the page and its widgets).
+    field: ["src/pages/index.layr", "src/widgets/home.layr", "src/widgets/shell.layr", "content/home/demo.layr"].map(read).join("\n"),
+    demo: { code: demo, lines: highlightLines(h, demo, "layr"), html: codeBlock(h, demo, "layr", "src/pages/room.layr"), playground: playgroundHref(demo), file: "src/pages/room.layr" },
     shape: { source: codeBlock(h, expanded(shape), "layr", "src/pages/profile.layr"), css: codeBlock(h, prettyCss(mod.css), "css", "Compiled CSS"), js: codeBlock(h, js, "typescript", "Compiled React module"), playground: playgroundHref(shape) },
     mistakes: { source: codeBlock(h, mistakes, "layr", "src/pages/checkout.layr"), report, count: bad.diagnostics.filter((d) => d.severity === "error").length },
     eei: codeBlock(h, expanded(eei), "layr", "src/pages/store.layr"),
+    eeiPlay: playgroundHref(expanded(eei)),
     react: codeBlock(h, expanded(read("content/home/react.layr")), "layr", "src/pages/stats.layr"),
     install: codeBlock(h, "npm create @dynshift/layr@latest my-app\ncd my-app\nnpm run dev", "bash", "Terminal"),
   };
@@ -508,6 +581,8 @@ export function siteContent(): Plugin {
     configResolved(c) {
       siteRoot = c.root;
       repo = resolve(siteRoot, "..");
+      repoRoot = repo;
+      addonCache = null;
       isSsr = !!c.build.ssr;
       isBuild = c.command === "build";
       load();
@@ -578,6 +653,10 @@ export function siteContent(): Plugin {
         return `export default ${JSON.stringify(items)};`;
       }
       if (what === "library") return `export default ${JSON.stringify(await getLib())};`;
+      if (what === "addons-src") {
+        addonCache = null;
+        return `export default ${JSON.stringify(addonSources(repo))};`;
+      }
       if (what.startsWith("page/")) {
         // Plain Markdown pages under site/content/pages (skills, privacy, v1, publishing).
         const name = what.slice(5);

@@ -47,7 +47,9 @@
 .l-row.l-adapt.l-stacked>.l-wfill{min-width:0}
 .l-row.l-wrap-auto{flex-wrap:wrap}
 .l-row.l-stackable>*,.l-row.l-stackable>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
-.l-root{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / 1000);line-height:1.5}
+.l-root{color:CanvasText;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / 1000);line-height:1.5}
+dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
+dialog.l:not([open]){display:none}
 dialog.l::backdrop{background:var(--l-backdrop,rgb(0 0 0 / .35))}
 button.l{cursor:pointer}
 button.l:disabled{cursor:not-allowed}

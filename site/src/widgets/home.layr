@@ -30,7 +30,7 @@ Widget(
 // A framed pane, the unit every demo on the page sits in.
 Widget(
   .name(Pane)
-  .param(txt title = '', txt note = '')
+  .param(txt title = '', txt note = '', txt play = '')
   .obj(
     Column(
       .config(w: fill, color: panel, cornerRadius: 10, clip: true, .border(color: line, width: 1))
@@ -40,6 +40,13 @@ Widget(
           .config(w: fill, h: 40, padding: sym(x: 14), gap: 8, xAlign: between, yAlign: mid, color: sunken, .border(color: line, width: 1, sides: bottom))
           Text(.config(size: 12.5, weight: medium, color: muted, font: code) .obj(param.title))
           Text(.config(size: 12, color: faint) .obj(param.note))
+          If(
+            .cnd(param.play != '')
+            .obj(Link(
+              .config(href: param.play, underline: false, className: 'pane-open')
+              .obj(Row(.config(gap: 6, yAlign: mid) Icon(.props(name: 'play', size: 13, weight: 'fill')), Text(.config(size: 12.5, weight: medium, color: accent) .obj('Open in playground'))))
+            ))
+          )
         ))
       )
       .obj
@@ -52,7 +59,7 @@ Widget(
   .param(req txt label, req txt href, txt icon = '')
   .obj(
     Link(
-      .config(href: param.href, padding: sym(x: 16, y: 11), cornerRadius: 8, color: accent, underline: false, className: 'btn-primary')
+      .config(href: param.href, padding: sym(x: 16, y: 11), cornerRadius: 8, color: action, underline: false, className: 'btn-primary')
       .obj(Row(
         .config(gap: 8, yAlign: mid)
         If(.cnd(param.icon != '') .obj(Icon(.props(name: param.icon, size: 16, weight: 'fill'))))

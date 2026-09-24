@@ -1,0 +1,63 @@
+# Publishes @dynshift/layr to npm when a version tag is pushed (v3.0.0, v3.1.0-next.2, ...).
+# npm trusted publishing: no token; the package's trusted publisher on npmjs.com names this
+# repository and this workflow file. A version with a prerelease part goes to the `next` dist-tag.
+name: Release
+
+on:
+  push:
+    tags: ["v3.*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to publish (e.g. v3.0.0-next.1)"
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: npm
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later.
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - name: Version matches the tag
+        id: v
+        run: |
+          tag="${{ inputs.tag || github.ref_name }}"
+          version="$(node -p "require('./packages/layr/package.json').version")"
+          if [ "v$version" != "$tag" ]; then echo "packages/layr is $version but the tag is $tag"; exit 1; fi
+          if [[ "$version" == *-* ]]; then echo "dist=next" >> "$GITHUB_OUTPUT"; else echo "dist=latest" >> "$GITHUB_OUTPUT"; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Smoke test the packed package
+        run: bash tools/smoke.sh
+      - name: Pack
+        run: |
+          mkdir -p out
+          cd packages/layr && pnpm pack --pack-destination ../../out
+      - name: Publish with provenance
+        run: npm publish out/*.tgz --provenance --access public --tag ${{ steps.v.outputs.dist }}
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version="${{ steps.v.outputs.version }}"
+          awk -v v="$version" '$0 ~ "^## \[?"v"\]?" {p=1; next} /^## / && p {exit} p' CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "See CHANGELOG.md." > notes.md
+          flags=""
+          if [ "${{ steps.v.outputs.dist }}" = "next" ]; then flags="--prerelease"; fi
+          gh release create "v$version" out/*.tgz --title "LAYR v$version" --notes-file notes.md $flags

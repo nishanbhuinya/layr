@@ -5,8 +5,9 @@ import { loadHome } from '../lib/content.ts'
 import { Ad } from '../react/Ad.tsx'
 import { Cascade } from '../react/Cascade.tsx'
 import { Frames } from '../react/Frames.tsx'
-import { Inspector } from '../react/Inspector.tsx'
-import { LightField } from '../react/LightField.tsx'
+import { AiPanel } from '../react/AiPanel.tsx'
+import { CodeField } from '../react/CodeField.tsx'
+import { Studio } from '../react/Studio.tsx'
 import { Code, Command, Console } from '../react/Prose.tsx'
 
 Widget(
@@ -32,37 +33,39 @@ Page(
     .bar(TopBar())
     .body(Column(
       .config(w: fill)
-      // The first viewport: the promise on the left, a real LAYR page under an inspector on the right.
+      // The first viewport: the claim, one paragraph and two ways in, over this page's own source
+      // glitching in the site's light; then a real LAYR page running live under an inspector.
       Stack(
         .config(w: fill)
-        Container(.config(w: fill, h: fill, className: 'hero-light') .obj(LightField()))
+        Container(.config(w: fill, h: fill, className: 'hero-ground') .obj(If(.cnd(data != null) .obj(CodeField(.props(source: data.field))))))
         Column(
-          .config(w: fill, padding: sym(x: 32, y: 64), xAlign: mid, className: 'hero-content')
-          .at(m, padding: only(left: 16, right: 16, top: 40, bottom: 48))
-          Row(
-            .config(w: fill, maxW: 1360, gap: 56, yAlign: mid, stackAt: 1100)
-            Column(
-              .config(w: fill, flex: 0.8, minW: 360, gap: 24)
-              Text(
-                .config(type: h1, size: 56, weight: 650, letterSpacing: -2, lineHeight: 1.02)
-                .at(m, size: 34, letterSpacing: -1)
-                .at(t, size: 64, letterSpacing: -2.2)
-                .at(w, size: 52, letterSpacing: -1.8)
-                .obj('Build websites deterministically.')
-              )
-              Text(
-                .config(size: 19, color: muted, lineHeight: 1.55, maxW: 460)
-                .obj('A compiled UI language. Write layout in your design’s numbers and ship static CSS and React that resolve the same way on every screen.')
-              )
-              Wrap(
-                .config(gap: 12, runGap: 12, yAlign: mid, margin: only(top: 4))
-                PrimaryLink(.config(label: 'Try it in the browser', href: '/playground', icon: 'play'))
-                Command(.props(command: 'npm create @dynshift/layr@latest'))
-              )
+          .config(w: fill, padding: only(left: 32, right: 32, top: 88, bottom: 64), xAlign: mid, gap: 56, className: 'hero-content')
+          .at(m, padding: only(left: 16, right: 16, top: 48, bottom: 40), gap: 36)
+          Column(
+            .config(w: fill, maxW: 880, gap: 24, xAlign: mid)
+            Text(.config(size: 13, weight: medium, color: muted, font: code, letterSpacing: 0.4, className: 'hero-eyebrow') .obj('LAYR · Layout Authoritative Yet Responsive'))
+            Text(
+              .config(type: h1, size: 76, weight: 660, letterSpacing: -3, lineHeight: 1, align: mid, className: 'hero-title')
+              .at(m, size: 42, letterSpacing: -1.6, lineHeight: 1.04)
+              .at(t, size: 68, letterSpacing: -2.6)
+              .obj('Build websites deterministically.')
             )
-            Column(
-              .config(w: fill, flex: 1.2, minW: 0)
-              If(.cnd(data != null) .obj(Inspector(.props(src: '/inspect/demo', lines: data.demo.lines, file: data.demo.file, playground: data.demo.playground))))
+            Text(
+              .config(size: 19, color: muted, lineHeight: 1.55, maxW: 620, align: mid)
+              .at(m, size: 17)
+              .obj('A compiled UI language. Write layout in your design’s numbers and ship static CSS and React that resolve the same way on every screen.')
+            )
+            Wrap(
+              .config(gap: 12, runGap: 12, xAlign: mid, yAlign: mid, margin: only(top: 8))
+              PrimaryLink(.config(label: 'Try it in the browser', href: '/playground', icon: 'play'))
+              Command(.props(command: 'npm create @dynshift/layr'))
+            )
+          )
+          Column(
+            .config(w: fill, maxW: 1240)
+            If(
+              .cnd(data != null)
+              .obj(Studio(.props(code: data.demo.code, codeHtml: data.demo.html, lines: data.demo.lines, file: data.demo.file, playground: data.demo.playground)))
             )
           )
         )
@@ -89,7 +92,7 @@ Page(
 
       Band(
         SectionHead(.config(title: 'One design, every screen.', sub: 'Numbers are design pixels from your frames. Values flow between frames and structure steps at them. You write no media queries.'))
-        Frames(.props(src: '/inspect/demo'))
+        If(.cnd(data != null) .obj(Frames(.props(code: data.demo.code))))
         TextLink(.config(label: 'How Design Scale works', href: '/docs/design-scale'))
       )
 
@@ -99,11 +102,11 @@ Page(
           .cnd(data != null)
           .obj(Row(
             .config(w: fill, gap: 20, yAlign: stretch)
-            Pane(.config(title: 'store.layr') Code(.props(html: data.eei)))
+            Pane(.config(title: 'store.layr', play: data.eeiPlay) Code(.props(html: data.eei)))
             Pane(
-              .config(title: 'Home.card', note: 'live')
+              .config(title: 'Store.card', note: 'live')
               Column(
-                .config(w: fill, h: fill, padding: all(28), xAlign: mid, yAlign: mid, className: 'lit-stage')
+                .config(w: fill, h: fill, minH: 220, padding: all(28), xAlign: mid, yAlign: mid, className: 'lit-stage')
                 Container(
                   .id(card)
                   .config(w: 260, cornerRadius: 12, padding: all(16), !mut color: panel, shadow: shadow(y: 8, blur: 24, color: black.alpha(18%)), .border(color: line, width: 1))
@@ -138,6 +141,12 @@ Page(
         SectionHead(.config(title: 'Your React packages keep working.', sub: 'Import a React component and use it as a node; hooks run in a .react block. LAYR components work inside React apps too.'))
         If(.cnd(data != null) .obj(Pane(.config(title: 'stats.layr') Code(.props(html: data.react)))))
         TextLink(.config(label: 'React interop', href: '/docs/react'))
+      )
+
+      Band(
+        SectionHead(.config(title: 'Learn it and write it with any AI.', sub: 'LAYR ships its own rules for AI: agents write canonical LAYR and check it with the same tools you use, and any assistant can teach it to you from the docs.'))
+        AiPanel()
+        TextLink(.config(label: 'AI Skill and MCP', href: '/skills'))
       )
 
       Band(
