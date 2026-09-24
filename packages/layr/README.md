@@ -265,4 +265,4 @@ Contributions are welcome. Please see the [GitHub repository](https://github.com
 
 ## License
 
-MIT © 2025 [DynShift](https://dynshift.com) & [Nishan Bhuiya](https://nishanbhuinya.com)
+MIT © 2025 [DynShift](https://dynshift.com) & [Nishan Bhuinya](https://nishanbhuinya.com)

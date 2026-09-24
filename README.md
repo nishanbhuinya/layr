@@ -90,4 +90,4 @@ See [#2](https://github.com/nishanbhuinya/layr/issues/2) for tracking.
 
 ## License
 
-MIT © 2025 [DynShift](https://dynshift.com) & [Nishan Bhuiya](https://nishanbhuinya.com)
+MIT © 2025 [DynShift](https://dynshift.com) & [Nishan Bhuinya](https://nishanbhuinya.com)
