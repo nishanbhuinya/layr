@@ -40,6 +40,18 @@ export function layr(opts: LayrPluginOptions = {}): Plugin {
 
   const rel = (abs: string) => relative(root, abs).replace(/\\/g, "/");
 
+  /**
+   * One import per page file the compiler knows. Not import.meta.glob: page files are named
+   * `[id].layr`, and brackets are glob syntax, so a glob silently drops them on some platforms.
+   */
+  const pageImports = () => {
+    const prefix = cfg.isAddon ? "examples/" : "src/pages/";
+    return [...(result?.modules.keys() ?? [])]
+      .filter((p) => p.startsWith(prefix) && p.endsWith(".layr"))
+      .sort()
+      .map((p) => `import ${JSON.stringify(`/${p}`)};`);
+  };
+
   const compileAll = () => {
     cfg = loadConfig(root);
     texts.clear();
@@ -114,7 +126,7 @@ export function layr(opts: LayrPluginOptions = {}): Plugin {
           `import "virtual:layr/global.css";`,
           `import { mount } from "@dynshift/layr/react";`,
           hasApp ? `import * as $appModule from "/src/app.layr";` : "const $appModule = {};",
-          cfg.isAddon ? `import.meta.glob("/examples/*.layr", { eager: true });` : `import.meta.glob("/src/pages/**/*.layr", { eager: true });`,
+          ...pageImports(),
           `mount(document.getElementById("app"), { ...($appModule.$app ?? {}), base: import.meta.env.BASE_URL });`,
         ].join("\n");
       }
@@ -123,7 +135,7 @@ export function layr(opts: LayrPluginOptions = {}): Plugin {
         return [
           `import { renderPage } from "@dynshift/layr/ssr";`,
           hasApp ? `import * as $appModule from "/src/app.layr";` : "const $appModule = {};",
-          cfg.isAddon ? `import.meta.glob("/examples/*.layr", { eager: true });` : `import.meta.glob("/src/pages/**/*.layr", { eager: true });`,
+          ...pageImports(),
           `export function render(url, data) { return renderPage(url, { ...($appModule.$app ?? {}) }, data); }`,
           `export { routes, prerenderRoutes, loadData } from "@dynshift/layr/ssr";`,
         ].join("\n");
