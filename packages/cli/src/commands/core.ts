@@ -57,12 +57,17 @@ export async function build(args: Args) {
   await viteBuild(await viteConfig(root, { base, logLevel: "warn", build: { ssr: entryFile, outDir: ssrDir, emptyOutDir: true, rollupOptions: { output: { entryFileNames: "entry.mjs" } } } }));
   const mod = (await import(pathToFileURL(join(ssrDir, "entry.mjs")).href)) as {
     render: (url: string, data?: unknown) => { html: string; title: string | null; meta: Record<string, unknown>; status: number };
-    prerenderRoutes: () => Promise<string[]>;
+    prerenderRoutes: (report?: (route: string, count: number | null) => void) => Promise<string[]>;
     loadData: (url: string) => Promise<unknown>;
   };
   const template = readFileSync(join(outDir, "index.html"), "utf8");
   const rendered: string[] = [];
-  for (const route of await mod.prerenderRoutes()) {
+  const dynamic: string[] = [];
+  const routeList = await mod.prerenderRoutes((route, count) => {
+    dynamic.push(count === null ? `${c.yellow("!")} ${route}: no .paths, so it renders in the browser only` : `  ${route}: ${count} path(s) from .paths`);
+  });
+  for (const line of dynamic) console.log(line);
+  for (const route of routeList) {
     const data = await mod.loadData(route);
     const r = mod.render(route, data);
     // The loaded data rides along so the client hydrates with exactly what the server rendered.

@@ -20,11 +20,17 @@ export function routes(): string[] {
 }
 
 /** Every route to prerender: static routes plus each dynamic route expanded by its page's `.paths`. */
-export async function prerenderRoutes(): Promise<string[]> {
+export async function prerenderRoutes(report?: (route: string, count: number | null) => void): Promise<string[]> {
   const out = routes();
   for (const p of router.allPages()) {
-    if (!p.route.includes(":") || !p.paths) continue;
-    for (const params of await p.paths()) out.push(router.hrefFor(p, params).replace(/\?.*$/, ""));
+    if (!p.route.includes(":")) continue;
+    if (!p.paths) {
+      report?.(p.route, null);
+      continue;
+    }
+    const list = await p.paths();
+    report?.(p.route, list.length);
+    for (const params of list) out.push(router.hrefFor(p, params).replace(/\?.*$/, ""));
   }
   return [...new Set(out)];
 }
