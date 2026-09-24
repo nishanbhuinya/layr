@@ -6,8 +6,8 @@ work="$(mktemp -d)"
 (cd packages/layr && pnpm pack --pack-destination "$work" >/dev/null)
 tgz="$(ls "$work"/*.tgz)"
 mkdir "$work/tool" && (cd "$work/tool" && npm init -y >/dev/null && npm i "$tgz" --no-audit --no-fund >/dev/null)
-(cd "$work" && "$work/tool/node_modules/.bin/layr" create app --template app >/dev/null)
-cd "$work/app"
+(cd "$work" && "$work/tool/node_modules/.bin/layr" create smoke-app --template app >/dev/null)
+cd "$work/smoke-app"
 node -e "const f='package.json',p=require('./'+f);p.dependencies['@dynshift/layr']='file:$tgz';require('fs').writeFileSync(f,JSON.stringify(p,null,2))"
 npm install --no-audit --no-fund >/dev/null
 npx layr analyze

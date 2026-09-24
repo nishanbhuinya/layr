@@ -23,18 +23,58 @@ Page(
       Scroll(
         .config(w: fill, h: fill)
         Column(
-          .config(w: fill, gap: 12, padding: only(left: 16, right: 16, top: 76, bottom: 16))
-          Container(.config(w: fill, h: 110, cornerRadius: 14, color: LinearGradient(.colors(#ff6a3d, #ffc46b))))
-          Container(.config(w: fill, h: 110, cornerRadius: 14, color: LinearGradient(.colors(#9b8cff, #2ed3c4))))
-          Container(.config(w: fill, h: 110, cornerRadius: 14, color: LinearGradient(.colors(#1c1917, #ff6a3d))))
-          Container(.config(w: fill, h: 110, cornerRadius: 14, color: LinearGradient(.colors(#2ed3c4, #ffc46b))))
+          .config(
+            w: fill
+            gap: 12
+            padding: only(left: 16, right: 16, top: 76, bottom: 16)
+          )
+          Container(
+            .config(
+              w: fill
+              h: 110
+              color: LinearGradient(.colors(#ff6a3d, #ffc46b))
+              cornerRadius: 14
+            )
+          )
+          Container(
+            .config(
+              w: fill
+              h: 110
+              color: LinearGradient(.colors(#9b8cff, #2ed3c4))
+              cornerRadius: 14
+            )
+          )
+          Container(
+            .config(
+              w: fill
+              h: 110
+              color: LinearGradient(.colors(#1c1917, #ff6a3d))
+              cornerRadius: 14
+            )
+          )
+          Container(
+            .config(
+              w: fill
+              h: 110
+              color: LinearGradient(.colors(#2ed3c4, #ffc46b))
+              cornerRadius: 14
+            )
+          )
         )
       )
       Position(
-        .config(top: 0, left: 0, right: 0)
+        .config(left: 0, right: 0, top: 0)
         .obj(Blur(
-          .config(w: fill, value: 16, padding: sym(x: 20, y: 18), color: #fffcf7.alpha(55%))
-          .obj(Text(.config(size: 17, weight: semibold, color: #1c1917) .obj('Frosted header')))
+          .config(
+            w: fill
+            color: #fffcf7.alpha(55%)
+            padding: sym(x: 20, y: 18)
+            value: 16
+          )
+          .obj(Text(
+            .config(size: 17, color: #1c1917, weight: semibold)
+            .obj('Frosted header')
+          ))
         ))
       )
     ))
@@ -59,14 +99,51 @@ Page(
       Column(
         .config(w: fill, gap: 10, padding: all(16))
         Text(.config(size: 13, color: #625a50) .obj('Today'))
-        Container(.config(w: fill, h: 72, cornerRadius: 12, color: LinearGradient(.colors(#ff6a3d, #ffc46b))))
-        Container(.config(w: fill, h: 72, cornerRadius: 12, color: LinearGradient(.colors(#9b8cff, #6d5ce6))))
-        Container(.config(w: fill, h: 72, cornerRadius: 12, color: LinearGradient(.colors(#2ed3c4, #0e9f92))))
-        Container(.config(w: fill, h: 72, cornerRadius: 12, color: LinearGradient(.colors(#ffc46b, #e8551f))))
+        Container(
+          .config(
+            w: fill
+            h: 72
+            color: LinearGradient(.colors(#ff6a3d, #ffc46b))
+            cornerRadius: 12
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 72
+            color: LinearGradient(.colors(#9b8cff, #6d5ce6))
+            cornerRadius: 12
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 72
+            color: LinearGradient(.colors(#2ed3c4, #0e9f92))
+            cornerRadius: 12
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 72
+            color: LinearGradient(.colors(#ffc46b, #e8551f))
+            cornerRadius: 12
+          )
+        )
       )
       Position(
         .config(bottom: 0, left: 0, right: 0)
-        .obj(Blur(.config(w: fill, h: 180, type: progressive, edge: bottom, value: 28, fade: #f4efe7)))
+        .obj(Blur(
+          .config(
+            w: fill
+            h: 180
+            edge: bottom
+            fade: #f4efe7
+            type: progressive
+            value: 28
+          )
+        ))
       )
     ))
   )
@@ -98,11 +175,26 @@ Page(
       Animate(
         .config(duration: 450ms, ease: ease.out)
         .obj(Blur(
-          .config(blurOn: object, value: hidden ? 10 : 0, padding: all(20), cornerRadius: 12, color: #fffcf7)
-          .obj(Text(.config(size: 18, color: #1c1917, lineHeight: 1.5) .obj('The layout was authoritative all along: every number in the file was the one on the screen.')))
+          .config(
+            blurOn: object
+            color: #fffcf7
+            cornerRadius: 12
+            padding: all(20)
+            value: hidden ? 10 : 0
+          )
+          .obj(Text(
+            .config(size: 18, color: #1c1917, lineHeight: 1.5)
+            .obj(
+              'The layout was authoritative all along: every number in the file was the one on the screen.'
+            )
+          ))
         ))
       )
-      Button(.preset(default) .config(label: hidden ? 'Reveal the ending' : 'Hide it again') .fnc { hidden = !hidden })
+      Button(
+        .preset(default)
+        .config(label: hidden ? 'Reveal the ending' : 'Hide it again')
+        .fnc { hidden = !hidden }
+      )
     ))
   )
 )
