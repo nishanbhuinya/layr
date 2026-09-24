@@ -1,0 +1,34 @@
+import { DocsShell, TopBar } from '../../widgets/shell.layr'
+import { Article, Crumbs, PagerLink } from '../../widgets/article.layr'
+import { docPaths, loadDoc } from '../../lib/content.ts'
+import { Prose } from '../../react/Prose.tsx'
+
+Page(
+  .name(DocPage)
+  .route('/docs/:slug')
+  .meta(title: '${data.title} · LAYR docs', description: data.description)
+  .load { return loadDoc(route.slug) }
+  .paths { return docPaths() }
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(DocsShell(
+      If(
+        .cnd(data != null)
+        .obj(Article(
+          .config(toc: data.toc, edit: data.edit)
+          Column(
+            .config(w: fill, gap: 20)
+            Crumbs(.config(section: data.section))
+            Prose(.props(html: data.html))
+          )
+          Row(
+            .config(w: fill, gap: 12, margin: only(top: 48))
+            If(.cnd(data.prev != null) .obj(PagerLink(.config(label: 'Previous', title: data.prev.title, href: data.prev.href))) .fb(Expand(Container())))
+            If(.cnd(data.next != null) .obj(PagerLink(.config(label: 'Next', title: data.next.title, href: data.next.href, next: true))) .fb(Expand(Container())))
+          )
+        ))
+      )
+    ))
+  )
+)

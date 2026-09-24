@@ -1,0 +1,35 @@
+import { DocsShell, TopBar } from '../../widgets/shell.layr'
+import { Article } from '../../widgets/article.layr'
+import { loadWidget, widgetPaths } from '../../lib/content.ts'
+import { Prose } from '../../react/Prose.tsx'
+
+Page(
+  .name(WidgetPage)
+  .route('/api/:name')
+  .meta(title: '${data.name} · LAYR widgets', description: data.summary)
+  .load { return loadWidget(route.name) }
+  .paths { return widgetPaths() }
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(DocsShell(
+      If(
+        .cnd(data != null)
+        .obj(Article(
+          .config(toc: data.toc)
+          Column(
+            .config(w: fill, gap: 16)
+            Row(
+              .config(gap: 6, yAlign: mid)
+              Link(.config(href: '/api', underline: false) .obj(Text(.config(size: 13, color: muted) .obj('Widgets'))))
+              Text(.config(size: 13, color: faint) .obj('/'))
+              Text(.config(size: 13, color: muted) .obj(data.module))
+            )
+            Prose(.props(html: data.head))
+            Prose(.props(html: data.html))
+          )
+        ))
+      )
+    ))
+  )
+)

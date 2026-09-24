@@ -1,0 +1,78 @@
+import { DocsShell, TopBar } from '../../widgets/shell.layr'
+import { Article } from '../../widgets/article.layr'
+import { addonPaths, loadAddon } from '../../lib/content.ts'
+import { Command, Prose } from '../../react/Prose.tsx'
+
+Widget(
+  .name(Fact)
+  .param(req txt label, req txt value, txt href = '')
+  .obj(
+    Column(
+      .config(gap: 3, minW: 120)
+      Text(.config(size: 12, color: faint) .obj(param.label))
+      If(
+        .cnd(param.href != '')
+        .obj(Link(.config(href: param.href, external: true, underline: false, className: 'text-link') .obj(Text(.config(size: 14, color: accent, font: code) .obj(param.value)))))
+        .fb(Text(.config(size: 14, font: code) .obj(param.value)))
+      )
+    )
+  )
+)
+
+Page(
+  .name(AddonPage)
+  .route('/library/:id')
+  .meta(title: '${data.name} · LAYR Library', description: data.description)
+  .load { return loadAddon(route.id) }
+  .paths { return addonPaths() }
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(DocsShell(
+      If(
+        .cnd(data != null)
+        .obj(Article(
+          Column(
+            .config(w: fill, gap: 24)
+            Row(
+              .config(gap: 6, yAlign: mid)
+              Link(.config(href: '/library', underline: false) .obj(Text(.config(size: 13, color: muted) .obj('Library'))))
+              Text(.config(size: 13, color: faint) .obj('/'))
+              Text(.config(size: 13, color: muted) .obj(data.official ? 'Official' : 'Community'))
+            )
+            Column(
+              .config(w: fill, gap: 10)
+              Text(.config(type: h1, size: 34, weight: 640, letterSpacing: -0.8) .obj(data.name))
+              Text(.config(size: 17, color: muted, lineHeight: 1.6) .obj(data.description))
+            )
+            Command(.props(command: data.install))
+            Wrap(
+              .config(w: fill, gap: 32, runGap: 16, padding: sym(y: 16), .border(color: line, width: 1, sides: y))
+              Fact(.config(label: 'npm', value: data.npm, href: 'https://www.npmjs.com/package/' + data.npm))
+              Fact(.config(label: 'Version', value: data.version))
+              Fact(.config(label: 'LAYR', value: data.layr))
+              If(.cnd(data.repository != '') .obj(Fact(.config(label: 'Source', value: 'Repository', href: data.repository))))
+            )
+            If(
+              .cnd(data.widgets.length > 0)
+              .obj(Column(
+                .config(w: fill, gap: 10)
+                Text(.config(type: h2, size: 20, weight: 620) .obj('Widgets'))
+                Wrap(
+                  .config(gap: 8)
+                  Each(.of(data.widgets) .as(wd) .obj(Container(.config(padding: sym(x: 10, y: 5), cornerRadius: 6, color: sunken) .obj(Text(.config(size: 13, font: code) .obj(wd))))))
+                )
+              ))
+            )
+            Prose(.props(html: data.readme))
+            Each(
+              .of(data.examples)
+              .as(ex)
+              .obj(Prose(.props(html: ex.html)))
+            )
+          )
+        ))
+      )
+    ))
+  )
+)
