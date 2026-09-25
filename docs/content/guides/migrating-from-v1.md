@@ -6,7 +6,7 @@ order: 43
 
 # Migrating from v1
 
-LAYR 1.x was a set of Flutter-style React components. LAYR 3 is a compiled language; v2 was never released. v1 keeps working: it stays on npm under the `v1` tag (`npm i @dynshift/layr@v1`) and its source is on the `v1` branch.
+LAYR 1.x was a set of Flutter-style React components. LAYR 3 is a compiled language; v2 was never released. v1 keeps working: it stays on npm, and `npm i @dynshift/layr@v1` installs the latest 1.x and its source is on the `v1` branch.
 
 ## Two ways forward
 

@@ -5,7 +5,7 @@
 | Version | Supported |
 |---|---|
 | 3.x (npm `latest`) | Yes: fixes are released as patch versions |
-| 1.x (npm `v1`) | Stays installable for existing projects; no new features |
+| 1.x (`@dynshift/layr@v1`) | Stays installable for existing projects; no new features |
 
 ## Report a vulnerability
 

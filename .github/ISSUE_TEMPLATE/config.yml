@@ -11,4 +11,4 @@ contact_links:
     about: Guides and the full reference.
   - name: LAYR 1.x
     url: https://github.com/nishanbhuinya/layr/tree/v1
-    about: The original React component library (npm dist-tag v1).
+    about: The original React component library (npm install @dynshift/layr@v1).

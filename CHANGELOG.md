@@ -22,4 +22,4 @@ LAYR 3: a compiled UI language, replacing the 1.x React component library. `npm 
 - The language server, the VS Code extension, the LAYR Skill and the MCP server.
 - Official addon: google_fonts.
 
-LAYR 1.x continues on the `v1` branch and the `v1` npm dist-tag.
+LAYR 1.x continues on the `v1` branch; `npm install @dynshift/layr@v1` installs it.
