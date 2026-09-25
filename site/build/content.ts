@@ -549,7 +549,7 @@ async function home(repo: string, siteRoot: string) {
     eei: codeBlock(h, expanded(eei), "layr", "src/pages/store.layr"),
     eeiPlay: playgroundHref(expanded(eei)),
     react: codeBlock(h, expanded(read("content/home/react.layr")), "layr", "src/pages/stats.layr"),
-    install: codeBlock(h, "npm create @dynshift/layr@latest my-app\ncd my-app\nnpm run dev", "bash", "Terminal"),
+    install: codeBlock(h, "npx @dynshift/layr create my-app\ncd my-app\nnpm install\nnpx layr dev", "bash", "Terminal"),
   };
 }
 
@@ -711,7 +711,7 @@ export function siteContent(): Plugin {
       const bySection = nav(docs)
         .map((s) => `## ${s.title}\n\n${s.items.map((i) => `- [${i.title}](${SITE_URL}/docs/${i.slug}.md): ${docs.find((d) => d.slug === i.slug)?.description ?? ""}`).join("\n")}`)
         .join("\n\n");
-      const llms = `# LAYR\n\n> LAYR (Layout Authoritative Yet Responsive) is a compiled UI language for the web: \`.layr\` files compile to React components and static CSS, with Design Scale units, deterministic layout adaptation and Export/Extract/Inject. Install: \`npm create @dynshift/layr@latest\`. npm: @dynshift/layr (CLI: layr).\n\nRead the Skill rules before writing LAYR: ${SITE_URL}/skills. Every widget and config key: ${SITE_URL}/api. Every diagnostic: ${SITE_URL}/errors.\n\n${bySection}\n\n## Optional\n\n- [Full documentation](${SITE_URL}/llms-full.txt): every page in one file\n- [Addon index](${SITE_URL}/addons.json): official and listed addons\n`;
+      const llms = `# LAYR\n\n> LAYR (Layout Authoritative Yet Responsive) is a compiled UI language for the web: \`.layr\` files compile to React components and static CSS, with Design Scale units, deterministic layout adaptation and Export/Extract/Inject. Create a project: \`npx @dynshift/layr create my-app\`. npm: @dynshift/layr (CLI: layr).\n\nRead the Skill rules before writing LAYR: ${SITE_URL}/skills. Every widget and config key: ${SITE_URL}/api. Every diagnostic: ${SITE_URL}/errors.\n\n${bySection}\n\n## Optional\n\n- [Full documentation](${SITE_URL}/llms-full.txt): every page in one file\n- [Addon index](${SITE_URL}/addons.json): official and listed addons\n`;
       this.emitFile({ type: "asset", fileName: "llms.txt", source: llms });
       const full = docs.map((d) => `# ${d.title}\n\nSource: ${SITE_URL}/docs/${d.slug}\n\n${d.markdown.replace(/^# .*\n+/, "").trim()}\n`).join("\n\n---\n\n");
       this.emitFile({ type: "asset", fileName: "llms-full.txt", source: `# LAYR documentation\n\n${full}` });

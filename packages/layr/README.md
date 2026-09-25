@@ -3,9 +3,10 @@
 **LAYR** (Layout Authoritative Yet Responsive) is a compiled UI language for the web. You write layout in your design's numbers; the compiler turns each `.layr` file into static CSS and a React module that resolve the same way on every screen.
 
 ```bash
-npm create @dynshift/layr@latest my-app
+npx @dynshift/layr create my-app
 cd my-app
-npm run dev
+npm install
+npx layr dev
 ```
 
 ```layr

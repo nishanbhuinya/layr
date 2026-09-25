@@ -46,7 +46,7 @@ Page(
           Text(.config(size: 17, color: muted, maxW: 620, lineHeight: 1.6) .obj('Everything LAYR does, in reading order. Start with the quick start, or run code right away in the playground.'))
           Wrap(
             .config(gap: 12, margin: only(top: 8), yAlign: mid)
-            Command(.props(command: 'npm create @dynshift/layr@latest'))
+            Command(.props(command: 'npx @dynshift/layr create my-app'))
             Link(
               .config(href: '/playground', padding: sym(x: 14, y: 10), cornerRadius: 8, color: accent, underline: false)
               .obj(Text(.config(size: 14, weight: medium, color: onAccent) .obj('Try it in the browser')))

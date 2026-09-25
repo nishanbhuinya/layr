@@ -30,9 +30,10 @@ Page(
 ## Start
 
 ```bash
-npm create @dynshift/layr@latest my-app
+npx @dynshift/layr create my-app
 cd my-app
-npm run dev
+npm install
+npx layr dev
 ```
 
 Or try it without installing anything in the [playground](https://layr.dynshift.com/playground).

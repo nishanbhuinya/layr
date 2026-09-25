@@ -58,7 +58,7 @@ Page(
             Wrap(
               .config(gap: 12, runGap: 12, xAlign: mid, yAlign: mid, margin: only(top: 8))
               PrimaryLink(.config(label: 'Try it in the browser', href: '/playground', icon: 'play'))
-              Command(.props(command: 'npm create @dynshift/layr'))
+              Command(.props(command: 'npx @dynshift/layr create my-app'))
             )
           )
           Column(
@@ -168,7 +168,7 @@ Page(
           Wrap(
             .config(gap: 12, runGap: 12, xAlign: mid, yAlign: mid)
             PrimaryLink(.config(label: 'Try it in the browser', href: '/playground', icon: 'play'))
-            Command(.props(command: 'npm create @dynshift/layr@latest'))
+            Command(.props(command: 'npx @dynshift/layr create my-app'))
           )
         )
       )
