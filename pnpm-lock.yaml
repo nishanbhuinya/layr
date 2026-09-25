@@ -45,21 +45,6 @@ importers:
         specifier: ^8.3.0
         version: 8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
 
-  addons/kit:
-    devDependencies:
-      '@dynshift/layr':
-        specifier: workspace:*
-        version: link:../../packages/layr
-      react:
-        specifier: ^19.3.0
-        version: 19.3.0
-      react-dom:
-        specifier: ^19.3.0
-        version: 19.3.0(react@19.3.0)
-      vite:
-        specifier: ^8.3.0
-        version: 8.3.0(@types/node@22.20.4)(esbuild@0.28.2)(yaml@2.9.1)
-
   examples/hello:
     dependencies:
       '@dynshift/layr':

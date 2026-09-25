@@ -6,27 +6,29 @@ order: 21
 
 # Functions and events
 
-A `Function` is a named, typed action. Write its body as **SAPI steps** or as **TypeScript**; both compile to the same thing and can be mixed.
+A `Function` is a named action. Write its body as **SAPI steps** (LAYR's own step language) or as **TypeScript**: both compile to the same thing and can be mixed in one file.
 
 ```layr
 Page(
   .name(Steps)
+  .route('/')
   var int count = 0
 
-  // SAPI steps
+  // SAPI steps: count up to 9, then wrap to 0
   Function(
     .name(step)
     .param(ref int n)
     .def(.if(.cnd(n >= 9) .exe(n = 0)) .fb(.exe(n++)))
   )
 
-  // TypeScript
+  // The same idea in TypeScript
   Function(.name(reset) .param(ref int n) .def { n = 0 })
 
   Scaffold(
+    .config(color: canvas)
     .body(Row(
-      .config(gap: 8, padding: all(24))
-      Text('$count')
+      .config(gap: 12, padding: all(24), yAlign: mid)
+      Text(.config(size: 32, weight: bold) .obj('$count'))
       Button(.preset(default) .config(label: 'Step') .fnc(step(count)))
       Button(.preset(default) .config(label: 'Reset') .fnc(reset(count)))
     ))
@@ -34,9 +36,12 @@ Page(
 )
 ```
 
-## Params
+`.fnc(step(count))` calls the Function when the button is pressed. `ref int n` means the Function receives the caller's `count` itself, so assigning `n` changes `count`. Without `ref`, a param is a plain value.
 
-`ref int n` receives the caller's state itself, so assigning `n` changes the caller's `count`. Without `ref`, a param is a value.
+> **Try it**
+> - Press **Step** ten times: it wraps from 9 to 0.
+> - Change `n >= 9` to `n >= 3`.
+> - Rewrite `step` in TypeScript: `.def { n = n >= 9 ? 0 : n + 1 }`. Same behaviour.
 
 ## SAPI steps
 
@@ -54,40 +59,71 @@ The analyzer reports conditions in a chain that can never run.
 
 ## TypeScript bodies
 
-Inside `{ }` you write TypeScript. LAYR state reads and writes like plain variables, and LAYR literals work: `200ds`, `12px`, `300ms`, `#ff0000`, `await 100ms`.
+Inside `{ }` you write TypeScript. LAYR state reads and writes like plain variables, and LAYR literals work too: `200ds`, `12px`, `300ms`, `#ff0000`, and `await 100ms` to wait.
 
 ```layr
 Page(
   .name(Pulse)
+  .route('/')
   var bool on = false
   Function(
     .name(blink)
     .def {
-      for (let i = 0; i < 3; i++) {
+      for (let i = 0; i < 6; i++) {
         on = !on
         await 200ms
       }
     }
   )
   Scaffold(
-    .body(Button(.preset(default) .config(label: on ? 'On' : 'Off') .fnc(blink)))
+    .config(color: canvas)
+    .body(Row(
+      .config(gap: 16, padding: all(24), yAlign: mid)
+      Container(
+        .config(size: 40, color: on ? accent : sunken, cornerRadius: 999)
+      )
+      Button(.preset(default) .config(label: 'Blink three times') .fnc(blink))
+    ))
   )
 )
 ```
+
+> **Try it**
+> - Change `200ms` to `60ms`.
+> - Wrap the circle in `Animate(...)` (see [Animation](/docs/animation)) so each change fades instead of snapping.
 
 Writing another object's feature (`card.w = 360`) is an imperative [Inject](/docs/export-extract-inject).
 
 ## Events
 
-`.fnc(action)` runs the widget's **primary action**: a Button or Link press, an Input/Toggle/Select/Slider change (the new value is `value`), a Form submit. `.on(event: action)` handles the rest:
+`.fnc(action)` runs the widget's **primary action**: a Button or Link press, an Input, Toggle, Select or Slider change (the new value is `value`), a Form submit. `.on(event: action)` handles the rest:
 
 ```layr
-Container(
-  .config(size: 80, color: #ff6a3d)
-  .on(
-    hover: { print('in') }
-    hoverEnd: { print('out') }
-    mount: { print('shown') }
+Page(
+  .name(Hover)
+  .route('/')
+  var bool over = false
+  var int taps = 0
+  Scaffold(
+    .config(color: canvas)
+    .body(Column(
+      .config(gap: 12, padding: all(24))
+      Container(
+        .config(
+          w: 220
+          .border(color: line, width: 1)
+          color: over ? accent : panel
+          cornerRadius: 14
+          padding: all(20)
+        )
+        .on(hover: { over = true }, hoverEnd: { over = false }, tap: { taps++ })
+        .obj(Text(
+          .config(color: over ? onAccent : ink)
+          .obj(over ? 'Pointer inside' : 'Point at me')
+        ))
+      )
+      Text(.config(color: muted) .obj('Tapped $taps times'))
+    ))
   )
 )
 ```

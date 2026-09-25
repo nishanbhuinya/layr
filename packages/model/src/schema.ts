@@ -195,7 +195,7 @@ export const WIDGETS: readonly WidgetDef[] = [
     tag: "div",
     layout: "box",
     events: EVENTS,
-    example: "Container(\n  .config(\n    w: 200\n    h: 120\n    color: #0d0d0d\n    cornerRadius: 16\n  )\n  .obj(Text('Hello'))\n)",
+    example: "Container(\n  .config(\n    w: 200\n    h: 120\n    color: #1c1917\n    cornerRadius: 16\n    objAlign: mid\n  )\n  .obj(Text(.config(color: white) .obj('Hello')))\n)",
   },
   {
     name: "Row",
@@ -207,7 +207,7 @@ export const WIDGETS: readonly WidgetDef[] = [
     tag: "div",
     layout: "row",
     events: EVENTS,
-    example: "Row(.config(gap: 12, yAlign: mid), Icon('star'), Text('Starred'))",
+    example: "Row(.config(gap: 8, yAlign: mid), Text('★'), Text('Starred'))",
   },
   {
     name: "Column",
@@ -232,7 +232,7 @@ export const WIDGETS: readonly WidgetDef[] = [
     tag: "div",
     layout: "stack",
     events: EVENTS,
-    example: "Stack(\n  Container(.config(size: 200, color: #111))\n  Position(.config(x: 16, y: 16) .obj(Text('Badge')))\n)",
+    example: "Stack(\n  Container(.config(size: 200, cornerRadius: 16, color: #1c1917))\n  Position(.config(x: 16, y: 16) .obj(Text(.config(color: white) .obj('Badge'))))\n)",
   },
   {
     name: "Position",

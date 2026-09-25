@@ -65,7 +65,7 @@ Widget(
           Row(
             .config(gap: 20, yAlign: mid)
             Button(
-              .config(className: 'foot-link')
+              .config(className: 'foot-link foot-privacy')
               .fnc { window.layrPrivacySettings?.() }
               .obj(Text(.config(size: 13, color: faint) .obj('Privacy settings')))
             )

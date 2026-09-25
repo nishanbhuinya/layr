@@ -11,19 +11,19 @@ An addon is an npm package of LAYR widgets. Core LAYR holds meaning and mechanic
 ## Use an addon
 
 ```sh
-npx layr add kit
+npx layr add google_fonts
 npx layr add @someone/layr-glass@^1.2.0
 ```
 
 `layr add` resolves the addon (by its LAYR id through the [Library](/library), or by npm name), checks that it supports your LAYR version, installs it with your package manager and records it in `layr.yaml`. Then import its widgets:
 
 ```layr noexec
-import { Card, PrimaryButton } from '@dynshift/layr-kit'
+import { GoogleFonts } from '@dynshift/layr-google-fonts'
 
 Page(
   .name(Home)
   Scaffold(
-    .body(Card(.config(title: 'Hello') .obj(PrimaryButton(.config(label: 'Go')))))
+    .body(Text(.config(size: 40, font: GoogleFonts.Fraunces) .obj('Hello')))
   )
 )
 ```

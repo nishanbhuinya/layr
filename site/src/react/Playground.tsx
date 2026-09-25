@@ -3,66 +3,12 @@
  * resizable viewport, with the compiled CSS and React module and every diagnostic beside it. The
  * code lives in the URL hash, so a link is a share.
  */
-import { history as editHistory, defaultKeymap, historyKeymap, indentWithTab } from "@codemirror/commands";
-import { bracketMatching, HighlightStyle, indentOnInput, StreamLanguage, syntaxHighlighting } from "@codemirror/language";
-import { type Diagnostic as CmDiagnostic, linter, lintGutter } from "@codemirror/lint";
-import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
-import { EditorState } from "@codemirror/state";
-import { drawSelection, EditorView, highlightActiveLine, highlightActiveLineGutter, keymap, lineNumbers } from "@codemirror/view";
-import { tags as t } from "@lezer/highlight";
-import { ArrowCounterClockwise, Check, Info, MagicWand, ShareNetwork, Warning, WarningCircle } from "@phosphor-icons/react/ssr";
+import type { EditorView } from "@codemirror/view";
+import { ArrowCounterClockwise, Check, Info, MagicWand, Play, ShareNetwork, Warning, WarningCircle } from "@phosphor-icons/react/ssr";
 import examples from "virtual:site/examples";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { type Compiled, loadCompiler } from "../lib/runner.ts";
+import { type Compiled, compile, loadCompiler } from "../lib/runner.ts";
 import { FrameChips, useRunner, Viewport } from "./stage.tsx";
-
-// ------------------------------------------------------------------ the LAYR language for CodeMirror
-
-const KEYWORDS = new Set(["var", "const", "bind", "req", "import", "from", "export", "true", "false", "null", "if", "else", "return", "await", "let", "for", "while"]);
-
-const layrLanguage = StreamLanguage.define<{ block: number }>({
-  name: "layr",
-  startState: () => ({ block: 0 }),
-  token(stream, state) {
-    if (stream.eatSpace()) return null;
-    if (stream.match("//")) {
-      stream.skipToEnd();
-      return "comment";
-    }
-    if (stream.match("/*")) {
-      while (!stream.eol() && !stream.match("*/")) stream.next();
-      return "comment";
-    }
-    if (stream.match(/^'(?:[^'\\]|\\.)*'?/) || stream.match(/^"(?:[^"\\]|\\.)*"?/)) return "string";
-    if (stream.match(/^#[0-9a-fA-F]{3,8}\b/)) return "color";
-    if (stream.match(/^!mut\b/)) return "keyword";
-    if (stream.match(/^\d+(\.\d+)?(ds|px|%|fr|ms|s|deg|vw|vh|dvh)?/)) return "number";
-    if (stream.match(/^\.[a-zA-Z_]\w*/)) return "modifier";
-    if (stream.match(/^[A-Z]\w*/)) return "widget";
-    if (stream.match(/^[a-z_]\w*(?=\s*:)/)) return "property";
-    const w = stream.match(/^[a-z_$][\w$]*/) as RegExpMatchArray | null;
-    if (w) return KEYWORDS.has(w[0]) ? "keyword" : "variable";
-    if (stream.match(/^[{}]/)) {
-      state.block += stream.current() === "{" ? 1 : -1;
-      return "brace";
-    }
-    stream.next();
-    return "punctuation";
-  },
-  tokenTable: { widget: t.typeName, modifier: t.function(t.propertyName), property: t.propertyName, color: t.color, brace: t.brace },
-});
-
-const layrHighlight = HighlightStyle.define([
-  { tag: t.keyword, color: "var(--code-keyword)" },
-  { tag: t.comment, color: "var(--code-comment)", fontStyle: "italic" },
-  { tag: t.string, color: "var(--code-string)" },
-  { tag: [t.number, t.color], color: "var(--code-constant)" },
-  { tag: t.typeName, color: "var(--code-function)" },
-  { tag: t.function(t.propertyName), color: "var(--code-type)" },
-  { tag: t.propertyName, color: "var(--code-param)" },
-  { tag: t.variableName, color: "var(--code-fg)" },
-  { tag: [t.punctuation, t.brace], color: "var(--code-punct)" },
-]);
 
 // ------------------------------------------------------------------ sharing through the URL
 
@@ -98,10 +44,16 @@ export function Playground() {
   const [h, setH] = useState(0);
   const [shared, setShared] = useState(false);
   const [example, setExample] = useState<string>(examples[0]?.id ?? "");
+  /** On a narrow screen one pane shows at a time. */
+  const [pane, setPane] = useState<"code" | "preview">("code");
+  // `code` is what runs (set by Run, Ctrl+S or picking an example); `pending` is the editor's text,
+  // compiled as you type for its diagnostics only.
   const run = useRunner(code, true);
-  const compiled: Compiled | null = run.compiled;
+  const [linted, setLinted] = useState<Compiled | null>(null);
+  const compiled: Compiled | null = linted ?? run.compiled;
   const lintRef = useRef<Compiled | null>(null);
   lintRef.current = compiled;
+  const edited = pending !== code;
 
   // Load shared code from the hash.
   useEffect(() => {
@@ -117,57 +69,57 @@ export function Playground() {
       .catch(() => {});
   }, []);
 
-  // The editor.
+  // The editor (CodeMirror loads with it, not with the page).
+  const pendingRef = useRef(pending);
+  pendingRef.current = pending;
   useEffect(() => {
-    if (!host.current) return;
-    const v = new EditorView({
-      parent: host.current,
-      state: EditorState.create({
-        doc: pending,
-        extensions: [
-          lineNumbers(),
-          highlightActiveLineGutter(),
-          editHistory(),
-          drawSelection(),
-          indentOnInput(),
-          bracketMatching(),
-          highlightActiveLine(),
-          highlightSelectionMatches(),
-          layrLanguage,
-          syntaxHighlighting(layrHighlight),
-          lintGutter(),
-          linter(
-            () => {
-              const c = lintRef.current;
-              if (!c) return [];
-              const doc = v.state.doc;
-              return c.diagnostics
-                .filter((d) => d.severity !== "info")
-                .map((d): CmDiagnostic => {
-                  const from = Math.min(d.span.start, doc.length);
-                  return { from, to: Math.max(from, Math.min(d.span.end, doc.length)), severity: d.severity === "error" ? "error" : "warning", message: `${d.code}: ${d.message}` };
-                });
-            },
-            { delay: 350 },
-          ),
-          keymap.of([indentWithTab, ...defaultKeymap, ...historyKeymap, ...searchKeymap]),
-          EditorView.updateListener.of((u) => {
-            if (u.docChanged) setPending(u.state.doc.toString());
-          }),
-          EditorView.contentAttributes.of({ "aria-label": "LAYR source" }),
-        ],
-      }),
+    let alive = true;
+    let v: EditorView | null = null;
+    void import("../lib/editor.ts").then(({ createEditor }) => {
+      if (!alive || !host.current) return;
+      v = createEditor({ parent: host.current, doc: pendingRef.current, onChange: setPending, onRun: () => runRef.current(), lint: () => lintRef.current });
+      view.current = v;
     });
-    view.current = v;
-    return () => v.destroy();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => {
+      alive = false;
+      v?.destroy();
+    };
   }, []);
 
-  // Compile as you type, after a short pause.
+  // Check as you type, after a short pause; running waits for Run.
   useEffect(() => {
-    const id = setTimeout(() => setCode(pending), 300);
-    return () => clearTimeout(id);
+    let alive = true;
+    const id = setTimeout(() => {
+      void compile(pending).then((c) => {
+        if (alive) setLinted(c);
+      });
+    }, 300);
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
   }, [pending]);
+
+  const runNow = useCallback(() => {
+    const text = view.current?.state.doc.toString() ?? pending;
+    if (text === code) run.rerun();
+    else setCode(text);
+    setPane("preview");
+  }, [pending, code, run.rerun]);
+  const runRef = useRef(runNow);
+  runRef.current = runNow;
+
+  // Ctrl+S / Cmd+S runs, wherever the focus is on the page.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        runRef.current();
+      }
+    };
+    addEventListener("keydown", onKey);
+    return () => removeEventListener("keydown", onKey);
+  }, []);
 
   useEffect(() => {
     const el = stageBox.current;
@@ -212,9 +164,22 @@ export function Playground() {
     v.focus();
   };
 
+  const runErrors = run.compiled?.errors ?? 0;
+  const mac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.platform);
+
   return (
-    <div className="play">
-      <section aria-label="Editor">
+    <div className="play" data-pane={pane}>
+      <div className="play-switch" role="tablist" aria-label="Show">
+        <button type="button" role="tab" aria-selected={pane === "code"} onClick={() => setPane("code")}>
+          Code
+          {errors ? <span className="count" data-err="">{errors}</span> : null}
+        </button>
+        <button type="button" role="tab" aria-selected={pane === "preview"} onClick={() => (edited ? runNow() : setPane("preview"))}>
+          Preview
+          {edited ? <span className="play-dot" title="Edited since the last run" /> : null}
+        </button>
+      </div>
+      <section aria-label="Editor" className="play-code">
         <div className="play-bar">
           <select
             aria-label="Examples"
@@ -234,18 +199,25 @@ export function Playground() {
           </select>
           <span className="spacer" />
           <button type="button" className="play-btn" onClick={() => void format()} title="Rewrite in canonical form (layr format)">
-            <MagicWand size={15} /> Format
+            <MagicWand size={15} /> <span className="play-btn-text">Format</span>
           </button>
           <button type="button" className="play-btn" onClick={() => load((examples.find((x: { id: string }) => x.id === example) ?? examples[0])?.code ?? "")} title="Back to the example">
-            <ArrowCounterClockwise size={15} /> Reset
+            <ArrowCounterClockwise size={15} /> <span className="play-btn-text">Reset</span>
           </button>
-          <button type="button" className="play-btn primary" onClick={() => void share()}>
-            {shared ? <Check size={15} /> : <ShareNetwork size={15} />} {shared ? "Link copied" : "Share"}
+          <button type="button" className="play-btn" onClick={() => void share()} title="Copy a link that carries this code">
+            {shared ? <Check size={15} /> : <ShareNetwork size={15} />} <span className="play-btn-text">{shared ? "Link copied" : "Share"}</span>
+          </button>
+          <button type="button" className="play-btn primary play-run" onClick={runNow} title={`Run (${mac ? "⌘" : "Ctrl"}+S)`} data-edited={edited ? "" : undefined}>
+            <Play size={14} weight="fill" /> Run
+            <span className="play-keys" aria-hidden="true">
+              <kbd>{mac ? "⌘" : "Ctrl"}</kbd>
+              <kbd>S</kbd>
+            </span>
           </button>
         </div>
         <div className="play-editor" ref={host} />
       </section>
-      <section aria-label="Output">
+      <section aria-label="Output" className="play-output">
         <div className="play-bar" role="tablist" aria-label="Output">
           {(
             [
@@ -269,9 +241,9 @@ export function Playground() {
         </div>
         <div className="play-out" ref={stageBox} hidden={tab !== "preview"}>
           <Viewport frame={run.frame} onLoad={run.onLoad} ready={run.ready} visible stageW={room} contentH={run.height} w={w} h={h} setW={setW} setH={setH} maxShownH={4000} fillHeight={paneH}>
-            {errors ? (
+            {runErrors ? (
               <p className="live-error">
-                {errors} error{errors === 1 ? "" : "s"}: the preview shows the last version that compiled. See Problems.
+                {runErrors} error{runErrors === 1 ? "" : "s"}: the preview shows the last version that compiled. See Problems.
               </p>
             ) : run.runtimeError ? (
               <p className="live-error">{run.runtimeError}</p>

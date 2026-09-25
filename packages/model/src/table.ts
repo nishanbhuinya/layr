@@ -54,5 +54,24 @@ export function runtimeWidget(name: string): { name: string; tag: string; layout
   return row && canonical ? { name: canonical, tag: row[0], layout: row[1] } : undefined;
 }
 
+/**
+ * Slot names per widget, the default slot first: `Inject(... text.obj = 'Shipped')` targets one as
+ * a feature. Positional values (`Gap(20)`, `Icon('star')`) are not slots. Kept equal to the schema by a test.
+ */
+export const SLOTS: Record<string, readonly string[]> = {
+  Container: ["obj"], Row: ["objs"], Column: ["objs"], Stack: ["objs"], Position: ["obj"], Order: ["obj"], Mid: ["obj"], Align: ["obj"],
+  Expand: ["obj"], Wrap: ["objs"], Grid: ["objs"], Scroll: ["obj"], Aspect: ["obj"], SafeArea: ["obj"], Adapt: ["objs"],
+  Scaffold: ["body", "bar", "footer"], Text: ["obj"], Span: ["objs"], Blur: ["obj"], Mask: ["objs"], Subtract: ["objs"], Clip: ["obj"],
+  Filter: ["obj"], Button: ["obj"], Link: ["obj"], Form: ["objs"], Overlay: ["obj"], Focus: ["obj"], Animate: ["obj"],
+};
+
+/** The slot a widget's feature name addresses: `obj`/`objs` name the default slot; named slots name themselves. */
+export function slotKey(widgetName: string, name: string): string | null {
+  const slots = SLOTS[RUNTIME_TABLE[widgetName] ? widgetName : (ALIAS[widgetName] ?? "")];
+  if (!slots) return null;
+  if (name === "obj" || name === "objs") return slots[0] as string;
+  return slots.includes(name) ? name : null;
+}
+
 /** The event `.fnc` binds for widgets whose primary action is not `press` (kept equal to the schema by a test). */
 export const PRIMARY_ACTIONS: Record<string, string> = { Input: "change", Toggle: "change", Select: "change", Slider: "change", Form: "submit" };

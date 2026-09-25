@@ -179,21 +179,78 @@ const LABELS: Record<Token, string> = {
   accent: "Accent and links",
   action: "Buttons",
   onAccent: "Button labels",
-  ember: "Light: ember",
-  gold: "Light: gold",
-  teal: "Light: teal",
-  violet: "Light: violet",
+  ember: "Ember",
+  gold: "Gold",
+  teal: "Teal",
+  violet: "Violet",
   danger: "Errors",
   warn: "Warnings",
 };
+
+const GROUPS: Array<{ name: string; tokens: Token[] }> = [
+  { name: "Surfaces", tokens: ["canvas", "panel", "sunken", "line", "lineStrong"] },
+  { name: "Text", tokens: ["ink", "muted", "faint"] },
+  { name: "Accent", tokens: ["accent", "action", "onAccent"] },
+  { name: "Highlights and signals", tokens: ["ember", "gold", "teal", "violet", "danger", "warn"] },
+];
+
+function TokenRow({ token, value, onSet }: { token: Token; value: string; onSet: (t: Token, v: string) => void }) {
+  return (
+    <div className="custom-row">
+      <label className="custom-chip" style={{ background: value }}>
+        <input type="color" value={value} onChange={(e) => onSet(token, e.target.value)} aria-label={LABELS[token]} />
+      </label>
+      <span className="custom-name">{LABELS[token]}</span>
+      <input
+        className="custom-hex"
+        type="text"
+        size={7}
+        defaultValue={value}
+        key={value}
+        spellCheck={false}
+        onBlur={(e) => onSet(token, e.target.value.trim())}
+        onKeyDown={(e) => e.key === "Enter" && onSet(token, (e.target as HTMLInputElement).value.trim())}
+        aria-label={`${LABELS[token]}, hex`}
+      />
+    </div>
+  );
+}
+
+/** A small page in the palette being edited, so every choice is judged in place. */
+function Specimen({ c }: { c: Colors }) {
+  return (
+    <div className="specimen" style={{ background: c.canvas, borderColor: c.line }}>
+      <div className="specimen-card" style={{ background: c.panel, borderColor: c.line }}>
+        <b style={{ color: c.ink }}>Order 1042</b>
+        <span style={{ color: c.muted }}>Two items, ships Monday</span>
+        <span style={{ color: c.faint }}>Updated 2 min ago</span>
+        <div className="specimen-well" style={{ background: c.sunken, borderColor: c.lineStrong }}>
+          <i style={{ background: c.ember }} />
+          <i style={{ background: c.gold }} />
+          <i style={{ background: c.teal }} />
+          <i style={{ background: c.violet }} />
+          <span style={{ color: c.danger }}>1 error</span>
+          <span style={{ color: c.warn }}>2 warnings</span>
+        </div>
+        <div className="specimen-actions">
+          <span className="specimen-btn" style={{ background: c.action, color: c.onAccent }}>
+            Track order
+          </span>
+          <span style={{ color: c.accent }}>View receipt</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function CustomEditor({ start, scheme: scheme0, onChange, onSave, onBack }: { start: Colors; scheme: "light" | "dark"; onChange: (c: Colors, s: "light" | "dark") => void; onSave: (c: Colors, s: "light" | "dark") => void; onBack: () => void }) {
   const [colors, setColors] = useState<Colors>(start);
   const [scheme, setScheme] = useState<"light" | "dark">(scheme0);
   useEffect(() => onChange(colors, scheme), [colors, scheme, onChange]);
-  const set = (t: Token, v: string) => {
-    if (/^#[0-9a-f]{6}$/i.test(v)) setColors((c) => ({ ...c, [t]: v.toLowerCase() }));
-  };
+  const set = useCallback((t: Token, v: string) => {
+    const hex = v.startsWith("#") ? v : `#${v}`;
+    if (/^#[0-9a-f]{6}$/i.test(hex)) setColors((c) => ({ ...c, [t]: hex.toLowerCase() }));
+  }, []);
   const results = CHECKS.map((c) => ({ ...c, ratio: contrast(colors[c.fg], colors[c.bg]) }));
   const bad = results.filter((r) => r.ratio < r.min);
   return (
@@ -210,27 +267,32 @@ function CustomEditor({ start, scheme: scheme0, onChange, onSave, onBack }: { st
           ))}
         </div>
       </div>
-      <div className="custom-grid">
-        {TOKENS.map((t) => (
-          <label key={t} className="custom-row">
-            <input type="color" value={colors[t]} onChange={(e) => set(t, e.target.value)} aria-label={LABELS[t]} />
-            <span>{LABELS[t]}</span>
-            <input type="text" defaultValue={colors[t]} key={colors[t]} spellCheck={false} onBlur={(e) => set(t, e.target.value.trim())} onKeyDown={(e) => e.key === "Enter" && set(t, (e.target as HTMLInputElement).value.trim())} aria-label={`${LABELS[t]}, hex`} />
-          </label>
-        ))}
+      <div className="custom-body">
+        <div className="custom-tokens">
+          {GROUPS.map((g) => (
+            <section key={g.name} className="custom-group">
+              <h3>{g.name}</h3>
+              {g.tokens.map((t) => (
+                <TokenRow key={t} token={t} value={colors[t]} onSet={set} />
+              ))}
+            </section>
+          ))}
+        </div>
+        <aside className="custom-side">
+          <Specimen c={colors} />
+          <ul className="contrast" aria-label="Readability">
+            {results.map((r) => (
+              <li key={r.what} data-ok={r.ratio >= r.min ? "" : undefined} data-bad={r.ratio < 3 ? "" : undefined} title={r.ratio >= r.min ? "Readable" : r.ratio < 3 ? "Unreadable" : `Needs ${r.min}:1`}>
+                {r.ratio >= r.min ? <Check size={14} weight="bold" /> : r.ratio < 3 ? <WarningCircle size={14} weight="fill" /> : <Warning size={14} weight="fill" />}
+                <span>{r.what}</span>
+                <b>{r.ratio.toFixed(1)}:1</b>
+              </li>
+            ))}
+          </ul>
+        </aside>
       </div>
-      <ul className="contrast" aria-label="Readability">
-        {results.map((r) => (
-          <li key={r.what} data-ok={r.ratio >= r.min ? "" : undefined} data-bad={r.ratio < 3 ? "" : undefined}>
-            {r.ratio >= r.min ? <Check size={14} weight="bold" /> : r.ratio < 3 ? <WarningCircle size={14} weight="fill" /> : <Warning size={14} weight="fill" />}
-            <span>{r.what}</span>
-            <b>{r.ratio.toFixed(1)}:1</b>
-            <em>{r.ratio >= r.min ? "readable" : r.ratio < 3 ? "unreadable" : `needs ${r.min}:1`}</em>
-          </li>
-        ))}
-      </ul>
       <div className="custom-foot">
-        <span>{bad.length ? `${bad.length} pairing${bad.length === 1 ? "" : "s"} will be hard to read.` : "Every pairing is readable."}</span>
+        <span data-bad={bad.length ? "" : undefined}>{bad.length ? `${bad.length} pairing${bad.length === 1 ? "" : "s"} will be hard to read.` : "Every pairing is readable."}</span>
         <button type="button" className="play-btn primary" onClick={() => onSave(colors, scheme)}>
           Use this theme
         </button>

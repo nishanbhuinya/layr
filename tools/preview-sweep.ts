@@ -15,6 +15,8 @@ const page = await ctx.newPage();
 
 async function links(path: string, prefix: string): Promise<string[]> {
   await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+  // Index pages render their lists on the client.
+  await page.waitForFunction((pre) => [...document.querySelectorAll("a[href]")].some((a) => (a as HTMLAnchorElement).pathname.startsWith(pre)), prefix, { timeout: 15000 }).catch(() => {});
   const hrefs = await page.$$eval("a[href]", (as) => as.map((a) => (a as HTMLAnchorElement).pathname));
   return [...new Set(hrefs.filter((h) => h.startsWith(prefix) && h !== prefix))];
 }
@@ -26,7 +28,9 @@ async function sweep(p: Page, path: string): Promise<string[]> {
   const n = await p.locator(".live-box").count();
   for (let i = 0; i < n; i++) await p.locator(".live-box").nth(i).scrollIntoViewIfNeeded();
   if (!n) return [];
-  await p.waitForTimeout(2500);
+  // Every preview has either rendered or shown an error (the dev server can take a few seconds).
+  await p.waitForFunction(() => !document.querySelector(".live-clip[data-loading]"), null, { timeout: 45000 }).catch(() => {});
+  await p.waitForTimeout(800);
   return p.$$eval(".live-box", (boxes) =>
     boxes.flatMap((b, i) => {
       const err = b.querySelector(".live-error")?.textContent;

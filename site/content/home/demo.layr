@@ -1,33 +1,7 @@
-// A studio booking page, the one in the home page's hero. Its App carries its own theme, so the
-// file runs as is in the playground. Resize the window: the row stacks when a pane would be
-// squeezed, the chips wrap and every number scales, with no media queries written here.
-App(
-  .theme(Theme(
-    .colors(
-      canvas: #f4efe7
-      panel: #fffcf7
-      sunken: #efe8dd
-      line: #e4dbcd
-      lineStrong: #cdc1af
-      ink: #1c1917
-      muted: #625a50
-      accent: #c93f12
-      onAccent: #ffffff
-    )
-    .dark(
-      canvas: #121110
-      panel: #1a1816
-      sunken: #221f1c
-      line: #2e2a26
-      lineStrong: #433d37
-      ink: #f3ede6
-      muted: #b0a79d
-      accent: #ff6a3d
-      onAccent: #ffffff
-    )
-  ))
-)
-
+// A studio booking page, the one in the home page's hero. Its colours are theme tokens (canvas,
+// panel, ink, accent…), so it wears whichever theme you pick for this site. Resize the window: the
+// row stacks when a pane would be squeezed, the chips wrap and every number scales, with no media
+// queries written here.
 Widget(
   .name(DayBar)
   .param(req txt day, req num load)

@@ -43,6 +43,10 @@ jobs:
         run: |
           mkdir -p out
           (cd "addons/${{ steps.a.outputs.dir }}" && pnpm pack --pack-destination ../../out)
+          name="$(node -p "require('./addons/${{ steps.a.outputs.dir }}/package.json').name")"
+          # A package's first version is published by hand (npm can only trust a workflow for a
+          # package that exists); its tag then finds the version already there.
+          if npm view "$name@${{ steps.a.outputs.version }}" version >/dev/null 2>&1; then echo "$name@${{ steps.a.outputs.version }} is already on npm"; exit 0; fi
           npm publish out/*.tgz --provenance --access public --tag ${{ steps.a.outputs.dist }}
       - name: Rebuild the site
         env:

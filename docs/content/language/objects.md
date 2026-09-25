@@ -6,111 +6,171 @@ order: 11
 
 # Objects
 
-Everything on screen is an **object**: a widget with config and children.
+Everything on screen is an **object**: a widget, its **config** (how it looks and sizes), and its **children** (what is inside it). This page takes those three parts one at a time.
 
-## Config
+## Config and children
 
-`.config(...)` holds keys. Dimensions come first, then keys in alphabetical order (the formatter keeps this order):
+`.config(...)` sets the object's features. `.obj(...)` holds the one object inside it.
 
 ```layr
 Container(
   .config(
     w: 240
-    h: 120
-    color: #ff6a3d
+    .border(color: line, width: 1)
+    color: panel
     cornerRadius: 16
-    padding: all(16)
-    shadow: shadow(y: 4, blur: 12, color: black.alpha(20%))
+    padding: all(20)
   )
+  .obj(Text(.config(size: 17, weight: semibold) .obj('A card, 240 wide')))
 )
 ```
 
-Some keys group naturally:
+Every number is in design pixels. `padding: all(20)` is space on all four sides inside the edge; `.border(...)` is a **group**, several related keys written together.
 
-```layr
-Container(.config(size: 120, .border(align: in, color: #0d0d0d, width: 2)))
-```
+> **Try it**
+> - Change `all(20)` to `sym(x: 40, y: 8)`: 40 on the left and right, 8 above and below.
+> - Change `cornerRadius: 16` to `cornerRadius: 999`: fully round ends.
+> - Delete `w: 240`: the card now *hugs* its text, the default for every object.
 
-Every widget's keys, with types, defaults and aliases, are in the [API reference](/api).
+The formatter keeps config in one order, sizes first (`w`, `h`, `size`, the `min`/`max` keys), then the rest alphabetically, so every file reads the same. Every widget's keys, with types and defaults, are in the [API reference](/api).
 
-## Children and slots
+## Slots: where children go
 
-`.obj(x)` is the default slot for one child; `.objs(a, b)` for several. Positional children go into the default slot. Some widgets have named slots:
+A widget with several places for children names them. `Scaffold`, the screen, has a `.bar` on top, a `.body` that scrolls, and a `.footer`. Each band below says which slot it is in:
 
 ```layr
 Page(
   .name(Slots)
+  .route('/')
   Scaffold(
-    .bar(Row(.config(padding: all(12)) Text('Header')))
-    .body(Column(Text('One'), Text('Two')))
-    .footer(Text('Footer'))
+    .config(color: canvas)
+    .bar(Row(
+      .config(w: fill, color: sunken, padding: all(14))
+      Text(.config(weight: semibold) .obj('.bar'))
+    ))
+    .body(Column(
+      .config(w: fill, gap: 8, padding: all(20))
+      Text('.body: the page content')
+      Text(
+        .config(color: muted)
+        .obj('It scrolls when it is taller than the screen.')
+      )
+    ))
+    .footer(Row(
+      .config(w: fill, color: sunken, padding: all(14))
+      Text(.config(color: muted) .obj('.footer'))
+    ))
   )
 )
 ```
 
+`.obj(x)` is the default slot for one child and `.objs(a, b)` the list form. Children written straight into the call (`Column(Text('One'), Text('Two'))`) go into the default slot.
+
+> **Try it**
+> - Remove the whole `.footer(...)` line: the body takes its space.
+> - Add a third `Text('More')` to the body.
+
 ## Identity: `.id`
 
-`.id(name)` names an object. Ids are unique within a Page or Widget, and are how other code reads and changes the object (see [Export, Extract and Inject](/docs/export-extract-inject)):
+`.id(name)` names an object. An id is unique inside its Page or Widget, and it is how other code reaches the object: `Slots.card` from any file, to read or change it with [Export, Extract and Inject](/docs/export-extract-inject).
 
-```layr
-Container(.id(card) .config(w: 200, h: 100, color: #ff6a3d))
+```layr noexec
+Container(.id(card) .config(w: 200, color: panel, padding: all(16)))
 ```
 
-## Presets
+Objects without an id are still reachable by their **lookup path**, one `.` per level (`Slots.scaffold.body.column.text(1)`). Ids survive edits that would change a path.
 
-A preset is a named bundle of config for a widget:
+## Presets: a name for a look
+
+A preset is a named bundle of config for one widget. Define it once, use it anywhere:
 
 ```layr
 Preset(
   .name(pill)
   .for(Button)
-  .config(padding: sym(x: 16, y: 8), cornerRadius: 999, color: #ff6a3d)
+  .config(
+    padding: sym(x: 16, y: 8)
+    cornerRadius: 999
+    color: sunken
+    .border(color: lineStrong, width: 1)
+  )
 )
 
 Page(
   .name(Buttons)
+  .route('/')
   Scaffold(
+    .config(color: canvas)
     .body(Row(
+      .config(gap: 12, padding: all(24))
       Button(.preset(pill) .config(label: 'Save'))
+      Button(.preset(pill) .config(label: 'Share'))
       Button(.preset(default) .config(label: 'Cancel'))
     ))
   )
 )
 ```
 
-`.preset(default)` gives interactive widgets a neutral, accessible look. Core widgets are otherwise unstyled; styled kits come as [addons](/docs/addons).
+Config written on the object wins over its preset: `Button(.preset(pill) .config(color: accent))` keeps the pill shape with an accent fill. `.preset(default)` is LAYR's neutral, accessible look for interactive widgets; core widgets are otherwise unstyled.
+
+> **Try it**
+> - In the `Preset`, change `cornerRadius: 999` to `6`: all three pill buttons change together, `Cancel` does not.
 
 ## Per-frame config: `.at`
 
-`.at(frame, key: value…)` changes config at a [design frame](/docs/design-scale). The plain `.config` value belongs to the smallest frame; if `.at` sets that frame itself, the plain value starts at the next frame up (so `.config(size: 72) .at(m, size: 34)` means 34 on phones, 72 from tablets). Numbers given at several frames are interpolated between them; add `step` to switch at the frame boundary instead:
+`.at(frame, key: value)` changes config at a [design frame](/docs/design-scale): `m` (phone), `t` (tablet), `w` (desktop). The plain `.config` value is the one for phones.
 
 ```layr
 Container(
-  .config(w: 120, h: 40, color: #ff6a3d)
+  .config(w: 160, color: accent, padding: all(16))
   .at(w, w: 480)
-  .at(t, step h: 60)
+  .obj(Text(
+    .config(color: onAccent, weight: semibold)
+    .obj('160 on phones, 480 on desktop')
+  ))
 )
 ```
 
+Between frames the number is **interpolated**: at a tablet width it is part way between 160 and 480, so nothing jumps. Write `step` for a value that switches at the frame instead: `.at(t, step h: 60)`.
+
+> **Try it**
+> - Press **m**, **t** and **w** in the result bar and watch the width move.
+> - Add `.at(t, color: violet)`: colours cannot be part way, so they switch at the frame.
+
 ## Conditions and lists
 
-`If` shows one branch; `.fb(...)` is the fallback. `Each` repeats an object for every item:
+`If` shows one branch or the other (`.fb(...)` is the fallback). `Each` repeats an object for every item of a list:
 
 ```layr
 Page(
   .name(Lists)
+  .route('/')
   var bool showAll = false
-  const list<txt> names = ['Ada', 'Grace', 'Linus']
+  const list<txt> names = ['Ada', 'Grace', 'Linus', 'Margaret']
 
   Scaffold(
+    .config(color: canvas)
     .body(Column(
-      If(.cnd(showAll) .obj(Text('Everyone')) .fb(Text('Just a few')))
-      Each(.of(names) .as(name, i) .obj(Text('$i: $name')))
+      .config(gap: 10, padding: all(24))
+      Button(
+        .preset(default)
+        .config(label: showAll ? 'Show fewer' : 'Show everyone')
+        .fnc { showAll = !showAll }
+      )
+      If(
+        .cnd(showAll)
+        .obj(Each(.of(names) .as(name, i) .obj(Text('${i + 1}. $name'))))
+        .fb(Text(.config(color: muted) .obj('${names.length} people, hidden')))
+      )
     ))
   )
 )
 ```
 
+> **Try it**
+> - Add `'Barbara'` to the list and run: `Each` shows five without any other change.
+> - Swap the `.obj(...)` and `.fb(...)` contents: the condition now works the other way round.
+
 ## Accessibility
 
-`Text(.config(type: h1))` renders a real heading. Images need `alt` (or `decorative: true`), and inputs need a `label`; the compiler reports L6001 and L6002 otherwise. `.a11y(label: ..., role: ...)` sets accessible names and roles on any object.
+`Text(.config(type: h1))` renders a real heading. Images need `alt` (or `decorative: true`) and inputs need a `label`: the compiler reports L6001 and L6002 otherwise. `.a11y(label: ..., role: ...)` sets an accessible name and role on any object.

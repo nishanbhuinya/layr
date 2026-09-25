@@ -104,3 +104,6 @@ export function suggest(name: string, candidates: Iterable<string>, max = 3): st
     .slice(0, max)
     .map(([c]) => c);
 }
+
+/** JavaScript globals an expression may use as in TypeScript. */
+export const JS_GLOBALS = new Set(["Math", "JSON", "Number", "String", "Boolean", "Array", "Object", "Date", "Intl", "parseInt", "parseFloat", "isNaN", "isFinite", "encodeURIComponent", "decodeURIComponent", "Infinity", "NaN", "undefined"]);

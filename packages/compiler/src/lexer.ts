@@ -6,6 +6,7 @@ export type TokenKind =
   | "string"
   | "color" // #rgb #rgba #rrggbb #rrggbbaa
   | "block" // { raw TypeScript }
+  | "jsx" // <tag ...>...</tag>: a React element, raw (the parser reads its structure)
   | "punct"
   | "eof";
 
@@ -216,6 +217,18 @@ export function lex(text: string): LexResult {
       i = j;
       continue;
     }
+    if (c === "<" && /[A-Za-z>]/.test(text[i + 1] ?? "") && jsxCanStart(tokens, nl)) {
+      const end = scanJsx(text, i);
+      if (end < 0) {
+        diagnostics.push(err("L0006", "Unclosed JSX element: close it with `</tag>` or `/>`.", i, text.length));
+        push({ kind: "jsx", value: text.slice(i), span: { start, end: text.length } });
+        i = text.length;
+      } else {
+        push({ kind: "jsx", value: text.slice(i, end), span: { start, end } });
+        i = end;
+      }
+      continue;
+    }
     const p = PUNCT.find((op) => text.startsWith(op, i));
     if (p) {
       push({ kind: "punct", value: p, span: { start, end: i + p.length } });
@@ -262,6 +275,120 @@ export function scanBlock(text: string, open: number): number {
       i = end + 1;
     }
     i++;
+  }
+  return -1;
+}
+
+/** A `<` starts JSX where a value is expected: first on a line, or after `(` `,` `:` `?` `=` `[` `=>` `&&` `||` `??`. Elsewhere it is less-than. */
+function jsxCanStart(tokens: Token[], nl: boolean): boolean {
+  const prev = tokens[tokens.length - 1];
+  if (!prev || nl) return true;
+  return prev.kind === "punct" && ["(", ",", ":", "?", "=", "[", "=>", "&&", "||", "??", ";"].includes(prev.value);
+}
+
+const JSX_NAME = /^[A-Za-z_$][\w$.:-]*/;
+
+/** Skips a quoted string starting at `i`; returns the index after the closing quote, or -1. */
+function skipQuoted(text: string, i: number): number {
+  const q = text[i];
+  for (let j = i + 1; j < text.length; j++) {
+    if (text[j] === "\\") j++;
+    else if (text[j] === q) return j + 1;
+  }
+  return -1;
+}
+
+/** Skips a LAYR call `Name(...)` or `a.B(...)` inside JSX children; returns the index after `)`, or -1. */
+export function skipCall(text: string, i: number): number {
+  let j = text.indexOf("(", i);
+  let depth = 0;
+  for (; j < text.length; j++) {
+    const c = text[j];
+    if (c === "(") depth++;
+    else if (c === ")") {
+      depth--;
+      if (depth === 0) return j + 1;
+    } else if (c === "'" || c === '"' || c === "`") {
+      const e = skipQuoted(text, j);
+      if (e < 0) return -1;
+      j = e - 1;
+    } else if (c === "{") {
+      const e = scanBlock(text, j);
+      if (e < 0) return -1;
+      j = e;
+    } else if (c === "<" && /[A-Za-z>]/.test(text[j + 1] ?? "") && /[(,:?=[\s]/.test(text[j - 1] ?? "")) {
+      const e = scanJsx(text, j);
+      if (e < 0) return -1;
+      j = e - 1;
+    } else if (c === "/" && text[j + 1] === "/") {
+      while (j < text.length && text[j] !== "\n") j++;
+    }
+  }
+  return -1;
+}
+
+/** A LAYR object inside JSX children: `Name(` or `ns.Name(`, capitalised. */
+export const LAYR_IN_JSX = /^(?:[a-z_$][\w$]*\.)?[A-Z][\w$]*\(/;
+
+/**
+ * Given the index of `<`, returns the index just after the element's end (`/>` or its closing tag),
+ * or -1. Attribute values are strings or `{ }`; children are text, `{ }`, elements and LAYR objects.
+ */
+export function scanJsx(text: string, open: number): number {
+  let i = open + 1;
+  const name = text[i] === ">" ? "" : (JSX_NAME.exec(text.slice(i))?.[0] ?? "");
+  i += name.length;
+  // Attributes.
+  for (;;) {
+    while (/\s/.test(text[i] ?? "")) i++;
+    if (i >= text.length) return -1;
+    if (text.startsWith("/>", i)) return i + 2;
+    if (text[i] === ">") {
+      i++;
+      break;
+    }
+    if (text[i] === "{") {
+      const e = scanBlock(text, i);
+      if (e < 0) return -1;
+      i = e + 1;
+      continue;
+    }
+    const attr = /^[\w$:.-]+/.exec(text.slice(i))?.[0];
+    if (!attr) return -1;
+    i += attr.length;
+    while (/\s/.test(text[i] ?? "")) i++;
+    if (text[i] !== "=") continue;
+    i++;
+    while (/\s/.test(text[i] ?? "")) i++;
+    if (text[i] === '"' || text[i] === "'") {
+      i = skipQuoted(text, i);
+      if (i < 0) return -1;
+    } else if (text[i] === "{") {
+      const e = scanBlock(text, i);
+      if (e < 0) return -1;
+      i = e + 1;
+    } else return -1;
+  }
+  // Children, up to this element's closing tag.
+  while (i < text.length) {
+    if (text.startsWith("</", i)) {
+      const close = text.indexOf(">", i);
+      return close < 0 ? -1 : close + 1;
+    }
+    const c = text[i] as string;
+    if (c === "<" && /[A-Za-z>]/.test(text[i + 1] ?? "")) {
+      const e = scanJsx(text, i);
+      if (e < 0) return -1;
+      i = e;
+    } else if (c === "{") {
+      const e = scanBlock(text, i);
+      if (e < 0) return -1;
+      i = e + 1;
+    } else if (/[A-Za-z_$]/.test(c) && !/[\w$]/.test(text[i - 1] ?? "") && LAYR_IN_JSX.test(text.slice(i, i + 80))) {
+      const e = skipCall(text, i);
+      if (e < 0) return -1;
+      i = e;
+    } else i++;
   }
   return -1;
 }

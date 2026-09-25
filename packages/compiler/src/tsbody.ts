@@ -14,7 +14,7 @@ export type BindingKind =
 
 export interface BodyScope {
   /** Resolves a free identifier in the body. Returns null when unknown (left as is). */
-  lookup(name: string): { kind: BindingKind; code: string; address?: string } | null;
+  lookup(name: string): { kind: BindingKind; code: string; address?: string; key?: (prop: string) => string } | null;
 }
 
 export interface BodyResult {
@@ -230,7 +230,8 @@ export function rewriteBody(source: string, scope: BodyScope, mode: "statements"
         const b = root ? binding(root.name as string) : null;
         if (b?.kind === "object" && (left.object as AnyNode) === root) {
           visit(node.right as AnyNode, node, "right");
-          const prop = (left.property as AnyNode).name as string;
+          const raw = (left.property as AnyNode).name as string;
+          const prop = b.key ? b.key(raw) : raw;
           const rhs = text(node.right as AnyNode);
           const value = op === "=" ? rhs : `$.read(${JSON.stringify(b.address)}, ${JSON.stringify(prop)}) ${op.slice(0, -1)} (${rhs})`;
           result.writes.push({ address: b.address as string, key: prop, offset: left.start - offset });
@@ -252,7 +253,8 @@ export function rewriteBody(source: string, scope: BodyScope, mode: "statements"
         const root = rootIdent(arg);
         const b = root ? binding(root.name as string) : null;
         if (b?.kind === "object" && (arg.object as AnyNode) === root) {
-          const prop = (arg.property as AnyNode).name as string;
+          const raw = (arg.property as AnyNode).name as string;
+          const prop = b.key ? b.key(raw) : raw;
           result.writes.push({ address: b.address as string, key: prop, offset: arg.start - offset });
           const delta = node.operator === "++" ? "1" : "-1";
           ms.overwrite(node.start, node.end, `$.write(${JSON.stringify(b.address)}, ${JSON.stringify(prop)}, $.add($.read(${JSON.stringify(b.address)}, ${JSON.stringify(prop)}), ${delta}))`);
@@ -266,7 +268,8 @@ export function rewriteBody(source: string, scope: BodyScope, mode: "statements"
       if (obj.type === "Identifier") {
         const b = binding(obj.name as string);
         if (b?.kind === "object") {
-          const prop = (node.property as AnyNode).name as string;
+          const raw = (node.property as AnyNode).name as string;
+          const prop = b.key ? b.key(raw) : raw;
           result.reads.push({ address: b.address as string, key: prop, offset: obj.start - offset });
           ms.overwrite(node.start, node.end, `$.read(${JSON.stringify(b.address)}, ${JSON.stringify(prop)})`);
           return;

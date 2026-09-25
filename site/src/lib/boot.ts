@@ -3,3 +3,4 @@ import "@fontsource-variable/geist";
 import "@fontsource-variable/geist-mono";
 import "../site.css";
 import "./consent.ts";
+import "./reveal.ts";

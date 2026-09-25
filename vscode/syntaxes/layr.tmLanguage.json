@@ -53,6 +53,24 @@
     },
     "expression": {
       "patterns": [
+        {
+          "name": "meta.tag.jsx.layr",
+          "begin": "(<)([A-Za-z][\\w$.:-]*)",
+          "beginCaptures": { "1": { "name": "punctuation.definition.tag.begin.layr" }, "2": { "name": "entity.name.tag.layr" } },
+          "end": "(/?>)",
+          "endCaptures": { "1": { "name": "punctuation.definition.tag.end.layr" } },
+          "patterns": [
+            { "include": "#block" },
+            { "include": "#string" },
+            { "name": "entity.other.attribute-name.layr", "match": "[A-Za-z_$][\\w$:.-]*" },
+            { "name": "keyword.operator.assignment.layr", "match": "=" }
+          ]
+        },
+        {
+          "match": "(</)([A-Za-z][\\w$.:-]*)?(>)",
+          "captures": { "1": { "name": "punctuation.definition.tag.begin.layr" }, "2": { "name": "entity.name.tag.layr" }, "3": { "name": "punctuation.definition.tag.end.layr" } }
+        },
+        { "name": "punctuation.definition.tag.layr", "match": "<>" },
         { "include": "#string" },
         { "name": "constant.other.color.layr", "match": "#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\\b" },
         {

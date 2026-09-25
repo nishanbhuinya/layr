@@ -144,6 +144,27 @@ export interface Call extends Base {
   items: Item[];
   /** Trailing `{ ts }` directly after the call, e.g. `.fnc(calc) { ... }` is a Modifier; this is for `Foo(...) { }` (rare). */
   block: Block | null;
+  /**
+   * Set when this is a JSX element (`<div class="x">…</div>`) written in LAYR: the callee is the tag,
+   * `items` are its children (text as strings, `{ }` as blocks, elements and LAYR objects as calls).
+   */
+  jsx?: JsxInfo;
+}
+
+export interface JsxAttr {
+  /** `...` for a spread `{...props}`. */
+  name: string;
+  nameSpan: Span;
+  /** A string, a `{ }` block, or null for a bare boolean attribute. */
+  value: StringLit | Block | null;
+}
+
+export interface JsxInfo {
+  /** The tag as written: `div`, `Chart`, `motion.div`, or `` for a fragment `<>`. */
+  tag: string;
+  attrs: JsxAttr[];
+  /** The element's source, which the formatter keeps as written. */
+  raw: string;
 }
 
 export interface Unary extends Base {

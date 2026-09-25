@@ -63,7 +63,7 @@ export function Html({ html, className }: { html: string; className?: string }) 
         LIVE_ROOTS.set(el, mounted);
       }
       clearTimeout(mounted.unmount);
-      mounted.root.render(<Live code={decodeCode(el.dataset.run ?? "")} codeHtml={mounted.codeHtml} playground={el.dataset.play ?? "/playground"} />);
+      mounted.root.render(<Live code={decodeCode(el.dataset.run ?? "")} src={el.dataset.src ? decodeCode(el.dataset.src) : undefined} codeHtml={mounted.codeHtml} playground={el.dataset.play ?? "/playground"} />);
     }
     return () => {
       for (const el of els) {
@@ -85,9 +85,12 @@ export function Prose({ html }: { html: string }) {
   return <Html html={html} className="prose" />;
 }
 
-/** Build-time highlighted code without prose styling (reference pages, home sections). */
-export function Code({ html }: { html: string }) {
-  return <Html html={html} className="code-bare" />;
+/**
+ * Build-time highlighted code without prose styling (reference pages, home sections).
+ * `scroll` caps it at a height and scrolls the rest; `fit` takes only the height its row gives it.
+ */
+export function Code({ html, scroll, fit }: { html: string; scroll?: boolean; fit?: boolean }) {
+  return <Html html={html} className={`code-bare${scroll ? " code-scroll" : ""}${fit ? " code-fit" : ""}`} />;
 }
 
 /** The install command with a copy button. */

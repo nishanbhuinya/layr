@@ -50,7 +50,9 @@ jobs:
           mkdir -p out
           cd packages/layr && pnpm pack --pack-destination ../../out
       - name: Publish with provenance
-        run: npm publish out/*.tgz --provenance --access public --tag ${{ steps.v.outputs.dist }}
+        run: |
+          if npm view "@dynshift/layr@${{ steps.v.outputs.version }}" version >/dev/null 2>&1; then echo "@dynshift/layr@${{ steps.v.outputs.version }} is already on npm"; exit 0; fi
+          npm publish out/*.tgz --provenance --access public --tag ${{ steps.v.outputs.dist }}
       - name: GitHub release
         env:
           GH_TOKEN: ${{ github.token }}

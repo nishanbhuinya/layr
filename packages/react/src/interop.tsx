@@ -6,6 +6,7 @@
 import { lower } from "@layr-internal/model";
 import { type Layer, registry } from "@layr-internal/runtime";
 import { type ComponentType, createElement, type ReactNode, useEffect, useLayoutEffect, useRef } from "react";
+import { resolveOverrides, usePublish } from "./declared.ts";
 import { useTrack } from "./track.ts";
 
 const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -18,10 +19,24 @@ export interface ForeignProps {
   /** Boundary box config (LAYR layout keys). */
   bx?: Record<string, unknown>;
   a?: string;
+  /** Object props LAYR code extracts (published for Extract). */
+  xs?: string[];
 }
 
-export function F({ c, p, bx, a }: ForeignProps): ReactNode {
-  const inner = createElement(c as ComponentType<Record<string, unknown>>, p);
+export function F({ c, p, bx, a, xs }: ForeignProps): ReactNode {
+  // Its props and `obj` (children) take part in E/E/I like any feature: `chart.data = …`, `card.obj = …`.
+  const declared: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(p)) declared[k === "children" ? "obj" : k] = v;
+  usePublish([a], declared, xs);
+  const t = useTrack();
+  let props = p;
+  try {
+    const resolved = a ? resolveOverrides([a], declared, () => true) : null;
+    if (resolved) props = Object.fromEntries(Object.entries(resolved).map(([k, v]) => [k === "obj" ? "children" : k, v]));
+  } finally {
+    t.done();
+  }
+  const inner = createElement(c as ComponentType<Record<string, unknown>>, props);
   if (!bx && !a) return inner;
   const l = lower("Container", bx ?? {});
   const style: Record<string, string> = {};

@@ -62,6 +62,36 @@ test("Export / Extract / Inject: reversible layers, ordered reads, writes, !mut"
   expect(errors).toEqual([]);
 });
 
+test("Export / Extract / Inject changes objects: Text content, widget params and objects, lists", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/eei");
+  // A Text's content is a feature: Extract reads it, a Function writes it.
+  await expect(page.getByLabel("status", { exact: true })).toHaveText("Pending");
+  await expect(page.getByLabel("status read")).toHaveText("status reads: Pending");
+  await page.getByRole("button", { name: "Ship" }).click();
+  await expect(page.getByLabel("status", { exact: true })).toHaveText("Shipped");
+  await expect(page.getByLabel("status read")).toHaveText("status reads: Shipped");
+
+  // A widget instance's param and `.obj`, and a Column's objects, while the injecting widget is mounted.
+  const note = page.locator('[data-a="Card::frame"]').filter({ has: page.getByLabel("note body") });
+  const list = page.locator('[data-a="EEI::list"]');
+  await expect(note.getByRole("heading")).toHaveText("Note");
+  await expect(page.getByLabel("note body")).toHaveText("original body");
+  await expect(list).toHaveText("first");
+  await page.getByRole("button", { name: "Swap objects" }).click();
+  await expect(page.getByLabel("swapper")).toBeVisible();
+  await expect(note.getByRole("heading")).toHaveText("Injected title");
+  await expect(page.getByLabel("note body")).toHaveText("injected body");
+  await expect(list.locator(":scope > *")).toHaveText(["one", "two", "three"]);
+
+  // Unmounting the injecting widget removes its layers: everything reverts.
+  await page.getByRole("button", { name: "Swap objects" }).click();
+  await expect(note.getByRole("heading")).toHaveText("Note");
+  await expect(page.getByLabel("note body")).toHaveText("original body");
+  await expect(list.locator(":scope > *")).toHaveText(["first"]);
+  expect(errors).toEqual([]);
+});
+
 test("layout adapts deterministically", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/layout");

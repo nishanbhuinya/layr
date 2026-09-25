@@ -40,3 +40,11 @@ describe("links to pages", () => {
     expect(r.modules.get("src/pages/index.layr")?.js).toContain('"to": "Home"');
   });
 });
+
+describe("JavaScript globals", () => {
+  it("are usable in expressions", () => {
+    const r = compileProject([{ path: "src/pages/index.layr", text: "Page(\n  .name(P)\n  .route('/')\n  var num x = 2.6\n  Scaffold(.body(Text('${Math.round(x)} ${JSON.stringify([x])}')))\n)" }]);
+    expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(r.modules.get("src/pages/index.layr")?.js).toContain("Math.round(");
+  });
+});

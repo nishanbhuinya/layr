@@ -8,7 +8,42 @@ order: 35
 
 LAYR's first render target is React, so the React ecosystem is one explicit, typed boundary away.
 
-## React components in LAYR
+## JSX inside LAYR
+
+Write JSX wherever LAYR expects an object: an HTML element or a React component, with LAYR objects inside it or around it. Lowercase tags are HTML elements, capitalised tags are React components you import, attributes are `"strings"` or `{ TypeScript }`, and `{ }` in the children is a TypeScript expression.
+
+```layr
+Page(
+  .name(Mixed)
+  .route('/')
+  var int likes = 3
+  Scaffold(
+    .config(color: canvas)
+    .body(Column(
+      .config(w: fill, gap: 16, padding: all(24))
+      <section className="note" style={{ borderLeft: '3px solid var(--layr-color-accent)', paddingLeft: 12 }}>
+        Text(.config(size: 18, weight: semibold, color: ink) .obj('A LAYR Text inside a section'))
+        <p style={{ margin: 0, color: 'var(--layr-color-muted)' }}>Plain HTML, {likes} likes.</p>
+      </section>
+      Container(
+        .config(
+          .border(color: line, width: 1)
+          color: panel
+          cornerRadius: 12
+          padding: all(16)
+        )
+        .obj(<button onClick={() => likes++}>Like it</button>)
+      )
+    ))
+  )
+)
+```
+
+That is the whole bridge to the React ecosystem: a component library's `<Dialog>`, a chart's `<LineChart>`, or `<motion.div>` go in the tree as they are, and LAYR objects inside them keep their layout, Design Scale and E/E/I. A LAYR object inside an element is reachable through it: the `Text` above is `Mixed.scaffold.body.column.section.text`.
+
+JSX text follows React's rules: line breaks and the spaces around them collapse. A word followed directly by `(` inside JSX text (`Container(`) is read as a LAYR object; write `{'Container('}` for the text. `layr format` leaves JSX exactly as you wrote it.
+
+## React components as LAYR objects
 
 Import a React component and use it as an object. `.props(...)` passes props to it; `.config(...)` takes only LAYR layout keys, applied to a box around it; `.on(change: ...)` maps to `onChange`:
 

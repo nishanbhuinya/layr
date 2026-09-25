@@ -4,8 +4,8 @@
  * inspector labels is read from the running page: `data-l` (widget), `data-path` and `data-line`
  * (compiled with `inspect`), computed boxes, and the page's own `--ds`. Edit opens this exact file.
  */
-import { ArrowSquareOut, Code as CodeIcon, Cursor, Eye } from "@phosphor-icons/react/ssr";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowSquareOut, Check, Code as CodeIcon, Copy, Cursor, Eye } from "@phosphor-icons/react/ssr";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FrameChips, useRunner, Viewport } from "./stage.tsx";
 
 interface Picked {
@@ -185,6 +185,129 @@ function TreeColumns({ tree, path, onPick, onPoint }: { tree: Tree; path: string
   );
 }
 
+/** An Inject the reader added from the studio: appended to the file, compiled and run like any other. */
+interface Layer {
+  target: string;
+  key: string;
+  value: string;
+}
+
+const SWATCHES = ["accent", "teal", "violet", "gold", "ember", "ink"];
+const BOXES = new Set(["Container", "Row", "Column", "Wrap", "Stack", "Button", "Grid"]);
+
+/**
+ * A feature the studio offers, with a few values. `label` is the chip; `into` descends from the picked
+ * object to the one the Inject targets, and `key` is the feature there (a Button's text is its Text's `obj`).
+ */
+interface Feature {
+  label: string;
+  key: string;
+  values: string[];
+  swatch?: boolean;
+  into?: string;
+}
+
+/** The features the studio offers for one kind of object, with a few values each. */
+function featuresFor(widget: string): Feature[] {
+  const out: Feature[] = [{ label: "color", key: "color", values: SWATCHES, swatch: true }];
+  if (widget === "Text") out.push({ label: "text", key: "obj", values: ["'Studio A'", "'Booked'"] }, { label: "size", key: "size", values: ["13", "18", "26", "34"] });
+  if (widget === "Button") out.push({ label: "text", key: "obj", into: "text", values: ["'Hold it'", "'Book now'"] });
+  if (BOXES.has(widget)) out.push({ label: "padding", key: "padding", values: ["all(4)", "all(16)", "all(28)"] }, { label: "cornerRadius", key: "cornerRadius", values: ["0", "10", "999"] });
+  return out;
+}
+
+/** The name an Inject uses for its target: the address's last segment, without `(n)`. */
+const targetName = (address: string) => lastSeg(address).replace(/\(\d+\)$/, "");
+
+export function injectLine(l: Layer, order: number): string {
+  return `Inject(.into(${l.target}) .exeOrder(${order}) ${targetName(l.target)}.${l.key} = ${l.value})`;
+}
+
+function CopyLine({ text }: { text: string }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button
+      type="button"
+      data-done={done ? "" : undefined}
+      aria-label={done ? "Copied" : "Copy this line"}
+      title="Copy this line"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(text);
+          setDone(true);
+          setTimeout(() => setDone(false), 1400);
+        } catch {}
+      }}
+    >
+      {done ? <Check size={14} weight="bold" /> : <Copy size={14} />}
+    </button>
+  );
+}
+
+const InjectBar = memo(function InjectBar({ widget, path, local, layers, setLayers }: { widget: string; path: string; local: string | null; layers: Layer[]; setLayers: (f: (l: Layer[]) => Layer[]) => void }) {
+  const sel = { widget, path, local };
+  const [every, setEvery] = useState(false);
+  const features = featuresFor(sel.widget);
+  const [label, setLabel] = useState(features[0]?.label ?? "color");
+  const feature = features.find((f) => f.label === label) ?? features[0];
+  const base = every && sel.local ? sel.local : sel.path;
+  const target = feature?.into ? `${base}.${feature.into}` : base;
+  const current = layers.find((l) => l.target === target && l.key === feature?.key)?.value;
+  const put = (value: string) =>
+    setLayers((ls) => {
+      const rest = ls.filter((l) => !(l.target === target && l.key === feature?.key));
+      return value === current ? rest : [...rest, { target, key: feature?.key ?? "color", value }];
+    });
+  if (!feature) return null;
+  return (
+    <div className="st-inject">
+      <div className="st-inject-row">
+        <span className="st-label">Inject</span>
+        <div className="st-seg" role="group" aria-label="Feature">
+          {features.map((f) => (
+            <button key={f.label} type="button" aria-pressed={f.label === feature.label} onClick={() => setLabel(f.label)}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="st-values" role="group" aria-label={`Value for ${feature.label}`}>
+          {feature.values.map((v) => (
+            <button key={v} type="button" aria-pressed={v === current} onClick={() => put(v)} title={`${targetName(target)}.${feature.key} = ${v}`} data-swatch={feature.swatch ? "" : undefined}>
+              {feature.swatch ? <i style={{ background: `var(--layr-color-${v})` }} /> : null}
+              <span>{v}</span>
+            </button>
+          ))}
+        </div>
+        {sel.local ? (
+          <div className="st-seg" role="group" aria-label="Which objects">
+            <button type="button" aria-pressed={!every} onClick={() => setEvery(false)}>
+              This one
+            </button>
+            <button type="button" aria-pressed={every} onClick={() => setEvery(true)}>
+              Every {sel.local.split(".")[0]}
+            </button>
+          </div>
+        ) : null}
+      </div>
+      {layers.length ? (
+        <ol className="st-layers" aria-label="Injection layers added to the file">
+          {layers.map((l, i) => (
+            <li key={`${l.target}:${l.key}`}>
+              <code>{injectLine(l, i)}</code>
+              <CopyLine text={injectLine(l, i)} />
+              <button type="button" onClick={() => setLayers((ls) => ls.filter((x) => x !== l))} aria-label="Remove this layer" title="Remove the layer: the value reverts">
+                ×
+              </button>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="st-inject-hint">Pick a value: the line is added to the file, compiled and run. Remove it and the value reverts.</p>
+      )}
+    </div>
+  );
+});
+
 export function Studio({ code, codeHtml, lines, file, playground }: { code: string; codeHtml: string; lines: string[]; file: string; playground: string }) {
   const box = useRef<HTMLDivElement>(null);
   const [room, setRoom] = useState(900);
@@ -201,7 +324,12 @@ export function Studio({ code, codeHtml, lines, file, playground }: { code: stri
   const pickedEl = useRef<HTMLElement | null>(null);
   const inspectRef = useRef(inspecting);
   inspectRef.current = inspecting;
-  const run = useRunner(code, true, { inspect: true });
+  const [layers, setLayers] = useState<Layer[]>([]);
+  // The reader's Injects are appended to the file itself: what runs is exactly the file plus those lines.
+  const source = useMemo(() => (layers.length ? `${code}\n\n${layers.map(injectLine).join("\n")}\n` : code), [code, layers]);
+  const run = useRunner(source, true, { inspect: true });
+  /** The selection survives a re-run (after an Inject) by its lookup path. */
+  const selPath = useRef<string | null>(null);
 
   useEffect(() => {
     const el = box.current;
@@ -251,8 +379,10 @@ export function Studio({ code, codeHtml, lines, file, playground }: { code: stri
     doc.addEventListener("pointermove", move);
     doc.addEventListener("pointerleave", leave);
     doc.addEventListener("click", click, true);
-    const first = doc.querySelector<HTMLElement>("[data-l=Button][data-path]");
-    if (first && !pickedEl.current?.isConnected) pickedEl.current = first;
+    if (!pickedEl.current?.isConnected) {
+      const again = selPath.current ? buildTree(doc).els.get(selPath.current) : undefined;
+      pickedEl.current = again ?? doc.querySelector<HTMLElement>("[data-l=Button][data-path]");
+    }
     const ro = new ResizeObserver(() => requestAnimationFrame(remeasure));
     ro.observe(doc.body);
     remeasure();
@@ -262,7 +392,7 @@ export function Studio({ code, codeHtml, lines, file, playground }: { code: stri
       doc.removeEventListener("click", click, true);
       ro.disconnect();
     };
-  }, [run.ran, run.frame, remeasure]);
+  }, [run.ran, run.runs, run.frame, remeasure]);
 
   /** Select the object at a path prefix; a slot segment (`body`) selects the object it holds. */
   /** The element a full path names; a slot (`body`) resolves to the first object it holds. */
@@ -292,6 +422,10 @@ export function Studio({ code, codeHtml, lines, file, playground }: { code: stri
     hoverEl.current = el ?? null;
     setHover(el ? measure(el) : null);
   };
+
+  useEffect(() => {
+    if (picked) selPath.current = picked.path;
+  }, [picked]);
 
   const shown = inspecting ? (hover ?? picked) : null;
   const error = run.compiled?.errors ? (run.compiled.diagnostics.find((d) => d.severity === "error")?.message ?? "Compile error") : run.runtimeError;
@@ -381,6 +515,7 @@ export function Studio({ code, codeHtml, lines, file, playground }: { code: stri
                   </div>
                 ) : null}
                 {tree ? <TreeColumns tree={tree} path={sel.path} onPick={pickPath} onPoint={pointPath} /> : null}
+                <InjectBar key={sel.path} widget={sel.widget} path={sel.path} local={sel.local} layers={layers} setLayers={setLayers} />
               </div>
               <span className="st-src">
                 <span className="st-ln">

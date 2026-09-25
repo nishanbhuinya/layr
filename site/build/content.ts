@@ -19,8 +19,12 @@ import { COMMANDS } from "../../packages/cli/src/cli.ts";
 import { formatDiagnostic } from "../../packages/cli/src/vite.ts";
 import { compileProject, format, readAppConfig } from "../../packages/compiler/src/index.ts";
 import { CONSTRUCTS, DIAGNOSTICS, WIDGETS } from "../../packages/model/src/index.ts";
+import { exampleApp } from "../src/lib/example-app.ts";
+import { wrapSnippet } from "../src/lib/snippet.ts";
 
 export const SITE_URL = "https://layr.dynshift.com";
+/** The AdSense publisher (`ca-pub-…`), from the repository variable LAYR_ADSENSE_CLIENT at build time. */
+export const ADSENSE_CLIENT = process.env.VITE_ADSENSE_CLIENT ?? "";
 export const REPO_URL = "https://github.com/nishanbhuinya/layr";
 
 const SECTIONS = [
@@ -94,8 +98,9 @@ export function codeBlock(h: Highlighter, code: string, lang: string, title?: st
 }
 
 /** A code block the Prose component turns into a live preview (the block stays readable without JS). */
-export function liveBlock(block: string, run: string): string {
-  return `<div class="live" data-run="${Buffer.from(run, "utf8").toString("base64url")}" data-play="${playgroundHref(run)}">${block}</div>`;
+export function liveBlock(block: string, run: string, src = run): string {
+  const b64 = (s: string) => Buffer.from(s, "utf8").toString("base64url");
+  return `<div class="live" data-run="${b64(run)}" data-src="${b64(src)}" data-play="${playgroundHref(run)}">${block}</div>`;
 }
 
 export function slugify(s: string): string {
@@ -135,18 +140,21 @@ export function addonSources(repo = repoRoot): AddonSources {
   return out;
 }
 
+/** The site's own app (its theme): every example runs in it. */
+export function siteAppSource(repo = repoRoot): string {
+  return readFileSync(join(repo, "site", "src", "app.layr"), "utf8").replace(/\r\n/g, "\n");
+}
+
 /** Compiles a snippet as the page of a project that has the official addons installed. */
 export function compileSnippet(code: string, appSource?: string) {
   const src = addonSources();
   const path = "src/pages/index.layr";
-  // A snippet may carry its own App (theme, Design Scale), as src/app.layr does for a project, or
-  // be given one (`appSource`).
-  const app = appSource ? readAppConfig(appSource) : /\b(App|Theme|DesignScale)\s*\(/.test(code) ? readAppConfig(code, path) : null;
-  const r = compileProject([{ path, text: code }, ...src.files], { addons: src.addons, ...(app ? { theme: app.theme, designScale: app.designScale } : {}) });
+  // Every example runs in the site's app (its theme tokens); a snippet's own App adds to it.
+  const app = exampleApp(readAppConfig, appSource ?? siteAppSource(), code, path);
+  const r = compileProject([{ path, text: code }, ...src.files], { addons: src.addons, theme: app.theme, designScale: app.designScale });
   return { ...r, diagnostics: r.diagnostics.filter((d) => !d.file || d.file === path) };
 }
 
-const DEFINITIONS = /^(Widget|Function|App|Preset|Inject|Extract|Export|Theme|DesignScale|import|var|const|bind)\b/m;
 
 /**
  * The code a docs preview runs: the snippet itself when it declares a Page, or a lone object
@@ -160,18 +168,7 @@ function previewable(spec: string): boolean {
 export function runnable(code: string): string | null {
   // A snippet that imports your own files or other packages is shown, not run.
   for (const m of code.matchAll(/^import\s[^'"]*['"]([^'"]+)['"]/gm)) if (!previewable(m[1] as string)) return null;
-  let run: string | null = null;
-  // Leading imports stay at the top of the wrapped page (`import { LiquidDrop } from '…'` + one object).
-  const lines = code.trim().split("\n");
-  const imports: string[] = [];
-  while (lines.length && (/^import\b/.test(lines[0] as string) || !(lines[0] as string).trim())) imports.push(lines.shift() as string);
-  const rest = lines.join("\n");
-  if (/\bPage\s*\(/.test(code)) run = code;
-  else if (!DEFINITIONS.test(rest) && /^[A-Z]\w*\s*\(/.test(rest)) {
-    const body = lines.map((l) => `      ${l}`).join("\n");
-    const head = imports.filter((l) => l.trim()).join("\n");
-    run = `${head ? `${head}\n\n` : ""}Page(\n  .name(Preview)\n  .route('/')\n  Scaffold(.body(\n    Column(\n      .config(w: fill, padding: all(24), gap: 16)\n${body}\n    )\n  ))\n)\n`;
-  }
+  const run = wrapSnippet(code.trim())?.run ?? null;
   if (!run) return null;
   return compileSnippet(run).diagnostics.some((d) => d.severity === "error") ? null : run;
 }
@@ -207,7 +204,13 @@ export function renderMarkdown(h: Highlighter, md: string): { html: string; toc:
         const run = l === "layr" && !flags.includes("noexec") ? runnable(text) : null;
         // noexec blocks are shown as written (deliberate mistakes in the diagnostics reference).
         // A runnable snippet becomes a live preview (the Prose component mounts it); the code stays readable without JS.
-        return run ? liveBlock(block, run) : block;
+        return run ? liveBlock(block, run, text.trim()) : block;
+      },
+      blockquote(this: { parser: { parse: (t: Tokens.Generic[]) => string } }, { tokens, text }: Tokens.Blockquote) {
+        const inner = this.parser.parse(tokens);
+        // `> **Try it**` starts a callout: edits to make in the example above, one per line.
+        if (/^\s*\*\*Try it\*\*/.test(text)) return `<aside class="try">${inner.replace(/<strong>Try it<\/strong>:?\s*/, '<span class="try-label">Try it</span>')}</aside>\n`;
+        return `<blockquote>${inner}</blockquote>\n`;
       },
       table(this: { parser: { parseInline: (t: Tokens.Generic[]) => string } }, token: Tokens.Table) {
         const cell = (c: Tokens.TableCell, tag: string) => `<${tag}${c.align ? ` style="text-align:${c.align}"` : ""}>${this.parser.parseInline(c.tokens)}</${tag}>`;
@@ -519,7 +522,7 @@ async function home(repo: string, siteRoot: string) {
 
   // Real compiler output for a small file: the CSS and the React module it becomes.
   const shape = read("content/home/shape.layr");
-  const compiled = compileProject([{ path: "src/pages/index.layr", text: shape }]);
+  const compiled = compileProject([{ path: "src/pages/index.layr", text: shape }], { theme: exampleApp(readAppConfig, siteAppSource(repo), shape).theme });
   const mod = compiled.modules.get("src/pages/index.layr");
   if (!mod || compiled.diagnostics.some((d) => d.severity === "error")) throw new Error("content/home/shape.layr must compile cleanly");
   const js = mod.js.trim();
@@ -527,14 +530,14 @@ async function home(repo: string, siteRoot: string) {
   // Real diagnostics for a file with two deliberate mistakes.
   // Compiled in the expanded form it is shown in, so the report's line numbers match the pane.
   const mistakes = expanded(read("content/home/mistakes.layr"));
-  const bad = compileProject([{ path: "src/pages/checkout.layr", text: mistakes }]);
+  const bad = compileProject([{ path: "src/pages/checkout.layr", text: mistakes }], { theme: exampleApp(readAppConfig, siteAppSource(repo), mistakes).theme });
   const report = bad.diagnostics
     .filter((d) => d.severity !== "info")
     .map((d) => formatDiagnostic({ ...d, file: "src/pages/checkout.layr" }, mistakes, repo))
     .join("\n\n");
 
   const eei = read("content/home/eei.layr");
-  const eeiCheck = compileProject([{ path: "src/pages/index.layr", text: eei }]);
+  const eeiCheck = compileSnippet(eei);
   if (eeiCheck.diagnostics.some((d) => d.severity === "error")) throw new Error("content/home/eei.layr must compile cleanly");
 
   return {
@@ -557,7 +560,7 @@ const PREFIX = "\0site:";
 /** The runner frame's page: the LAYR runtime in a real viewport, always on a light stage. */
 function runHtml(script: string, css: string[] = []): string {
   const links = css.map((c) => `<link rel="stylesheet" href="/${c}">`).join("");
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>LAYR runner</title>${links}<style>html,body{margin:0}html{background:#fffcf7;color:#1c1917;font-family:"Geist Variable",system-ui,sans-serif;color-scheme:light}</style></head><body><div id="app"></div><script type="module" src="${script}"></script></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="robots" content="noindex"><title>LAYR runner</title>${links}<style>html,body{margin:0}html{background:#f4efe7;color:#1c1917;font-family:"Geist Variable",system-ui,sans-serif;color-scheme:light}@media (prefers-color-scheme:dark){html:not([data-theme=light]){background:#121110;color:#f3ede6;color-scheme:dark}}html[data-theme=dark]{background:#121110;color:#f3ede6;color-scheme:dark}</style></head><body><div id="app"></div><script type="module" src="${script}"></script></body></html>`;
 }
 
 export function siteContent(): Plugin {
@@ -608,8 +611,11 @@ export function siteContent(): Plugin {
       server.watcher.on("add", onChange);
     },
     transformIndexHtml(html) {
-      // AdSense: the site-ownership tag and the loader, only when a publisher id is configured.
-      const client = process.env.VITE_ADSENSE_CLIENT ?? "";
+      // AdSense, as on dynshift.com: the ownership tag and the loader on every built page. The
+      // loader also delivers Google's certified consent message (EEA, UK, Switzerland), so it is not
+      // gated behind a banner of ours. Ad slots stay empty until their unit ids are configured.
+      // Local dev loads nothing from Google.
+      const client = isBuild ? ADSENSE_CLIENT : "";
       const tags = client
         ? `<meta name="google-adsense-account" content="${escapeHtml(client)}"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}" crossorigin="anonymous"></script>`
         : "";
@@ -676,6 +682,7 @@ export function siteContent(): Plugin {
           });
         return `export default ${JSON.stringify(list)};`;
       }
+      if (what === "app-src") return `export default ${JSON.stringify(siteAppSource(repo))};`;
       if (what === "home") return `export default ${JSON.stringify(await home(repo, siteRoot))};`;
       return null;
     },

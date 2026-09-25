@@ -17,7 +17,7 @@ Page(
   .name(Glass)
   .route('/')
   Scaffold(
-    .config(color: #f4efe7)
+    .config(color: canvas)
     .body(Stack(
       .config(w: fill, h: 340, clip: true)
       Scroll(
@@ -32,7 +32,7 @@ Page(
             .config(
               w: fill
               h: 110
-              color: LinearGradient(.colors(#ff6a3d, #ffc46b))
+              color: LinearGradient(.colors(ember, gold))
               cornerRadius: 14
             )
           )
@@ -40,7 +40,7 @@ Page(
             .config(
               w: fill
               h: 110
-              color: LinearGradient(.colors(#9b8cff, #2ed3c4))
+              color: LinearGradient(.colors(violet, teal))
               cornerRadius: 14
             )
           )
@@ -48,7 +48,7 @@ Page(
             .config(
               w: fill
               h: 110
-              color: LinearGradient(.colors(#1c1917, #ff6a3d))
+              color: LinearGradient(.colors(ink, ember))
               cornerRadius: 14
             )
           )
@@ -56,7 +56,7 @@ Page(
             .config(
               w: fill
               h: 110
-              color: LinearGradient(.colors(#2ed3c4, #ffc46b))
+              color: LinearGradient(.colors(teal, gold))
               cornerRadius: 14
             )
           )
@@ -67,12 +67,12 @@ Page(
         .obj(Blur(
           .config(
             w: fill
-            color: #fffcf7.alpha(55%)
+            color: panel.alpha(55%)
             padding: sym(x: 20, y: 18)
             value: 16
           )
           .obj(Text(
-            .config(size: 17, color: #1c1917, weight: semibold)
+            .config(size: 17, color: ink, weight: semibold)
             .obj('Frosted header')
           ))
         ))
@@ -81,6 +81,10 @@ Page(
   )
 )
 ```
+
+> **Try it**
+> - Change `value: 16` to `value: 4`, then to `40`.
+> - Change `panel.alpha(55%)` to `panel.alpha(90%)`: more veil, less of what is behind.
 
 ## Progressive blur
 
@@ -93,17 +97,17 @@ Page(
   .name(Dissolve)
   .route('/')
   Scaffold(
-    .config(color: #f4efe7)
+    .config(color: canvas)
     .body(Stack(
       .config(w: fill, h: 360, clip: true)
       Column(
         .config(w: fill, gap: 10, padding: all(16))
-        Text(.config(size: 13, color: #625a50) .obj('Today'))
+        Text(.config(size: 13, color: muted) .obj('Today'))
         Container(
           .config(
             w: fill
             h: 72
-            color: LinearGradient(.colors(#ff6a3d, #ffc46b))
+            color: LinearGradient(.colors(ember, gold))
             cornerRadius: 12
           )
         )
@@ -111,7 +115,7 @@ Page(
           .config(
             w: fill
             h: 72
-            color: LinearGradient(.colors(#9b8cff, #6d5ce6))
+            color: LinearGradient(.colors(violet, accent))
             cornerRadius: 12
           )
         )
@@ -119,7 +123,7 @@ Page(
           .config(
             w: fill
             h: 72
-            color: LinearGradient(.colors(#2ed3c4, #0e9f92))
+            color: LinearGradient(.colors(teal, violet))
             cornerRadius: 12
           )
         )
@@ -127,7 +131,7 @@ Page(
           .config(
             w: fill
             h: 72
-            color: LinearGradient(.colors(#ffc46b, #e8551f))
+            color: LinearGradient(.colors(gold, ember))
             cornerRadius: 12
           )
         )
@@ -139,7 +143,7 @@ Page(
             w: fill
             h: 180
             edge: bottom
-            fade: #f4efe7
+            fade: canvas
             type: progressive
             value: 28
           )
@@ -149,6 +153,11 @@ Page(
   )
 )
 ```
+
+> **Try it**
+> - Change `edge: bottom` to `edge: top` and move the Position to `top: 0`.
+> - Add `curve: linear`: the blur starts sooner, and the fade shows its steps less gracefully.
+> - Remove `fade: canvas`: the blur stays, without melting into the page.
 
 | Key | What it does |
 | --- | --- |
@@ -169,7 +178,7 @@ Page(
   .route('/')
   var bool hidden = true
   Scaffold(
-    .config(color: #f4efe7)
+    .config(color: canvas)
     .body(Column(
       .config(w: fill, gap: 16, padding: all(24))
       Animate(
@@ -177,13 +186,13 @@ Page(
         .obj(Blur(
           .config(
             blurOn: object
-            color: #fffcf7
+            color: panel
             cornerRadius: 12
             padding: all(20)
             value: hidden ? 10 : 0
           )
           .obj(Text(
-            .config(size: 18, color: #1c1917, lineHeight: 1.5)
+            .config(size: 18, color: ink, lineHeight: 1.5)
             .obj(
               'The layout was authoritative all along: every number in the file was the one on the screen.'
             )

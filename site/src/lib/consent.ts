@@ -53,7 +53,20 @@ function banner() {
   document.body.appendChild(box);
 }
 
+/** The footer's "Privacy settings" appears only where there is a choice to change (see site.css). */
+function offerSettings() {
+  document.documentElement.setAttribute("data-consent-ui", "");
+}
+// Google's consent message answers this queue when it applies to the reader (EEA, UK, Switzerland).
+{
+  const g = window as unknown as { googlefc?: { callbackQueue?: unknown[] } };
+  g.googlefc = g.googlefc ?? {};
+  g.googlefc.callbackQueue = g.googlefc.callbackQueue ?? [];
+  g.googlefc.callbackQueue.push({ CONSENT_API_READY: offerSettings });
+}
+
 if (GA_ID) {
+  offerSettings();
   const choice = read();
   if (choice === "yes") loadAnalytics();
   else if (choice === null) banner();

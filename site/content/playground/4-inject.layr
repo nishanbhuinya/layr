@@ -7,18 +7,27 @@ Page(
   .route('/')
 
   Scaffold(
-    .config(color: #fffcf7)
+    .config(color: canvas)
     .body(Column(
       .config(w: fill, padding: all(24), gap: 16)
       Container(
         .id(card)
-        .config(padding: all(16), cornerRadius: 12, !mut color: #efe8dd)
-        .obj(Text('Order 1042'))
+        .config(padding: all(16), cornerRadius: 12, !mut color: panel, .border(color: line, width: 1))
+        .obj(Column(
+          .config(gap: 4)
+          Text(.config(size: 15, weight: semibold, color: ink) .obj('Order 1042'))
+          Text(.config(size: 13, color: muted) .obj('Two items, ships Monday'))
+        ))
       )
-      Button(.preset(default) .config(label: 'Toggle the bigger padding') .fnc { big = !big })
+      Button(
+        .config(color: action, cornerRadius: 10, padding: sym(x: 16, y: 10))
+        .fnc { big = !big }
+        .obj(Text(.config(color: onAccent, weight: semibold) .obj(big ? 'Back to the declared padding' : 'Triple the padding')))
+      )
     ))
   )
 )
 
+// Reads the padding below every Inject (the declared all(16)), then layers a change on top.
 Extract(.from(Store.card) .exeOrder(-1) insets base = card.padding)
 Inject(.into(Store.card) .exeOrder(0) card.padding = big ? base * 3 : base)

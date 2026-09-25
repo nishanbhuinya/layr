@@ -22,7 +22,7 @@ Widget(
     Column(
       .config(w: fill, padding: sym(x: 32, y: 88), xAlign: mid)
       .at(m, padding: sym(x: 16, y: 56))
-      Column(.config(w: fill, maxW: 1240, gap: param.gap) .obj)
+      Column(.config(w: fill, maxW: 1240, gap: param.gap, className: 'band') .obj)
     )
   )
 )

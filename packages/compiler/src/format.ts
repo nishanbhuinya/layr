@@ -246,6 +246,8 @@ class Formatter {
   }
 
   private call(c: Call, ind: string): string {
+    // JSX is kept exactly as written: its whitespace is part of what it renders.
+    if (c.jsx) return c.jsx.raw;
     let callee = this.expr(c.callee, ind);
     const def = c.callee.type === "Ident" ? widget(c.callee.name) : undefined;
     if (def) callee = def.name;

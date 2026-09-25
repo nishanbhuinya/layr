@@ -23,3 +23,11 @@ describe("themes", () => {
     expect(css).toContain("font-family:var(--layr-font-code)");
   });
 });
+
+describe("theme without an App", () => {
+  it("still defines the theme's variables", () => {
+    const r = compileProject([{ path: "src/pages/index.layr", text: "Page(.name(P) .route('/') Scaffold(.body(Container(.config(size: 56, color: accent)))))" }], { theme: { colors: { accent: "#ff6a3d" }, dark: { accent: "#ff8a5b" }, fonts: {} } });
+    expect(r.globalCss).toContain("--layr-color-accent:#ff6a3d");
+    expect(r.globalCss).toContain(":root[data-theme=dark] .l-root{--layr-color-accent:#ff8a5b");
+  });
+});

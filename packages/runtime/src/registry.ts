@@ -92,6 +92,16 @@ export function immutable(table: Record<string, string[]>) {
   }
 }
 
+/** Drops `!mut` from features (a live editor removing the modifier). Layers refused earlier stay refused. */
+export function mutable(table: Record<string, string[]>) {
+  for (const [addr, keys] of Object.entries(table)) {
+    const set = immutableTable.get(addr);
+    if (!set) continue;
+    for (const k of keys) set.delete(k);
+    if (!set.size) immutableTable.delete(addr);
+  }
+}
+
 export function isImmutable(address: string, key: string): boolean {
   return immutableTable.get(address)?.has(key) ?? false;
 }

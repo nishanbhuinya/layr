@@ -18,6 +18,6 @@ LAYR 3: a compiled UI language, replacing the 1.x React component library.
 - React interop in both directions; `@dynshift/layr/tsx` components.
 - The `layr` CLI: create, dev, build with prerendering (including dynamic routes), preview, format, analyze, explain, test, addons, skills, lsp, mcp.
 - The language server, the VS Code extension, the LAYR Skill and the MCP server.
-- Official addons: kit, icons, liquid_drop.
+- Official addon: google_fonts.
 
 LAYR 1.x continues on the `v1` branch and the `v1` npm dist-tag.

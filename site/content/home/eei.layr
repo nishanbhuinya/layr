@@ -3,8 +3,18 @@ Page(
   .route('/')
   Scaffold(.body(Container(
     .id(card)
-    .config(padding: all(16), !mut color: #ffffff)
-    .obj(Text('Order 1042'))
+    .config(
+      w: 260
+      cornerRadius: 12
+      padding: all(16)
+      !mut color: panel
+      .border(color: line, width: 1)
+    )
+    .obj(Column(
+      .config(gap: 4)
+      Text(.config(size: 15, weight: semibold) .obj('Order 1042'))
+      Text(.config(size: 13, color: muted) .obj('Two items, ships Monday'))
+    ))
   )))
 )
 

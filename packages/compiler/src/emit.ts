@@ -25,6 +25,7 @@ import {
   size as sizeValue,
   spring,
   scaleCss,
+  slotKey,
   sym,
   vp,
   type WidgetDef,
@@ -32,8 +33,8 @@ import {
   fr,
 } from "@layr-internal/model";
 import type { Block, Call, Expr, Item, Modifier, Prop, StringLit } from "./ast.ts";
-import { designScaleFrom } from "./app.ts";
-import { BUILTIN_ALIASES, COLOR_METHOD_ALIASES, NAMESPACES, RENDERED_FEATURES, suggest, VALUE_BUILTINS } from "./names.ts";
+import { designScaleFrom, type ThemeConfig } from "./app.ts";
+import { BUILTIN_ALIASES, COLOR_METHOD_ALIASES, JS_GLOBALS, NAMESPACES, RENDERED_FEATURES, suggest, VALUE_BUILTINS } from "./names.ts";
 import {
   type CompDef,
   type ConfigEntry,
@@ -47,6 +48,7 @@ import {
   type Project,
   report,
   lookupPath,
+  inlineObject,
   runtimeAddress,
 } from "./project.ts";
 import type { Span } from "./source.ts";
@@ -279,17 +281,8 @@ export class ModuleEmitter {
     }
     const meta = (firstModifier(call.items, "meta")?.items ?? []).filter((i): i is Prop => i.type === "Prop");
     for (const m of meta) parts.push(`${JSON.stringify(m.key)}: ${this.expr(m.value, this.moduleScope).code}`);
-    const theme = this.project.config.theme;
-    const vars = Object.entries(theme.colors).map(([k, v]) => `--layr-color-${k}:${v}`);
-    const fallback = (k: string) => (k === "code" ? "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" : "system-ui, sans-serif");
-    for (const [k, v] of Object.entries(theme.fonts)) vars.push(`--layr-font-${k}:"${v}", ${fallback(k)}`);
-    if (theme.fonts.body) vars.push("font-family:var(--layr-font-body)");
-    const rules: string[] = [];
-    if (vars.length) rules.push(`.l-root{${vars.join(";")}}`);
-    // `.dark(...)` follows the system setting unless the page pins data-theme on <html>.
-    const dark = Object.entries(theme.dark).map(([k, v]) => `--layr-color-${k}:${v}`).join(";");
-    if (dark) rules.push(`@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .l-root{${dark};color-scheme:dark}}`, `:root[data-theme=dark] .l-root{${dark};color-scheme:dark}`);
-    if (rules.length) this.cssRules.set("theme", rules.join("\n"));
+    const rules = themeCss(this.project.config.theme);
+    if (rules) this.cssRules.set("theme", rules);
     return `export const $app = { ${parts.join(", ")} };`;
   }
 
@@ -362,7 +355,8 @@ export class ModuleEmitter {
       const defaults = comp.params
         .filter((p) => p.init)
         .map((p) => `${JSON.stringify(p.name)}: ${this.expr(p.init as Expr, this.moduleScope, { type: p.type ? normalizeType(p.type) : undefined }).code}`);
-      if (defaults.length) lines.push(`$p = $.params($p, { ${defaults.join(", ")} });`);
+      // Defaults, then Inject layers and writes on this instance (`b.label = …`, `b.obj = …`).
+      lines.push(`$p = $.useParams($p, { ${defaults.join(", ")} });`);
     }
     if (comp.kind === "page") {
       lines.push("const $route = $.useRoute();");
@@ -407,6 +401,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   private node(n: ObjNode, sc: Scope, comp: CompDef): string {
     if (n.kind === "construct") return this.construct(n, sc, comp);
     if (n.kind === "foreign") return this.foreign(n, sc, comp);
+    if (n.kind === "jsx") return this.jsxElement(n.call, (n.children.get("obj") ?? []).map((c) => this.child(c, sc, comp, false)), sc);
     if (n.kind === "user") return this.userNode(n, sc, comp);
     const def = n.def as WidgetDef;
     const props: string[] = [`w: ${JSON.stringify(def.name)}`];
@@ -448,6 +443,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       props.push(`a: ${JSON.stringify(runtimeAddress(comp, n))}`);
       if (allStatic) props.push(`s: { ${Object.entries(staticCfg).sort((x, y) => (x[0] < y[0] ? -1 : 1)).map(([k, v]) => `${JSON.stringify(k)}: ${this.constCode(v)}`).join(", ")} }`);
       if (comp.kind === "widget") props.push("ip: $p.$a");
+      const xs = def.name === "Gap" || def.name === "Icon" ? [] : this.readSlots(n, comp, def.slots.filter((s) => s.kind !== "text").map((s) => s.name));
+      if (xs.length) props.push(`xs: ${JSON.stringify(xs)}`);
     }
     if (n === comp.root && comp.kind === "widget") props.push("o: $p.$o", "oe: $p.$on");
     if (this.project.config.inspect) props.push(`p: ${JSON.stringify(lookupPath(comp, n))}`, `ln: ${this.mod.source.position(n.call.span.start).line}`);
@@ -505,6 +502,19 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   /** Addresses targeted anywhere in the project, computed before emission. */
   preTargets = new Set<string>();
 
+  /** `address#key` of every feature LAYR code extracts or reads, computed before emission. */
+  preReads = new Set<string>();
+
+  /**
+   * Object slots of `n` that LAYR code reads (`Extract(... obj o = card.obj)`): the runtime publishes
+   * those for Extract. Text content is always published; objects (React elements) only when read.
+   */
+  private readSlots(n: ObjNode, comp: CompDef, slots: string[]): string[] {
+    const addr = runtimeAddress(comp, n);
+    const inWidget = comp.kind === "widget";
+    return slots.filter((s) => this.preReads.has(`${addr}#${s}`) || (inWidget && [...this.preReads].some((r) => r.endsWith(`>${n.address}#${s}`))));
+  }
+
   private child(c: ObjNode["children"] extends Map<string, infer L> ? (L extends Array<infer C> ? C : never) : never, sc: Scope, comp: CompDef, text: boolean): string {
     if (c.kind === "node") return this.node(c.node, sc, comp);
     if (c.kind === "forward") return "$p.children";
@@ -541,11 +551,45 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       props.push(`children: ${rendered.length === 1 ? rendered[0] : `$js($Fr, { children: [${rendered.join(", ")}] })`}`);
     }
     if (this.project.config.inspect) props.push(`$ip: ${JSON.stringify(lookupPath(comp, n))}`);
-    if (n.id || this.isAddressable(n)) props.push(`$a: ${comp.kind === "widget" ? `(($p.$a ?? ${JSON.stringify(comp.name)}) + ">" + ${JSON.stringify(n.address)})` : JSON.stringify(runtimeAddress(comp, n))}`);
+    if (n.id || this.isAddressable(n)) {
+      props.push(`$a: ${comp.kind === "widget" ? `(($p.$a ?? ${JSON.stringify(comp.name)}) + ">" + ${JSON.stringify(n.address)})` : JSON.stringify(runtimeAddress(comp, n))}`);
+      if (this.readSlots(n, comp, ["obj"]).length) props.push(`$xs: ["obj"]`);
+    }
     const events = this.events(n, null, sc);
     if (events) props.push(`$on: ${events}`);
     const ref = this.mod.layrImports.has(target.name) || this.mod.comps.includes(target) ? target.name : [...this.mod.layrImports.entries()].find(([, v]) => v.name === target.name)?.[0] ?? target.name;
     return `$j(${ref}, { ${props.join(", ")} })`;
+  }
+
+  /**
+   * A JSX element written in LAYR: a DOM element (`div`) or a React component in scope (`Chart`,
+   * `motion.div`), with its attributes as props and `children` already emitted.
+   */
+  private jsxElement(call: Call, children: string[], sc: Scope): string {
+    const jsx = call.jsx as NonNullable<Call["jsx"]>;
+    let tag: string;
+    if (!jsx.tag) tag = "$Fr";
+    else if (/^[a-z][\w-]*$/.test(jsx.tag)) tag = JSON.stringify(jsx.tag);
+    else {
+      const [head, ...rest] = jsx.tag.split(".");
+      const b = sc.lookup(head as string);
+      if (!b && !this.mod.foreign.has(head as string)) this.err("L1005", `\`${head}\` is not defined here: import the React component to use it as <${jsx.tag}>.`, call.callee.span);
+      tag = [b && "code" in b ? b.code : head, ...rest].join(".");
+      if (!this.project.config.targets.every((t) => t === "react")) this.err("L9001", `<${jsx.tag}> is a React component and runs only on the React target.`, call.callee.span, "info");
+    }
+    const props: string[] = [];
+    for (const a of jsx.attrs) {
+      if (a.name === "...") {
+        props.push(`...(${this.expr(a.value as Block, sc).code})`);
+        continue;
+      }
+      const name = a.name === "class" ? "className" : a.name === "for" ? "htmlFor" : a.name;
+      const value = a.value === null ? "true" : a.value.type === "String" ? JSON.stringify(a.value.raw) : this.expr(a.value, sc).code;
+      props.push(`${JSON.stringify(name)}: ${value}`);
+    }
+    if (children.length === 1) props.push(`children: ${children[0]}`);
+    if (children.length > 1) return `$js(${tag}, { ${props.join(", ")}${props.length ? ", " : ""}children: [${children.join(", ")}] })`;
+    return `$j(${tag}, { ${props.join(", ")} })`;
   }
 
   private foreign(n: ObjNode, sc: Scope, comp: CompDef): string {
@@ -576,7 +620,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       }
       props.push(`bx: { ${cfg.join(", ")} }`);
     }
-    if (n.id) props.push(`a: ${JSON.stringify(runtimeAddress(comp, n))}`);
+    if (n.id || this.isAddressable(n)) {
+      props.push(`a: ${JSON.stringify(runtimeAddress(comp, n))}`);
+      const xs = this.readSlots(n, comp, ["obj"]);
+      if (xs.length) props.push(`xs: ${JSON.stringify(xs)}`);
+    }
     props.push(`c: ${n.name}`, `p: { ${fp.join(", ")} }`);
     if (!this.project.config.targets.every((t) => t === "react")) this.err("L9001", `\`${n.name}\` is a React component and runs only on the React target.`, n.call.callee.span, "info");
     return `$j($.F, { ${props.join(", ")} })`;
@@ -978,7 +1026,10 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       const key = ref.key;
       this.checkMutation(ref.address, key, target.span, false);
       this.graphWrite(ref.address, key, target.span, null, "write");
-      const v = this.expr(value, sc).code;
+      const slot = ref.node ? slotType(ref.node, key) : null;
+      const g = this.expr(value, sc, slot ? { type: slot } : {});
+      if (slot === "txt" && g.type === "obj") this.err("L1007", "A Text shows text, so its `obj` takes text, not an object. To show objects, use a Row or a Span.", value.span);
+      const v = g.code;
       const newVal = op === "=" ? v : `$V.arith(${JSON.stringify(op.slice(0, -1))}, $.read(${JSON.stringify(ref.address)}, ${JSON.stringify(key)}), ${v})`;
       return `$.write(${JSON.stringify(ref.address)}, ${JSON.stringify(key)}, ${newVal})`;
     }
@@ -1069,7 +1120,10 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         const psc = new Scope(tsc);
         psc.set("$prev", { kind: "value", code: "$prev", type: null });
         this.prevTarget = { address: ref.address, key: ref.key };
-        const v = this.expr(ex.value, psc).code;
+        const slot = ref.node ? slotType(ref.node, ref.key) : null;
+        const g = this.expr(ex.value, psc, slot ? { type: slot } : {});
+        if (slot === "txt" && g.type === "obj") this.err("L1007", "A Text shows text, so its `obj` takes text, not an object. To show objects, use a Row or a Span.", ex.value.span);
+        const v = g.code;
         this.prevTarget = null;
         this.checkSelfRead(ex.value, ref.address, ref.key as string);
         valueFn = ex.op === "=" ? `($prev) => ${v}` : `($prev) => $V.arith(${JSON.stringify(ex.op.slice(0, -1))}, $prev, ${v})`;
@@ -1185,7 +1239,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     } else if (b?.kind === "group") {
       const mem = segs[1] ? b.members.get((segs[1] as Seg).name) : undefined;
       if (!mem) return null;
-      return { address: mem.address, key: mem.key, rest: segs.slice(2).map((s) => `.${s.name}`).join(""), node: mem.node, comp: (mem.node?.comp ?? this.currentComp) as CompDef };
+      return { address: mem.address, key: mem.key, rest: segs.slice(2).map((s) => `${s.optional ? "?." : "."}${s.name}`).join(""), node: mem.node, comp: (mem.node?.comp ?? this.currentComp) as CompDef };
     } else if (!b || b.kind === "comp") {
       comp = b?.kind === "comp" ? b.comp : (this.project.pages.get(first.name) ?? this.project.widgets.get(first.name) ?? null);
       if (!comp) return null;
@@ -1200,7 +1254,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
           this.err("L3301", `Export \`${s.name}\` of \`${comp.name}\` has no member \`${segs[2]?.name ?? ""}\`.`, s.span);
           return null;
         }
-        return { address: runtimeAddress(comp, mem.node), key: mem.key, rest: segs.slice(3).map((x) => `.${x.name}`).join(""), node: mem.node, comp };
+        return { address: runtimeAddress(comp, mem.node), key: mem.key, rest: segs.slice(3).map((x) => `${x.optional ? "?." : "."}${x.name}`).join(""), node: mem.node, comp };
       }
       if (comp.ids.has(s.name)) node = comp.ids.get(s.name) as ObjNode;
       else if (comp.root.seg === s.name && (s.index === undefined || s.index === 0)) node = comp.root;
@@ -1225,6 +1279,13 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       const cur = node as ObjNode;
       const slotNames = new Set(cur.def?.slots.map((x) => x.name) ?? []);
       const namesChild = [...cur.children.values()].flat().some((c) => c.kind === "node" && (c.node.seg === s.name || c.node.id === s.name));
+      // A path that ends on a slot names the slot itself, as a feature: `title.obj = 'Shipped'`,
+      // `list.objs = [...]`, `Home.scaffold.bar = null`. Anything after it descends into the slot.
+      const slot0 = i === segs.length - 1 && !objectOnly && s.index === undefined && !namesChild ? slotFeature(cur, s.name) : null;
+      if (slot0) {
+        if (prefix) this.graph.via.add(runtimeAddress(comp as CompDef, cur));
+        return { address: addressOf(comp as CompDef, cur), key: slot0, rest: "", node: cur, comp: comp as CompDef };
+      }
       if (slotNames.has(s.name) && !pendingSlot && s.index === undefined && cur.children.has(s.name) && !namesChild) {
         pendingSlot = s.name;
         continue;
@@ -1278,7 +1339,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       // Remaining segments: feature (+ member access on its value).
       const keyName = featureKey(cur, s.name);
       if (!keyName) {
-        const known = [...(cur.def?.keys.map((k) => k.name) ?? []), ...(cur.user?.params.map((p) => p.name) ?? []), ...Object.keys(RENDERED_FEATURES), "obj"];
+        const known = [...(cur.def?.keys.map((k) => k.name) ?? []), ...(cur.user?.params.map((p) => p.name) ?? []), ...Object.keys(RENDERED_FEATURES), ...(cur.def ? (cur.def.slots.map((x) => x.name)) : ["obj"])];
         const sug = suggest(s.name, known);
         this.err("L3301", `\`${cur.seg}\` has no child or feature \`${s.name}\`.${sug.length ? ` Did you mean ${sug.map((x) => `\`${x}\``).join(", ")}?` : ""}`, s.span);
         return null;
@@ -1289,7 +1350,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       }
       const rest = segs
         .slice(i + 1)
-        .map((x) => `.${x.name}`)
+        .map((x) => `${x.optional ? "?." : "."}${x.name}`)
         .join("");
       if (prefix) this.graph.via.add(runtimeAddress(comp as CompDef, cur));
       return { address: addressOf(comp as CompDef, cur), key: keyName, rest, node: cur, comp: comp as CompDef };
@@ -1504,6 +1565,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       this.err("L1004", `\`${name}\` is not an alignment. Use ${ALIGN_ALL.join(", ")}.`, span);
       return { code: JSON.stringify(name), type: "align" };
     }
+    // The standard JavaScript globals, as in any TypeScript expression (`Math.round(x)`, `JSON.stringify(v)`).
+    if (JS_GLOBALS.has(name)) return { code: name, type: "any" };
     // Generated names (`$i`, `$p`) are not the author's: never suggest them, and suggest each name once.
     const all = [...new Set([...collectNames(sc), ...Object.keys(VALUE_BUILTINS)])].filter((n) => !n.startsWith("$"));
     const s = suggest(name, all);
@@ -1615,6 +1678,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   }
 
   private call(e: Call, sc: Scope, expect: Expect): Gen {
+    // A JSX element as a value (`cond ? <b>on</b> : <i>off</i>`).
+    if (e.jsx) return { code: this.jsxElement(e, exprItems(e.items).map((x) => this.expr(x, sc, { type: "obj" }).code), sc), type: "obj" };
     const callee = e.callee;
     // Method calls on values: #fff.alpha(50%), white.shade(2), color.mix(x, .3)
     if (callee.type === "Member") {
@@ -1653,10 +1718,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       this.err("L1003", `\`${name}\` is a ${b.comp.kind === "page" ? "Page" : "Widget"}; use it as an object in the layout.`, e.span);
       return { code: "null", type: "obj" };
     }
-    // Widget constructors inside expressions (e.g. assigning an obj): compile inline.
-    if (!b && (widget(name) || this.project.widgets.has(name))) {
-      this.err("L1007", `\`${name}(...)\` here is an object; objects belong in the layout tree or in \`.obj\` injections.`, e.span, "warning");
-      return { code: "null", type: "obj" };
+    // An object written as a value (`card.obj = Text('Shipped')`, an obj param, a React slot): it
+    // compiles like the same object in the layout.
+    if (!b && (widget(name) || this.project.widgets.has(name) || this.mod.layrImports.has(name))) {
+      const n = inlineObject(this.project, this.mod, e);
+      return { code: n ? this.node(n, sc, n.comp) : "null", type: "obj" };
     }
     // Gradients
     if (name === "LinearGradient" || name === "RadialGradient" || name === "ConicGradient" || name === "AngularGradient") return this.gradient(name, e, sc);
@@ -1840,13 +1906,15 @@ interface Seg {
   name: string;
   index?: number;
   span: Span;
+  /** Written `?.name`. */
+  optional?: boolean;
 }
 
 function flatten(e: Expr): Seg[] | null {
   if (e.type === "Ident") return [{ name: e.name, span: e.span }];
   if (e.type === "Member") {
     const base = flatten(e.object);
-    return base ? [...base, { name: e.name, span: e.nameSpan }] : null;
+    return base ? [...base, { name: e.name, span: e.nameSpan, optional: e.optional }] : null;
   }
   if (e.type === "Call" && e.items.length === 1) {
     const arg = e.items[0];
@@ -1870,8 +1938,20 @@ function suggestKeys(def: WidgetDef, written: string): string[] {
   return [...new Set(suggest(written, byName.keys()).map((n) => byName.get(n) as string))];
 }
 
+/**
+ * The slot a feature name addresses on this object, as the runtime keys it: the default slot for
+ * `obj`/`objs` (a widget instance's or React component's `obj` is its children), or a named slot.
+ */
+function slotFeature(node: ObjNode, name: string): string | null {
+  if (node.kind === "user" || node.kind === "foreign") return name === "obj" || name === "objs" ? "obj" : null;
+  if (!node.def || node.def.name === "Gap" || node.def.name === "Icon") return null;
+  return slotKey(node.def.name, name);
+}
+
 function featureKey(node: ObjNode, name: string): string | null {
   if (RENDERED_FEATURES[name]) return name;
+  const slot = slotFeature(node, name);
+  if (slot) return slot;
   if (name === "obj") return "obj";
   if (node.def) {
     const k = keyOf(node.def, name);
@@ -1892,9 +1972,17 @@ function canonicalKey(node: ObjNode, key: string): string {
   return key;
 }
 
+/** A slot feature's value type: text for Text's content, objects otherwise; null when `key` is not a slot. */
+function slotType(node: ObjNode, key: string): "txt" | "obj" | null {
+  if (slotFeature(node, key) !== key) return null;
+  return node.def?.slots.find((s) => s.name === key)?.kind === "text" ? "txt" : "obj";
+}
+
 function featureType(node: ObjNode | null, key: string): string {
   if (key === "size") return "size";
   if (key === "visible") return "bool";
+  const slot = node ? slotType(node, key) : null;
+  if (slot) return slot;
   const k = node?.def ? keyOf(node.def, key) : undefined;
   return k?.type === "len" ? "len" : (k?.type ?? "any");
 }
@@ -1924,7 +2012,7 @@ function bodyScope(sc: Scope) {
         case "function":
           return { kind: "value" as const, code: `((...a) => ${b.code}($ctx, ...a))` };
         case "object":
-          return { kind: "object" as const, code: name, address: runtimeAddress(b.comp, b.node) };
+          return { kind: "object" as const, code: name, address: runtimeAddress(b.comp, b.node), key: (prop: string) => slotFeature(b.node, prop) ?? prop };
         case "params":
           return { kind: "value" as const, code: "$p" };
         case "comp":
@@ -2034,4 +2122,20 @@ export function defaultRoute(path: string, name: string): string {
 export function globMatch(glob: string, path: string): boolean {
   const re = new RegExp(`^${glob.replace(/[.+^${}()|[\]\\]/g, "\\$&").replace(/\*\*\/?/g, "§").replace(/\*/g, "[^/]*").replace(/§/g, ".*")}$`);
   return re.test(path);
+}
+
+/**
+ * A theme as CSS: its colours and fonts as variables on the app root, and `.dark(...)` following the
+ * system setting unless the page pins data-theme on <html>. Empty when the theme sets nothing.
+ */
+export function themeCss(theme: ThemeConfig): string {
+  const vars = Object.entries(theme.colors).map(([k, v]) => `--layr-color-${k}:${v}`);
+  const fallback = (k: string) => (k === "code" ? "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" : "system-ui, sans-serif");
+  for (const [k, v] of Object.entries(theme.fonts)) vars.push(`--layr-font-${k}:"${v}", ${fallback(k)}`);
+  if (theme.fonts.body) vars.push("font-family:var(--layr-font-body)");
+  const rules: string[] = [];
+  if (vars.length) rules.push(`.l-root{${vars.join(";")}}`);
+  const dark = Object.entries(theme.dark).map(([k, v]) => `--layr-color-${k}:${v}`).join(";");
+  if (dark) rules.push(`@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .l-root{${dark};color-scheme:dark}}`, `:root[data-theme=dark] .l-root{${dark};color-scheme:dark}`);
+  return rules.join("\n");
 }

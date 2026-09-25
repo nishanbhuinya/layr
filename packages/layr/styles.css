@@ -47,12 +47,18 @@
 .l-row.l-adapt.l-stacked>.l-wfill{min-width:0}
 .l-row.l-wrap-auto{flex-wrap:wrap}
 .l-row.l-stackable>*,.l-row.l-stackable>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
+/* Stacked, a row's children keep their own heights: a fill share was for the width. */
+.l-row.l-stacked>*,.l-row.l-stacked.l-stacked>.l-wfill.l-wfill{flex:0 0 auto}
 .l-root{color:CanvasText;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / 1000);line-height:1.5}
 dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
 dialog.l:not([open]){display:none}
 dialog.l::backdrop{background:var(--l-backdrop,rgb(0 0 0 / .35))}
-button.l{cursor:pointer}
+button.l{cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),filter 160ms}
 button.l:disabled{cursor:not-allowed}
+/* A button answers the press: it gives a little under the finger, and brightens under a mouse. */
+button.l:active:not(:disabled){transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){button.l:hover:not(:disabled){filter:brightness(1.06)}}
+@media (prefers-reduced-motion: reduce){button.l{transition:none}button.l:active:not(:disabled){transform:none}}
 .l:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 @media (prefers-reduced-motion: reduce){.l-motion{transition:none!important;animation:none!important}}
 }

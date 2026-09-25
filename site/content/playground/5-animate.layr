@@ -1,19 +1,26 @@
-// Animate interpolates every change to its object, whatever caused it.
+// Animate interpolates every change to its object, whatever caused it: here, one boolean.
 Page(
   .name(Motion)
   .route('/')
 
-  var bool wide = false
+  var bool open = false
 
   Scaffold(
-    .config(color: #fffcf7)
+    .config(color: canvas)
     .body(Column(
       .config(w: fill, padding: all(24), gap: 16)
       Animate(
-        .eases(w: spring.bounce)
-        .obj(Container(.config(w: wide ? 320 : 120, h: 80, color: #9b8cff, cornerRadius: 16)))
+        .eases(w: spring.bounce, h: spring.gentle)
+        .obj(Container(
+          .config(w: open ? 320 : 120, h: open ? 140 : 80, color: open ? violet : accent, cornerRadius: open ? 28 : 16, padding: all(16))
+          .obj(Text(.config(color: onAccent, weight: semibold) .obj(open ? 'Open' : 'Closed')))
+        ))
       )
-      Button(.preset(default) .config(label: 'Animate') .fnc { wide = !wide })
+      Button(
+        .config(color: panel, cornerRadius: 10, padding: sym(x: 16, y: 10), .border(color: lineStrong, width: 1))
+        .fnc { open = !open }
+        .obj(Text(.config(color: ink, weight: semibold) .obj(open ? 'Close it' : 'Open it')))
+      )
     ))
   )
 )

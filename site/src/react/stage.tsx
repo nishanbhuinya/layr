@@ -6,9 +6,9 @@
 import { type ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { type Compiled, compile, currentTheme } from "../lib/runner.ts";
 
-/** Site theme overrides set inline on <html> (custom themes); the frame does not inherit them. */
-function themeVars(): string {
-  return document.documentElement.getAttribute("style") ?? "";
+/** The reader's palette (a named or custom theme): the frame does not inherit the page's styles. */
+function palette(): string {
+  return document.getElementById("layr-palette")?.textContent ?? "";
 }
 
 export const MIN_W = 320;
@@ -50,6 +50,8 @@ export function useRunner(code: string, active = true, opts: { inspect?: boolean
   const [height, setHeight] = useState(160);
   const [runtimeError, setRuntimeError] = useState<string | null>(null);
   const [ran, setRan] = useState(false);
+  // Counts completed runs, so a view over the page can re-attach to each fresh render.
+  const [runs, setRuns] = useState(0);
   const [compiled, setCompiled] = useState<Compiled | null>(null);
 
   useEffect(() => {
@@ -61,6 +63,7 @@ export function useRunner(code: string, active = true, opts: { inspect?: boolean
       if (e.data?.type === "ran") {
         setRuntimeError(null);
         setRan(true);
+        setRuns((n) => n + 1);
       }
     };
     addEventListener("message", onMsg);
@@ -80,18 +83,28 @@ export function useRunner(code: string, active = true, opts: { inspect?: boolean
 
   // The page inside follows the site's theme, including a choice made while it is open.
   useEffect(() => {
-    const mo = new MutationObserver(() => frame.current?.contentWindow?.postMessage({ type: "theme", theme: currentTheme() ?? null, vars: themeVars() }, location.origin));
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "style"] });
-    return () => mo.disconnect();
+    const send = () => frame.current?.contentWindow?.postMessage({ type: "theme", theme: currentTheme() ?? null, palette: palette() }, location.origin);
+    const mo = new MutationObserver(send);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    addEventListener("layr-theme", send);
+    return () => {
+      mo.disconnect();
+      removeEventListener("layr-theme", send);
+    };
   }, []);
 
   useEffect(() => {
     if (!ready || !compiled || compiled.errors) return;
-    frame.current?.contentWindow?.postMessage({ type: "run", js: compiled.js, css: compiled.css, modules: compiled.modules, aliases: compiled.aliases, theme: currentTheme(), transparent: !!opts.transparent }, location.origin);
+    frame.current?.contentWindow?.postMessage({ type: "run", js: compiled.js, css: compiled.css, modules: compiled.modules, aliases: compiled.aliases, theme: currentTheme(), palette: palette(), transparent: !!opts.transparent }, location.origin);
   }, [ready, compiled, opts.transparent]);
 
   const onLoad = useCallback(() => setReady(true), []);
-  return { frame, onLoad, ready, height, runtimeError, compiled, ran };
+  /** Runs the current code again from a fresh page (its state starts over). */
+  const rerun = useCallback(() => {
+    if (!compiled || compiled.errors) return;
+    frame.current?.contentWindow?.postMessage({ type: "run", js: compiled.js, css: compiled.css, modules: compiled.modules, aliases: compiled.aliases, theme: currentTheme(), palette: palette(), transparent: !!opts.transparent }, location.origin);
+  }, [compiled, opts.transparent]);
+  return { frame, onLoad, ready, height, runtimeError, compiled, ran, runs, rerun };
 }
 
 /**

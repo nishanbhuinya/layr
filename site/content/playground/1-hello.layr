@@ -1,4 +1,5 @@
-// Drag the preview's corner: the row stacks when the panes no longer fit side by side.
+// Drag the preview's corner: the row stacks when the two panes would be squeezed.
+// Colours are theme tokens (canvas, panel, ink, accent…): switch the site theme and they follow.
 Page(
   .name(Hello)
   .route('/')
@@ -6,25 +7,29 @@ Page(
   var int count = 0
 
   Scaffold(
-    .config(color: #fffcf7)
+    .config(color: canvas)
     .body(Column(
       .config(w: fill, padding: all(24), gap: 20)
-      Text(.config(type: h1, size: 32) .obj('Hello, LAYR'))
+      Text(.config(type: h1, size: 32, color: ink) .obj('Hello, LAYR'))
       Row(
         .config(w: fill, gap: 16)
         Container(
-          .config(w: fill, h: 140, color: #ff6a3d, cornerRadius: 16, padding: all(16))
-          .obj(Text(.config(color: white, weight: semibold) .obj('fill')))
+          .config(w: fill, h: 140, color: accent, cornerRadius: 16, padding: all(16))
+          .obj(Text(.config(color: onAccent, weight: semibold) .obj('fill')))
         )
         Container(
-          .config(w: fill, h: 140, color: #2ed3c4, cornerRadius: 16, padding: all(16))
-          .obj(Text(.config(weight: semibold) .obj('fill')))
+          .config(w: fill, h: 140, color: panel, cornerRadius: 16, padding: all(16), .border(color: line, width: 1))
+          .obj(Text(.config(color: ink, weight: semibold) .obj('fill')))
         )
       )
       Row(
         .config(gap: 12, yAlign: mid)
-        Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
-        Text('Clicked $count times')
+        Button(
+          .config(color: action, cornerRadius: 10, padding: sym(x: 16, y: 10))
+          .fnc { count++ }
+          .obj(Text(.config(color: onAccent, weight: semibold) .obj('Add one')))
+        )
+        Text(.config(color: muted) .obj('Clicked $count times'))
       )
     ))
   )

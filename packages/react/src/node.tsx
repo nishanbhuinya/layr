@@ -3,10 +3,11 @@
  * config, injected layers and per-frame values are lowered here at runtime with the same lowering
  * the compiler uses.
  */
-import { type Decls, lengthCss, lower, PRIMARY_ACTIONS, runtimeWidget, size as makeSize } from "@layr-internal/model";
+import { type Decls, lengthCss, lower, PRIMARY_ACTIONS, runtimeWidget, SLOTS, size as makeSize } from "@layr-internal/model";
 import { type Action, atFrame, registry, router, run, type Signal } from "@layr-internal/runtime";
 import { Children, type CSSProperties, createElement, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { applyMotion, exitAnimation, type MotionSpec } from "./motion.ts";
+import { resolveOverrides, usePublish } from "./declared.ts";
 import { exitSpecs } from "./presence.tsx";
 import { useTrack } from "./track.ts";
 
@@ -53,6 +54,8 @@ export interface NodeProps {
   ad?: number;
   /** Events from a widget's usage site, applied to the widget's root. */
   oe?: Record<string, Action>;
+  /** Object slots LAYR code extracts: published for Extract (text content always is). */
+  xs?: string[];
   children?: ReactNode;
   [slot: string]: unknown;
 }
@@ -137,7 +140,12 @@ export function N(props: NodeProps): ReactNode {
     // ---- effective config
     let cfg: Record<string, unknown> | null = d ? { ...d } : null;
     if (o && Object.keys(o).length) cfg = { ...(s ?? {}), ...(cfg ?? {}), ...o };
-    const overridden = a ? [...registry.overriddenKeys(a), ...(instanceAddr ? registry.overriddenKeys(instanceAddr) : [])] : [];
+    const slotNames = SLOTS[def?.name ?? w] ?? [];
+    const slotValue = (k: string) => (k === slotNames[0] ? props.children : props[k]);
+    const allOverridden = a ? [...registry.overriddenKeys(a), ...(instanceAddr ? registry.overriddenKeys(instanceAddr) : [])] : [];
+    const overridden = allOverridden.filter((k) => !slotNames.includes(k));
+    // Slots changed through E/E/I (`title.obj = 'Shipped'`): what renders in place of the written objects.
+    const slots = overridden.length < allOverridden.length ? (resolveOverrides([a, instanceAddr], Object.fromEntries(slotNames.map((k) => [k, slotValue(k)])), (k) => slotNames.includes(k)) ?? {}) : {};
     if (a && overridden.length) {
       const base: Record<string, unknown> = { ...(s ?? {}), ...(b ?? {}), ...(cfg ?? {}) };
       for (const k of overridden) {
@@ -218,6 +226,7 @@ export function N(props: NodeProps): ReactNode {
         if (instanceAddr) registry.publish(instanceAddr, k, val);
       }
     });
+    usePublish(a ? [a, instanceAddr] : [], a ? Object.fromEntries(slotNames.map((k) => [k, slotValue(k)])) : {}, props.xs);
     useIsoLayoutEffect(() => {
       const node = el.current;
       if (!node || (!a && !ad)) return;
@@ -247,15 +256,29 @@ export function N(props: NodeProps): ReactNode {
     useIsoLayoutEffect(() => {
       if (w !== "Adapt" || !el.current) return undefined;
       const node = el.current;
+      // The room an Adapt has is what its parent gives it, not its own width: it hugs the candidate
+      // it shows, so measuring itself would keep a narrow candidate forever once chosen.
+      const px = (v: string) => Number.parseFloat(v) || 0;
+      const room = () => {
+        const p = node.parentElement;
+        if (!p) return node.clientWidth;
+        const cs = getComputedStyle(p);
+        let w = p.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight);
+        if (cs.display.includes("flex") && cs.flexDirection.startsWith("row")) {
+          const gap = px(cs.columnGap);
+          for (const c of p.children) if (c !== node && c instanceof HTMLElement && getComputedStyle(c).position !== "absolute") w -= c.getBoundingClientRect().width + gap;
+        }
+        return Math.max(node.clientWidth, w);
+      };
       const pick = () => {
-        const avail = node.clientWidth;
+        const avail = room();
         const measurers = [...(node.querySelector("[data-adapt-measure]")?.children ?? [])] as HTMLElement[];
         let idx = measurers.findIndex((m) => m.scrollWidth <= avail + 0.5);
         if (idx < 0) idx = Math.max(0, measurers.length - 1);
         setChosen(idx);
       };
       pick();
-      return observeResize([node], pick);
+      return observeResize(node.parentElement ? [node, node.parentElement] : [node], pick);
     }, [w]);
     useIsoLayoutEffect(() => {
       if ((w === "Mask" || w === "Subtract") && el.current) return composite(el.current, w, (beh.mode as string) ?? "alpha");
@@ -263,7 +286,8 @@ export function N(props: NodeProps): ReactNode {
     });
 
     // ---- children and slots
-    let children: ReactNode = props.children;
+    let children = (slotNames[0] && slotNames[0] in slots ? slots[slotNames[0]] : props.children) as ReactNode;
+    const named = (k: string) => (k in slots ? slots[k] : props[k]) as ReactNode;
     const setRef = (n: HTMLElement | null) => {
       el.current = n;
     };
@@ -357,8 +381,8 @@ export function N(props: NodeProps): ReactNode {
       case "Overlay":
         return overlay(beh, className, style, children, on, lifetime.current, attrs);
       case "Scaffold": {
-        const bar = props.bar as ReactNode;
-        const footer = props.footer as ReactNode;
+        const bar = named("bar");
+        const footer = named("footer");
         if (beh.scroll === "none" || beh.fit === "contain") className += " l-fit-contain";
         children = [
           bar ? createElement("header", { key: "bar", className: "l l-col l-bar", style: { position: "sticky", top: 0, zIndex: 10 } }, bar) : null,

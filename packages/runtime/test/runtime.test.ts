@@ -90,6 +90,22 @@ describe("Export / Extract / Inject registry", () => {
     expect(registry.read("P::x", "color")).toBe("blue");
   });
 
+  it("drops !mut so later layers apply, and restores it", () => {
+    registry.setWarn(vi.fn());
+    registry.immutable({ "P::x": ["color"] });
+    registry.declare({ "P::x": { color: "red" } });
+    registry.addLayer({ a: "P::x", k: "color", o: 0, f: () => "blue" });
+    registry.mutable({ "P::x": ["color"] });
+    expect(registry.isImmutable("P::x", "color")).toBe(false);
+    expect(registry.read("P::x", "color")).toBe("red");
+    const off = registry.addLayer({ a: "P::x", k: "color", o: 0, f: () => "blue" });
+    expect(registry.read("P::x", "color")).toBe("blue");
+    off();
+    registry.immutable({ "P::x": ["color"] });
+    registry.addLayer({ a: "P::x", k: "color", o: 0, f: () => "blue" });
+    expect(registry.read("P::x", "color")).toBe("red");
+  });
+
   it("explains the cascade", () => {
     registry.declare({ "P::x": { w: 1 } });
     registry.addLayer({ a: "P::x", k: "w", o: 0, f: (p) => (p as number) + 1, src: "a.layr:3" });

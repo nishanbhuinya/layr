@@ -113,12 +113,32 @@ function run(js: string, css: string) {
   post({ type: "ran", pages: pages.map((p) => p.name) });
 }
 
+// The site's theme is the examples' environment: its ink is the default text colour (where a
+// project's page would get the browser's), and its body font the default face.
+const base = document.createElement("style");
+base.textContent = ":root .l-root{color:var(--layr-color-ink,CanvasText)}";
+document.head.appendChild(base);
+
+/** The site reader's palette, so examples (written with the site's theme tokens) wear it too. */
+function setPalette(css: string | undefined) {
+  let el = document.getElementById("layr-palette");
+  if (!css) return el?.remove();
+  if (!el) {
+    el = document.createElement("style");
+    el.id = "layr-palette";
+  }
+  el.textContent = css;
+  // Last in the head, after each run's own styles.
+  document.head.appendChild(el);
+}
+
 addEventListener("message", (e: MessageEvent) => {
   if (e.origin !== location.origin) return;
   if (e.data?.type === "height") return setAuto(!!e.data.auto);
   if (e.data?.type === "theme") {
     if (e.data.theme) document.documentElement.setAttribute("data-theme", e.data.theme);
     else document.documentElement.removeAttribute("data-theme");
+    setPalette(e.data.palette);
     return;
   }
   if (e.data?.type !== "run") return;
@@ -134,6 +154,7 @@ addEventListener("message", (e: MessageEvent) => {
   document.documentElement.style.colorScheme = see ? (theme ?? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")) : "";
   try {
     run(js, css);
+    setPalette((e.data as { palette?: string }).palette);
     setAuto(autoHeight);
   } catch (err) {
     post({ type: "error", message: err instanceof Error ? err.message : String(err) });

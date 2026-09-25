@@ -1,0 +1,7 @@
+// The theme for this addon's examples and gallery (layr dev). It is not part of the package.
+App(
+  .theme(Theme(
+    .colors(canvas: #f4efe7, panel: #fffcf7, sunken: #efe8dd, ink: #1c1917, muted: #625a50, faint: #938a7e, accent: #c93f12)
+    .dark(canvas: #121110, panel: #1a1816, sunken: #221f1c, ink: #f3ede6, muted: #b0a79d, faint: #7f776e, accent: #ff6a3d)
+  ))
+)

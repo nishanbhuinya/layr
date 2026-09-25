@@ -40,7 +40,7 @@ order: 42
 name: my-app
 layr: ^3.0.0
 addons:
-  kit: ^1.0.0
+  google_fonts: ^1.0.0
 base: /
 access:
   force: ["src/system/**"]   # files allowed to use Inject(.force ...)

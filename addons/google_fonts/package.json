@@ -25,7 +25,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "src",
+    "src/index.js",
+    "src/index.d.ts",
     "examples",
     "README.md",
     "CHANGELOG.md",

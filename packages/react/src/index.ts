@@ -10,7 +10,7 @@ export { F, inject, injectGlobal, useExtract, useInject } from "./interop.tsx";
 export { springEasing } from "./motion.ts";
 export { icons, N, preset } from "./node.tsx";
 export { Presence } from "./presence.tsx";
-export { pageStore, params, useInstance, useTrack } from "./track.ts";
+export { pageStore, params, useInstance, useParams, useTrack } from "./track.ts";
 
 import { registry, router } from "@layr-internal/runtime";
 

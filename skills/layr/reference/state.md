@@ -6,33 +6,46 @@ order: 20
 
 # State
 
-```text
-var int count = 0                   state: change it and everything that reads it updates
-const txt title = 'Hello'           a constant
-bind txt label = '$title: $count'   derived: always equal to its expression
-!mut var int seed = 42              refuses changes from Export/Extract/Inject
-_draft                              underscore names stay private to their file
-```
-
-State is reactive. Reading `count` in config, text or a `bind` subscribes to it; only the objects that read it re-render.
+State is what a page remembers. Declare it with `var`, and everything that reads it updates when it changes: no subscriptions, no setters.
 
 ```layr
 Page(
   .name(Profile)
+  .route('/')
   var txt name = 'Ada'
   var int visits = 0
   bind txt greeting = 'Hello, $name (visit ${visits + 1})'
 
   Scaffold(
+    .config(color: canvas)
     .body(Column(
       .config(gap: 12, padding: all(24))
-      Text(.config(type: h2) .obj(greeting))
-      Input(.config(label: 'Name', value: name) .fnc { name = value })
+      Text(.config(size: 24, type: h2) .obj(greeting))
+      Input(
+        .preset(default)
+        .config(label: 'Name', value: name)
+        .fnc { name = value }
+      )
       Button(.preset(default) .config(label: 'Visit') .fnc { visits++ })
     ))
   )
 )
 ```
+
+Three kinds of declaration are at work:
+
+| Declaration | What it is | Here |
+|---|---|---|
+| `var` | State: change it and everything that reads it updates | `name`, `visits` |
+| `bind` | Derived: always equal to its expression, never set by hand | `greeting` |
+| `const` | A constant | |
+
+Reading `name` in the `bind`, and `greeting` in the `Text`, is what connects them. Only the objects that read a value re-render when it changes.
+
+> **Try it**
+> - Type in the box: the heading follows each keystroke, through the `bind`.
+> - Add `Text(.config(color: muted) .obj('${name.length} letters'))` at the end of the column.
+> - Replace `.obj(greeting)` with `.obj('Hi, $name')`: the same updating text, written in place. A `bind` is a name for an expression you want to reuse.
 
 ## Where state lives
 
@@ -44,6 +57,16 @@ Page(
 | A Function | For one call |
 
 Because page state is kept, other pages can [Extract](/docs/export-extract-inject) it even when that page is not on screen.
+
+## The whole syntax
+
+```text
+var int count = 0                   state
+const txt title = 'Hello'           a constant
+bind txt label = '$title: $count'   derived
+!mut var int seed = 42              refuses changes from Export/Extract/Inject
+_draft                              underscore names stay private to their file
+```
 
 ## Types
 

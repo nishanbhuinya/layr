@@ -74,7 +74,10 @@ export async function build(args: Args) {
     const script = data === undefined ? "" : `<script>window.__LAYR_DATA__=${JSON.stringify(data).replace(/</g, "\\u003c")}</script>`;
     let html = template.replace(/<div id="app"><\/div>/, () => `<div id="app">${r.html}</div>${script}`);
     if (r.title) html = html.replace(/<title>[^<]*<\/title>/, () => `<title>${escapeHtml(r.title as string)}</title>`);
-    html = html.replace("</head>", () => `${headTags(r.title, r.meta)}</head>`);
+    // With the site's address in layr.yaml (`url:`), every page gets its canonical URL and og:url.
+    const site = typeof (p.config.yaml as { url?: unknown }).url === "string" ? ((p.config.yaml as { url: string }).url).replace(/\/$/, "") : null;
+    const meta = site && typeof r.meta.canonical !== "string" ? { ...r.meta, canonical: `${site}${route === "/" ? "/" : route}` } : r.meta;
+    html = html.replace("</head>", () => `${headTags(r.title, meta)}</head>`);
     const file = route === "/" ? join(outDir, "index.html") : join(outDir, route.replace(/^\//, ""), "index.html");
     mkdirSync(dirname(file), { recursive: true });
     writeFileSync(file, html);
@@ -91,10 +94,10 @@ export async function build(args: Args) {
 function headTags(title: string | null, meta: Record<string, unknown>): string {
   const tags: string[] = [];
   const desc = typeof meta.description === "string" ? meta.description : null;
-  if (desc) tags.push(`<meta name="description" content="${escapeHtml(desc)}">`, `<meta property="og:description" content="${escapeHtml(desc)}">`);
-  if (title) tags.push(`<meta property="og:title" content="${escapeHtml(title)}">`);
+  if (desc) tags.push(`<meta name="description" content="${escapeHtml(desc)}">`, `<meta property="og:description" content="${escapeHtml(desc)}">`, `<meta name="twitter:description" content="${escapeHtml(desc)}">`);
+  if (title) tags.push(`<meta property="og:title" content="${escapeHtml(title)}">`, `<meta name="twitter:title" content="${escapeHtml(title)}">`);
   if (typeof meta.image === "string") tags.push(`<meta property="og:image" content="${escapeHtml(meta.image)}">`);
-  if (typeof meta.canonical === "string") tags.push(`<link rel="canonical" href="${escapeHtml(meta.canonical)}">`);
+  if (typeof meta.canonical === "string") tags.push(`<link rel="canonical" href="${escapeHtml(meta.canonical)}">`, `<meta property="og:url" content="${escapeHtml(meta.canonical)}">`);
   return tags.join("");
 }
 

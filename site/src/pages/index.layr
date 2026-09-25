@@ -82,9 +82,9 @@ Page(
               Tab(.config(label: 'Compiled CSS', on: tab == 'css') .fnc { tab = 'css' })
               Tab(.config(label: 'React module', on: tab == 'js') .fnc { tab = 'js' })
             )
-            If(.cnd(tab == 'source') .obj(Code(.props(html: data.shape.source))))
-            If(.cnd(tab == 'css') .obj(Code(.props(html: data.shape.css))))
-            If(.cnd(tab == 'js') .obj(Code(.props(html: data.shape.js))))
+            If(.cnd(tab == 'source') .obj(Code(.props(html: data.shape.source, scroll: true))))
+            If(.cnd(tab == 'css') .obj(Code(.props(html: data.shape.css, scroll: true))))
+            If(.cnd(tab == 'js') .obj(Code(.props(html: data.shape.js, scroll: true))))
           ))
         )
         TextLink(.config(label: 'The language, step by step', href: '/docs/syntax'))
@@ -97,12 +97,12 @@ Page(
       )
 
       Band(
-        SectionHead(.config(title: 'Change anything from anywhere, in order.', sub: 'Extract reads a feature, Inject layers a change at an exeOrder, and !mut protects what must never change. Tick the layers.'))
+        SectionHead(.config(title: 'Change anything from anywhere, in order.', sub: 'Extract reads a feature, Inject layers a change at an exeOrder, and !mut protects what must never change. Tick the layers, or untick !mut.'))
         If(
           .cnd(data != null)
           .obj(Row(
             .config(w: fill, gap: 20, yAlign: stretch)
-            Pane(.config(title: 'store.layr', play: data.eeiPlay) Code(.props(html: data.eei)))
+            Pane(.config(title: 'store.layr', play: data.eeiPlay) Code(.props(html: data.eei, fit: true)))
             Pane(
               .config(title: 'Store.card', note: 'live')
               Column(

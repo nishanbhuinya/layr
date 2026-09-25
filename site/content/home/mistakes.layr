@@ -3,8 +3,8 @@ Page(
   .route('/')
   Scaffold(.body(Container(
     .id(card)
-    .config(widht: 320, !mut color: #16181d, padding: all(24))
+    .config(widht: 320, !mut color: panel, padding: all(24))
   )))
 )
 
-Inject(.into(Checkout.card) card.color = #1a66e8)
+Inject(.into(Checkout.card) card.color = accent)

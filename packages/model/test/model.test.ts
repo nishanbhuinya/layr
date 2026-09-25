@@ -124,6 +124,28 @@ describe("text interpolation", () => {
   });
 });
 
+describe("slots", () => {
+  it("match the schema, default first", async () => {
+    const { SLOTS } = await import("../src/table.ts");
+    // Gap(20) and Icon('star') take a positional value, not an object.
+    const fromSchema = Object.fromEntries(
+      WIDGETS.filter((w) => w.slots.length && w.name !== "Gap" && w.name !== "Icon").map((w) => [w.name, [...w.slots.filter((s) => s.default), ...w.slots.filter((s) => !s.default)].map((s) => s.name)]),
+    );
+    expect(SLOTS).toEqual(fromSchema);
+  });
+
+  it("maps obj/objs to the default slot", async () => {
+    const { slotKey } = await import("../src/table.ts");
+    expect(slotKey("Column", "obj")).toBe("objs");
+    expect(slotKey("Text", "objs")).toBe("obj");
+    expect(slotKey("Scaffold", "obj")).toBe("body");
+    expect(slotKey("Scaffold", "bar")).toBe("bar");
+    expect(slotKey("Box", "obj")).toBe("obj");
+    expect(slotKey("Image", "obj")).toBeNull();
+    expect(slotKey("Gap", "size")).toBeNull();
+  });
+});
+
 describe("primary actions", () => {
   it("match the schema", async () => {
     const { PRIMARY_ACTIONS } = await import("../src/table.ts");

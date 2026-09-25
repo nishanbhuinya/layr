@@ -1,5 +1,6 @@
 /** Compiles LAYR in the browser for the runner frame (the compiler loads on first use). */
 import type { Diagnostic } from "@dynshift/layr/compiler";
+import { exampleApp } from "./example-app.ts";
 
 type Compiler = typeof import("@dynshift/layr/compiler");
 let compiler: Promise<Compiler> | null = null;
@@ -14,6 +15,8 @@ interface AddonSources {
   files: Array<{ path: string; text: string }>;
 }
 let addonSources: Promise<AddonSources> | null = null;
+/** The site's app source (its theme), which every example runs in; loaded with the compiler. */
+let siteApp: Promise<string> | null = null;
 /** An import of an official addon; its sources load only for code that asks for one. */
 const ADDON_IMPORT = /from\s*['"]@dynshift\/layr-[\w-]+['"]/;
 
@@ -37,8 +40,8 @@ export async function compile(code: string, opts: { inspect?: boolean; app?: str
   const c = await loadCompiler();
   const src: AddonSources = ADDON_IMPORT.test(code) ? await (addonSources ??= import("virtual:site/addons-src").then((m) => m.default as AddonSources)) : { addons: {}, files: [] };
   const path = "src/pages/index.layr";
-  const app = opts.app ? c.readAppConfig(opts.app) : /\b(App|Theme|DesignScale)\s*\(/.test(code) ? c.readAppConfig(code, path) : null;
-  const r = c.compileProject([{ path, text: code }, ...src.files], { addons: src.addons, inspect: opts.inspect, ...(app ? { theme: app.theme, designScale: app.designScale } : {}) });
+  const app = exampleApp(c.readAppConfig, opts.app ?? (await (siteApp ??= import("virtual:site/app-src").then((m) => m.default as string))), code, path);
+  const r = c.compileProject([{ path, text: code }, ...src.files], { addons: src.addons, inspect: opts.inspect, theme: app.theme, designScale: app.designScale });
   const mod = r.modules.get(path);
   const sf = new c.SourceFile(path, code);
   // Only the reader's own code has problems worth listing; addon sources are known to compile.

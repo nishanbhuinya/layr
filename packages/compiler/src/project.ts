@@ -107,7 +107,7 @@ export interface ConfigEntry {
   keySpan: Span;
 }
 
-export type NodeKind = "core" | "user" | "foreign" | "construct";
+export type NodeKind = "core" | "user" | "foreign" | "construct" | "jsx";
 
 export interface ObjNode {
   call: Call;
@@ -539,6 +539,48 @@ export function classify(project: Project, mod: Module, name: string): { kind: N
   return null;
 }
 
+const inlineTrees = new WeakMap<Call, { node: ObjNode | null; diagnostics: Module["diagnostics"] }>();
+
+/**
+ * An object written as a value (`card.obj = Text('Shipped')`, `list.objs = [Text('a'), Text('b')]`):
+ * built like a layout object, under a detached owner so its ids never join a Page's. Built once per
+ * call and shared by both compile passes; its diagnostics are reported again on each.
+ */
+export function inlineObject(project: Project, mod: Module, call: Call): ObjNode | null {
+  const hit = inlineTrees.get(call);
+  if (hit) {
+    mod.diagnostics.push(...hit.diagnostics);
+    return hit.node;
+  }
+  const owner: CompDef = {
+    kind: "page",
+    name: "Inline",
+    nameSpan: call.span,
+    call: null,
+    module: mod,
+    params: [],
+    state: [],
+    functions: [],
+    eei: [],
+    route: null,
+    meta: [],
+    load: null,
+    paths: null,
+    react: null,
+    stateMode: "reset",
+    rootCall: call,
+    root: null,
+    ids: new Map(),
+    anonymous: false,
+    exportGroups: new Map(),
+  };
+  const before = mod.diagnostics.length;
+  const node = buildTree(project, mod, owner, call, null, "obj", 0);
+  owner.root = node;
+  inlineTrees.set(call, { node, diagnostics: mod.diagnostics.slice(before) });
+  return node;
+}
+
 function buildTree(project: Project, mod: Module, comp: CompDef, call: Call, parent: ObjNode | null, slot: string, index: number): ObjNode | null {
   let name = calleeName(call);
   let foreignNs = false;
@@ -550,7 +592,8 @@ function buildTree(project: Project, mod: Module, comp: CompDef, call: Call, par
     report(mod, "L1001", "Expected a widget name.", call.callee.span);
     return null;
   }
-  const cls = foreignNs ? { kind: "foreign" as const, name, def: null, user: null } : classify(project, mod, name);
+  // A JSX element (`<div>`) is a React element whose children may be LAYR objects.
+  const cls = call.jsx ? { kind: "jsx" as const, name, def: null, user: null } : foreignNs ? { kind: "foreign" as const, name, def: null, user: null } : classify(project, mod, name);
   if (!cls) {
     const candidates = [...new Set([...(project.widgets.keys() as Iterable<string>), ...["Container", "Row", "Column", "Stack", "Text", "Button", "Image", "Scaffold", "Mid", "Gap"]])];
     const s = suggest(name, candidates);

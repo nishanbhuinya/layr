@@ -1,5 +1,5 @@
 import { BASE_CSS, REGISTER_PROPERTIES, scaleCss } from "@layr-internal/model";
-import { type Graph, ModuleEmitter, newGraph } from "./emit.ts";
+import { type Graph, ModuleEmitter, newGraph, themeCss } from "./emit.ts";
 import { analyzeProject, DEFAULT_CONFIG, type Project, type ProjectConfig } from "./project.ts";
 import type { Diagnostic } from "./source.ts";
 
@@ -30,6 +30,7 @@ export function compileProject(files: Array<{ path: string; text: string }>, con
   const probe = newGraph();
   for (const mod of project.modules.values()) new ModuleEmitter(project, mod, probe).emit();
   const targets = new Set([...probe.entries.map((e) => e.address), ...probe.via]);
+  const reads = new Set(probe.entries.filter((e) => e.kind === "extract" || e.kind === "read").map((e) => `${e.address}#${e.key}`));
 
   // Pass 2: real emission with the full graph known.
   const graph = newGraph();
@@ -40,6 +41,7 @@ export function compileProject(files: Array<{ path: string; text: string }>, con
     mod.diagnostics = [...(baseDiagnostics.get(mod.path) ?? [])];
     const em = new ModuleEmitter(project, mod, graph);
     em.preTargets = targets;
+    em.preReads = reads;
     em.pendingImmutable = probe.immutable;
     const r = em.emit();
     modules.set(mod.path, { path: mod.path, ...r, diagnostics: mod.diagnostics });
@@ -50,7 +52,11 @@ export function compileProject(files: Array<{ path: string; text: string }>, con
     if (out) out.diagnostics = dedupe(mod.diagnostics);
   }
   const diagnostics = [...modules.values()].flatMap((m) => m.diagnostics);
-  return { modules, diagnostics, graph, project, globalCss: globalCss(cfg) };
+  // The theme's variables come with the App. A project compiled with a theme but no App (a snippet, a
+  // test, an editor preview) still gets them, or its theme colours would resolve to nothing.
+  const hasApp = [...project.modules.values()].some((m) => m.app);
+  const theme = hasApp ? "" : themeCss(cfg.theme);
+  return { modules, diagnostics, graph, project, globalCss: theme ? `${globalCss(cfg)}\n${theme}` : globalCss(cfg) };
 }
 
 export function globalCss(cfg: ProjectConfig = DEFAULT_CONFIG): string {

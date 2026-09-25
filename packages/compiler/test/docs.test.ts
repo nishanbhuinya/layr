@@ -1,9 +1,12 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, it } from "vitest";
+import { readAppConfig } from "../src/app.ts";
 import { compileProject } from "../src/compile.ts";
 
 const DOCS = join(import.meta.dirname, "../../../docs/content");
+/** Docs examples use the site's theme tokens (canvas, panel, ink, accent...), as the site compiles them. */
+const SITE_THEME = readAppConfig(readFileSync(join(import.meta.dirname, "../../../site/src/app.layr"), "utf8")).theme;
 
 function markdown(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -31,7 +34,7 @@ describe("docs snippets compile", () => {
   it("found snippets", () => expect(snippets.length).toBeGreaterThan(10));
   it.each(snippets)("%s", (_where, source) => {
     const r = compileProject([{ path: "src/pages/snippet.layr", text: source }], {
-      theme: { colors: { brand: "#3b82f6", ink: "#0d0d0d" }, dark: {}, fonts: {} },
+      theme: { ...SITE_THEME, colors: { brand: "#3b82f6", ...SITE_THEME.colors } },
     });
     const errors = r.diagnostics.filter((d) => d.severity === "error").map((d) => `${d.code} ${d.message} @${source.slice(d.span.start, d.span.start + 30)}`);
     expect(errors).toEqual([]);

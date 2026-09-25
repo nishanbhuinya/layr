@@ -4,13 +4,16 @@ Page(
   .name(EEI)
   .route('/eei')
   var bool injecting = false
+  var bool swapping = false
   var int writes = 0
 
   Extract(.from(EEI.target) .exeOrder(-1) insets original = target.padding)
   Extract(.from(EEI.target) insets current = target.padding)
+  Extract(.from(EEI.status) txt statusText = status.obj)
 
   Function(.name(widen) .def { target.w = 360; writes++ })
   Function(.name(forbidden) .def { target.color = #ff0000 })
+  Function(.name(ship) .def { status.obj = 'Shipped' })
 
   Scaffold(
     .config(padding: all(24))
@@ -40,8 +43,29 @@ Page(
         Button(.preset(default) .config(label: 'Forbidden') .fnc(forbidden))
       )
       If(.cnd(injecting) .obj(Injector()))
+
+      // Objects change through E/E/I too: a Text's content, a widget's params and `.obj`, a list's objects.
+      Text(.id(status) .a11y(label: 'status') .obj('Pending'))
+      Text(.a11y(label: 'status read') .obj('status reads: $statusText'))
+      Card(.id(note) .config(title: 'Note') .obj(Text(.a11y(label: 'note body') .obj('original body'))))
+      Column(.id(list) .config(gap: 4) Text('first'))
+      Row(
+        .config(gap: 8)
+        Button(.preset(default) .config(label: 'Ship') .fnc(ship))
+        Button(.preset(default) .config(label: 'Swap objects') .fnc { swapping = !swapping })
+      )
+      If(.cnd(swapping) .obj(Swapper()))
     ))
   )
+)
+
+// While mounted, this widget replaces objects: a widget's param and `.obj`, and a Column's objects.
+Widget(
+  .name(Swapper)
+  Inject(.into(EEI.note) note.title = 'Injected title')
+  Inject(.into(EEI.note) note.obj = Text(.a11y(label: 'note body') .obj('injected body')))
+  Inject(.into(EEI.list) list.objs = [Text('one'), Text('two'), Text('three')])
+  .obj(Text(.a11y(label: 'swapper') .obj('swapper mounted')))
 )
 
 // While mounted, this widget doubles the target's padding (a reversible layer).

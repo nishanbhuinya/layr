@@ -13,10 +13,11 @@ Container(
   .config(
     w: 200
     h: 120
-    color: #0d0d0d
+    color: #1c1917
     cornerRadius: 16
+    objAlign: mid
   )
-  .obj(Text('Hello'))
+  .obj(Text(.config(color: white) .obj('Hello')))
 )
 ```
 
@@ -62,7 +63,7 @@ Group `.border(align, color, width, style, sides)`: Border settings grouped: `.b
 Lays objects out left to right. Adapts deterministically when space runs out.
 
 ```layr
-Row(.config(gap: 12, yAlign: mid), Icon('star'), Text('Starred'))
+Row(.config(gap: 8, yAlign: mid), Text('★'), Text('Starred'))
 ```
 
 Slots: `.objs` (many, default).
@@ -161,8 +162,8 @@ Layers objects on top of each other; later objects paint above earlier ones (or 
 
 ```layr
 Stack(
-  Container(.config(size: 200, color: #111))
-  Position(.config(x: 16, y: 16) .obj(Text('Badge')))
+  Container(.config(size: 200, cornerRadius: 16, color: #1c1917))
+  Position(.config(x: 16, y: 16) .obj(Text(.config(color: white) .obj('Badge'))))
 )
 ```
 

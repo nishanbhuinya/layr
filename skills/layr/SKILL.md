@@ -38,6 +38,7 @@ If the `layr` MCP server is available, `check_snippet`, `get_widget` and `explai
 - **Export/Extract/Inject:** address objects by `Page.id` or lookup path (`Page.scaffold.body.column.text(1)`); a path continues into a widget instance (`Page.….card(1).text(0)` reaches that one instance, `Card.text(0)` every instance). `Extract(.from(Page.card) .exeOrder(-1) insets pad = card.padding)` reads the declared value (without an order it reads the final value, after every Inject); `Inject(.into(Page.card) .exeOrder(0) card.padding = card.padding * 2)` adds a reversible layer. Give Injects on the same feature different `exeOrder`s. Never mutate `!mut` features.
 - **Accessibility is required:** `alt` (or `decorative: true`) on Image, `label` on Input/Toggle/Select/Slider and Buttons without content.
 - **React packages:** import the component and use it as an object with `.props(...)`; hooks only inside `.react { }`.
+- **JSX is allowed where an object goes**, for HTML and React components that LAYR has no widget for: `<section className="x">Text('LAYR inside')</section>` or `.obj(<Chart data={rows} />)`. Attributes are `"strings"` or `{ ts }`; LAYR objects inside keep layout and lookup paths (`Page.….section.text`). Prefer LAYR widgets for layout; reach for JSX for foreign components and plain HTML.
 
 ## Mistakes to avoid
 

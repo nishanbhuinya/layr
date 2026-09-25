@@ -45,3 +45,7 @@ declare module "virtual:site/addons-src" {
   const src: { addons: Record<string, string>; files: Array<{ path: string; text: string }> };
   export default src;
 }
+declare module "virtual:site/app-src" {
+  const src: string;
+  export default src;
+}

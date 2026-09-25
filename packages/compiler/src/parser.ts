@@ -8,12 +8,13 @@ import type {
   FileNode,
   Import,
   Item,
+  JsxAttr,
   Modifier,
   Prop,
   StringLit,
   TypeRef,
 } from "./ast.ts";
-import { type Comment, lex, type Token } from "./lexer.ts";
+import { type Comment, LAYR_IN_JSX, lex, scanBlock, skipCall, type Token } from "./lexer.ts";
 import type { Diagnostic, Span } from "./source.ts";
 
 export interface ParseResult {
@@ -522,6 +523,9 @@ class Parser {
       case "block":
         this.next();
         return this.blockFrom(t);
+      case "jsx":
+        this.next();
+        return this.jsxElement(t.value, t.span.start, 0).call;
       case "punct":
         if (t.value === "(") return this.parseParenOrTuple();
         if (t.value === "[") {
@@ -577,6 +581,142 @@ class Parser {
     return { type: "Arrow", params, body, span: { start, end: body.span.end } };
   }
 
+  // ------------------------------------------------------------ JSX
+
+  /**
+   * One JSX element of `src` (a `jsx` token's text, starting at file offset `base`), from the `<` at
+   * `open`. It becomes a Call with `jsx` set: the tag as callee, children as items. LAYR objects
+   * among the children are parsed as LAYR.
+   */
+  private jsxElement(src: string, base: number, open: number): { call: Call; end: number } {
+    let i = open + 1;
+    const tag = src[i] === ">" ? "" : (/^[A-Za-z_$][\w$.:-]*/.exec(src.slice(i))?.[0] ?? "");
+    const tagSpan = { start: base + i, end: base + i + tag.length };
+    i += tag.length;
+    const attrs: JsxAttr[] = [];
+    const ws = () => {
+      while (/\s/.test(src[i] ?? "")) i++;
+    };
+    let selfClosing = false;
+    for (;;) {
+      ws();
+      if (i >= src.length) break;
+      if (src.startsWith("/>", i)) {
+        i += 2;
+        selfClosing = true;
+        break;
+      }
+      if (src[i] === ">") {
+        i++;
+        break;
+      }
+      if (src[i] === "{") {
+        const e = scanBlock(src, i);
+        if (e < 0) break;
+        const code = src.slice(i + 1, e);
+        const m = /^\s*\.\.\./.exec(code);
+        if (m) attrs.push({ name: "...", nameSpan: { start: base + i, end: base + e + 1 }, value: { type: "Block", code: code.slice(m[0].length), codeStart: base + i + 1 + m[0].length, span: { start: base + i, end: base + e + 1 } } });
+        else this.error("L0006", "A `{ }` among attributes spreads props: `{...props}`.", { start: base + i, end: base + e + 1 });
+        i = e + 1;
+        continue;
+      }
+      const name = /^[\w$:.-]+/.exec(src.slice(i))?.[0];
+      if (!name) {
+        this.error("L0006", `Unexpected \`${src[i]}\` in the attributes of <${tag}>.`, { start: base + i, end: base + i + 1 });
+        i++;
+        continue;
+      }
+      const nameSpan = { start: base + i, end: base + i + name.length };
+      i += name.length;
+      ws();
+      let value: StringLit | Block | null = null;
+      if (src[i] === "=") {
+        i++;
+        ws();
+        if (src[i] === '"' || src[i] === "'") {
+          let e = i + 1;
+          while (e < src.length && src[e] !== src[i]) e++;
+          const text = src.slice(i + 1, e);
+          value = { type: "String", quote: src[i] as string, parts: [text], raw: text, span: { start: base + i, end: base + e + 1 } };
+          i = e + 1;
+        } else if (src[i] === "{") {
+          const e = scanBlock(src, i);
+          value = { type: "Block", code: src.slice(i + 1, e), codeStart: base + i + 1, span: { start: base + i, end: base + e + 1 } };
+          i = e + 1;
+        }
+      }
+      attrs.push({ name, nameSpan, value });
+    }
+    const items: Item[] = [];
+    if (!selfClosing) {
+      let text = "";
+      let textStart = i;
+      const flush = () => {
+        const t = jsxText(text);
+        if (t) {
+          const span = { start: base + textStart, end: base + textStart + text.length };
+          const lit: StringLit = { type: "String", quote: "'", parts: [t], raw: t, span };
+          items.push({ type: "ExprItem", expr: lit, span });
+        }
+        text = "";
+      };
+      let closed = false;
+      while (i < src.length) {
+        if (src.startsWith("</", i)) {
+          flush();
+          const close = src.indexOf(">", i);
+          const closeName = src.slice(i + 2, close < 0 ? src.length : close).trim();
+          if (closeName !== tag) this.error("L0006", `<${tag || ""}> is closed by </${closeName}>.`, { start: base + i, end: base + (close < 0 ? src.length : close + 1) });
+          i = close < 0 ? src.length : close + 1;
+          closed = true;
+          break;
+        }
+        const c = src[i] as string;
+        if (c === "<" && /[A-Za-z>]/.test(src[i + 1] ?? "")) {
+          flush();
+          const r = this.jsxElement(src, base, i);
+          items.push({ type: "ExprItem", expr: r.call, span: r.call.span });
+          i = r.end;
+          textStart = i;
+          continue;
+        }
+        if (c === "{") {
+          flush();
+          const e = scanBlock(src, i);
+          const end = e < 0 ? src.length - 1 : e;
+          const code = src.slice(i + 1, end);
+          // `{/* comment */}` renders nothing.
+          if (code.replace(/\/\*[\s\S]*?\*\//g, "").trim()) {
+            const b: Block = { type: "Block", code, codeStart: base + i + 1, span: { start: base + i, end: base + end + 1 } };
+            items.push({ type: "ExprItem", expr: b, span: b.span });
+          }
+          i = end + 1;
+          textStart = i;
+          continue;
+        }
+        if (/[A-Za-z_$]/.test(c) && !/[\w$]/.test(src[i - 1] ?? "") && LAYR_IN_JSX.test(src.slice(i, i + 80))) {
+          flush();
+          const end = skipCall(src, i);
+          const stop = end < 0 ? src.length : end;
+          const sub = new Parser(src.slice(i, stop), base + i);
+          const expr = sub.parseExpr();
+          for (const d of sub.diagnostics) this.diagnostics.push(d);
+          items.push({ type: "ExprItem", expr, span: expr.span });
+          i = stop;
+          textStart = i;
+          continue;
+        }
+        if (!text) textStart = i;
+        text += c;
+        i++;
+      }
+      if (!closed) flush();
+    }
+    const span = { start: base + open, end: base + i };
+    const call: Call = { type: "Call", callee: { type: "Ident", name: tag || "Fragment", span: tagSpan }, items, block: null, span, jsx: { tag, attrs, raw: src.slice(open, i) } };
+    return { call, end: i };
+  }
+
   private stringLit(t: Token): StringLit {
     const raw = t.value;
     const parts: Array<string | Expr> = [];
@@ -627,7 +767,28 @@ class Parser {
   }
 }
 
+const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", "#39": "'" };
+
+/** JSX text the way React reads it: lines trimmed, blank lines dropped, lines joined by one space. */
+function jsxText(raw: string): string {
+  const lines = raw.split(/\r?\n/);
+  const text =
+    lines.length === 1
+      ? raw
+      : lines
+          .map((l, k) => {
+            let s = l.replace(/\t/g, " ");
+            if (k > 0) s = s.trimStart();
+            if (k < lines.length - 1) s = s.trimEnd();
+            return s;
+          })
+          .filter((s) => s.length)
+          .join(" ");
+  return text.replace(/&(#?\w+);/g, (m, e: string) => ENTITIES[e] ?? (e.startsWith("#") ? String.fromCodePoint(Number(e.slice(1))) : m));
+}
+
 function describe(t: Token): string {
+  if (t.kind === "jsx") return "a JSX element";
   if (t.kind === "eof") return "end of file";
   if (t.kind === "block") return "`{`";
   if (t.kind === "string") return "a string";

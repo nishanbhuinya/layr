@@ -7,23 +7,23 @@ Page(
   const list<txt> topics = ['Layout', 'Design Scale', 'State', 'Animation', 'Export', 'Extract', 'Inject']
 
   Scaffold(
-    .config(color: #fffcf7)
+    .config(color: canvas)
     .body(Column(
       .config(w: fill, padding: all(24), gap: 16)
-      Text(.config(type: h2, size: 24) .obj('Pick a topic'))
+      Text(.config(type: h2, size: 24, color: ink) .obj('Pick a topic'))
       Wrap(
         .config(gap: 8)
         Each(
           .of(topics)
           .as(t)
           .obj(Button(
-            .config(padding: sym(x: 14, y: 8), cornerRadius: 999, color: picked == t ? #1c1917 : #efe8dd)
+            .config(padding: sym(x: 14, y: 8), cornerRadius: 999, color: picked == t ? accent : panel, .border(color: picked == t ? accent : line, width: 1))
             .fnc { picked = t }
-            .obj(Text(.config(color: picked == t ? white : #1c1917) .obj(t)))
+            .obj(Text(.config(color: picked == t ? onAccent : ink, weight: medium) .obj(t)))
           ))
         )
       )
-      Text(.config(color: #625a50) .obj('You picked $picked.'))
+      Text(.config(color: muted) .obj('You picked $picked.'))
     ))
   )
 )
