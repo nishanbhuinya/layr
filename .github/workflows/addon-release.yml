@@ -13,6 +13,8 @@ permissions:
 
 jobs:
   publish:
+    # npm trusts the public repository's workflow; a tag in the private one publishes nothing.
+    if: github.repository == 'nishanbhuinya/layr'
     runs-on: ubuntu-latest
     environment: npm
     steps:

@@ -1,0 +1,8 @@
+# Every change is reviewed by a maintainer. The language's single source of truth (the schema and
+# the diagnostics), the release pipeline and the published package are named explicitly so they
+# keep a maintainer's review even if ownership of the rest is shared later.
+*                                   @nishanbhuinya
+/packages/model/src/schema.ts       @nishanbhuinya
+/packages/model/src/diagnostics.ts  @nishanbhuinya
+/packages/layr/                     @nishanbhuinya
+/.github/                           @nishanbhuinya

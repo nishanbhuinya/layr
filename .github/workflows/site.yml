@@ -23,6 +23,8 @@ concurrency:
 
 jobs:
   build:
+    # The site deploys from the public repository only (the private one has no Pages).
+    if: github.repository == 'nishanbhuinya/layr'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

@@ -1,8 +1,14 @@
-blank_issues_enabled: true
+blank_issues_enabled: false
 contact_links:
+  - name: Questions and help
+    url: https://github.com/nishanbhuinya/layr/discussions/categories/q-a
+    about: How do I…? Ask in Discussions, where answers stay findable.
+  - name: Ideas
+    url: https://github.com/nishanbhuinya/layr/discussions/categories/ideas
+    about: Open-ended ideas for the language and tools.
   - name: Documentation
     url: https://layr.dynshift.com/docs
     about: Guides and the full reference.
   - name: LAYR 1.x
     url: https://github.com/nishanbhuinya/layr/tree/v1
-    about: The original React component library.
+    about: The original React component library (npm dist-tag v1).

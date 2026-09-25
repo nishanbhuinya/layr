@@ -1,0 +1,56 @@
+name: Bug report
+description: LAYR compiles, renders or reports something wrongly.
+labels: ["bug", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you. The fastest fix starts from the smallest file that shows the problem. A playground link (its **Share** button) is the best reproduction.
+        Security problems go to **Security → Report a vulnerability**, never here.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you saw. Paste diagnostics (with their `L…` codes) as text.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: The smallest `.layr` that shows it
+      description: Or a playground Share link.
+      render: layr
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where
+      options:
+        - Compiler or diagnostics
+        - Rendering in the browser (layout, Design Scale, animation)
+        - Export / Extract / Inject
+        - CLI or build
+        - Editor support (VS Code, LSP)
+        - React interop
+        - Website or docs
+        - An addon
+        - Not sure
+    validations:
+      required: true
+  - type: input
+    id: frame
+    attributes:
+      label: Screen and browser
+      description: For rendering problems, e.g. "390px wide, Safari 18" or "the m frame, Chrome".
+  - type: textarea
+    id: doctor
+    attributes:
+      label: "`npx layr doctor` output"
+      render: text

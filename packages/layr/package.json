@@ -1,6 +1,6 @@
 {
   "name": "@dynshift/layr",
-  "version": "3.0.0-next.0",
+  "version": "3.0.0",
   "description": "LAYR: Layout Authoritative Yet Responsive. A compiled UI language with Design Scale, deterministic layout and Export/Extract/Inject.",
   "type": "module",
   "license": "MIT",

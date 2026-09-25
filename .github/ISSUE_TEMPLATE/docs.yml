@@ -1,0 +1,19 @@
+name: Documentation
+description: A docs page, example or "Try it" is wrong, unclear or missing.
+labels: ["documentation", "needs triage"]
+body:
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The URL on layr.dynshift.com.
+      placeholder: https://layr.dynshift.com/docs/...
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What is wrong or missing
+      description: If an example or a "Try it" does not do what the page says, say what it did.
+    validations:
+      required: true
