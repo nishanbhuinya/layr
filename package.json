@@ -13,7 +13,7 @@
     "gen": "node tools/gen.ts",
     "check:docs": "node tools/format-docs.ts --check",
     "site": "pnpm --filter layr-site dev",
-    "site:build": "pnpm --filter layr-site build"
+    "site:build": "pnpm --filter layr-site build && node tools/check-site-assets.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.14",

@@ -1,0 +1,74 @@
+<!doctype html>
+<!-- The link-preview card (1200×630), rendered to site/public/og.png by tools/brand.ts. -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: Geist; src: url("../node_modules/@fontsource-variable/geist/files/geist-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
+  @font-face { font-family: GeistMono; src: url("../node_modules/@fontsource-variable/geist-mono/files/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; }
+  html, body { margin: 0; width: 1200px; height: 630px; overflow: hidden; background: #121110; }
+  .field { position: absolute; inset: -10px; font: 500 15px/22px GeistMono, monospace; color: #f3ede6; opacity: 0.07; white-space: pre; letter-spacing: 0.5px; }
+  .field b { font-weight: 700; }
+  .glow { position: absolute; inset: 0; background: radial-gradient(640px 420px at 0% 100%, rgba(18,17,16,0.96), rgba(18,17,16,0.55) 55%, rgba(18,17,16,0) 80%), linear-gradient(90deg, rgba(18,17,16,0.92) 0 46%, rgba(18,17,16,0.35) 78%, rgba(18,17,16,0.15)); }
+  .tint { position: absolute; font: 700 15px/22px GeistMono, monospace; }
+  .left { position: absolute; left: 72px; top: 64px; bottom: 60px; width: 610px; display: flex; flex-direction: column; }
+  .brand { display: flex; align-items: center; gap: 16px; color: #f3ede6; font: 650 34px/1 Geist; letter-spacing: -0.5px; }
+  .eyebrow { margin-top: 64px; font: 500 17px/1 GeistMono; color: #b0a79d; letter-spacing: 0.4px; }
+  .eyebrow i { font-style: normal; color: #ff6a3d; }
+  h1 { margin: 18px 0 0; font: 720 76px/0.98 Geist; letter-spacing: -2.6px; color: #f3ede6; }
+  p { margin: 26px 0 0; font: 400 24px/1.4 Geist; color: #b0a79d; max-width: 540px; }
+  .url { margin-top: auto; font: 500 19px/1 GeistMono; color: #7f776e; }
+  .card { position: absolute; right: 64px; top: 112px; width: 420px; border-radius: 16px; background: #1a1816; box-shadow: 0 0 0 1px #2e2a26, 0 30px 60px -20px rgba(0,0,0,0.7); overflow: hidden; }
+  .card header { height: 44px; display: flex; align-items: center; gap: 8px; padding: 0 18px; background: #221f1c; border-bottom: 1px solid #2e2a26; font: 500 14px/1 GeistMono; color: #b0a79d; }
+  .card pre { margin: 0; padding: 18px 20px 22px; font: 450 17px/1.62 GeistMono; color: #f3ede6; }
+  .w { color: #2ed3c4; } .m { color: #9b8cff; } .k { color: #ffc46b; } .n { color: #ff8577; } .s { color: #ffc46b; } .p { color: #7f776e; }
+  .path { position: absolute; right: 64px; top: 446px; width: 420px; box-sizing: border-box; border-radius: 12px; background: #1a1816; box-shadow: 0 0 0 1px #2e2a26; padding: 16px 20px; font: 500 16px/1.4 GeistMono; color: #f3ede6; }
+  .path span { color: #7f776e; font: 500 12px/1 Geist; display: block; margin-bottom: 8px; letter-spacing: 0.3px; }
+  .path i { font-style: normal; color: #ff6a3d; font-weight: 800; padding: 0 1px; }
+  .path b { color: #9b8cff; font-weight: 650; }
+</style>
+</head>
+<body>
+  <div class="field" id="field"></div>
+  <div class="glow"></div>
+  <div class="left">
+    <div class="brand">
+      <svg width="52" height="52" viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#221f1c" stroke="#433d37" stroke-width="1.5"/><rect x="13" y="27.5" width="38" height="9" rx="4.5" fill="#f3ede6"/></svg>
+      LAYR
+    </div>
+    <div class="eyebrow"><i>L</i>ayout <i>A</i>uthoritative <i>Y</i>et <i>R</i>esponsive</div>
+    <h1>Build websites deterministically.</h1>
+    <p>A compiled UI language. Write layout in your design's numbers; ship static CSS and React.</p>
+    <div class="url">layr.dynshift.com</div>
+  </div>
+  <div class="card">
+    <header>booking.layr</header>
+<pre><span class="w">Row</span>(
+  <span class="m">.config</span>(<span class="k">gap</span>: <span class="n">16</span>, <span class="k">padding</span>: <span class="m">all</span>(<span class="n">24</span>))
+  <span class="w">Text</span>(<span class="s">'Room B'</span>)
+  <span class="w">Button</span>(
+    <span class="m">.config</span>(<span class="k">label</span>: <span class="s">'Book 2 hours'</span>)
+  )
+)</pre>
+  </div>
+  <div class="path"><span>Reach it from any file</span>Room<i>.</i>scaffold<i>.</i>body<i>.</i>row<i>.</i><b>button</b></div>
+  <script>
+    // A faint field of LAYR source behind everything, a few characters lit in the site's colours.
+    const lines = [
+      "Page(", "  .name(Room)", "  .route('/')", "  var bool open = false", "  Scaffold(", "    .config(color: canvas, textColor: ink)",
+      "    .body(Column(", "      .config(w: fill, padding: all(24), gap: 20)", "      Row(", "        .config(w: fill, xAlign: between, yAlign: mid)",
+      "        Text(.config(size: 28, weight: bold) .obj('Room B'))", "        Chip(.config(label: 'Available'))", "      )", "      Wrap(.config(gap: 8) Slot(), Slot(), Slot())",
+      "      Button(.config(label: 'Book 2 hours') .fnc { open = true })", "    ))", "  )", ")", "",
+      "Extract(.from(Room.card) .exeOrder(-1) insets base = card.padding)", "Inject(.into(Room.card) .exeOrder(0) card.padding = base * 2)", "",
+    ];
+    const colors = ["#ff6a3d", "#ffc46b", "#2ed3c4", "#9b8cff"];
+    let out = "";
+    for (let r = 0; r < 30; r++) {
+      let row = "";
+      for (let col = 0; col < 3; col++) row += (lines[(r + col * 7) % lines.length]).padEnd(58, " ");
+      out += [...row].map((ch, c) => (ch !== " " && ((r * 31 + c * 17) % 53) === 0 ? `<b style="color:${colors[(r + c) % 4]}">${ch}</b>` : ch.replace(/</g, "&lt;"))).join("") + "\n";
+    }
+    document.getElementById("field").innerHTML = out;
+  </script>
+</body>
+</html>
