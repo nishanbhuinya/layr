@@ -17,7 +17,7 @@ Page(
         .id(masked)
         .config(size: 200)
         Order(
-          .pos(0)
+          .posOrder(0)
           .obj(Container(
             .config(
               size: 200
@@ -25,14 +25,14 @@ Page(
             )
           ))
         )
-        Order(.pos(1) .obj(Container(.config(size: 200, color: red))))
+        Order(.posOrder(1) .obj(Container(.config(size: 200, color: red))))
       )
       Subtract(
         .id(cut)
         .config(size: 200)
-        Order(.pos(0) .obj(Container(.config(size: 200, color: ink))))
+        Order(.posOrder(0) .obj(Container(.config(size: 200, color: ink))))
         Order(
-          .pos(1)
+          .posOrder(1)
           .obj(Position(
             .config(bottom: 20, right: 20)
             .obj(Container(.config(size: 80, color: white, cornerRadius: 40)))

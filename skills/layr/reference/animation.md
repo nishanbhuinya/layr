@@ -15,26 +15,32 @@ Page(
   var bool big = false
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 16, padding: all(24))
-      Animate(
-        .eases(w: spring.bounce)
-        .obj(Container(
-          .config(
-            w: big ? 320 : 160
-            h: 96
-            color: big ? violet : accent
-            cornerRadius: big ? 28 : 12
-            padding: all(16)
+    .body(
+      Column(
+        .config(gap: 16, padding: all(24))
+        Animate(
+          .eases(w: spring.bounce)
+          .obj(
+            Container(
+              .config(
+                w: big ? 320 : 160
+                h: 96
+                color: big ? violet : accent
+                cornerRadius: big ? 28 : 12
+                padding: all(16)
+              )
+              .obj(
+                Text(
+                  .config(color: onAccent, weight: semibold)
+                  .obj(big ? 'w: 320' : 'w: 160')
+                )
+              )
+            )
           )
-          .obj(Text(
-            .config(color: onAccent, weight: semibold)
-            .obj(big ? 'w: 320' : 'w: 160')
-          ))
-        ))
+        )
+        Button(.preset(default) .config(label: 'Toggle') .fnc { big = !big })
       )
-      Button(.preset(default) .config(label: 'Toggle') .fnc { big = !big })
-    ))
+    )
   )
 )
 ```
@@ -56,66 +62,80 @@ Page(
   var bool on = false
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(w: fill, gap: 10, padding: all(24))
-      Button(.preset(default) .config(label: 'Move all four') .fnc { on = !on })
-      Animate(
-        .config(ease: spring.gentle)
-        .obj(Container(
-          .config(
-            w: on ? 300 : 120
-            h: 36
-            color: ember
-            cornerRadius: 8
-            objAlign: midLeft
-            padding: sym(x: 12)
+    .body(
+      Column(
+        .config(w: fill, gap: 10, padding: all(24))
+        Button(
+          .preset(default)
+          .config(label: 'Move all four')
+          .fnc { on = !on }
+        )
+        Animate(
+          .config(ease: spring.gentle)
+          .obj(
+            Container(
+              .config(
+                w: on ? 300 : 120
+                h: 36
+                color: ember
+                cornerRadius: 8
+                objAlign: midLeft
+                padding: sym(x: 12)
+              )
+              .obj(Text(.config(color: onAccent) .obj('gentle')))
+            )
           )
-          .obj(Text(.config(color: onAccent) .obj('gentle')))
-        ))
-      )
-      Animate(
-        .config(ease: spring.snappy)
-        .obj(Container(
-          .config(
-            w: on ? 300 : 120
-            h: 36
-            color: gold
-            cornerRadius: 8
-            objAlign: midLeft
-            padding: sym(x: 12)
+        )
+        Animate(
+          .config(ease: spring.snappy)
+          .obj(
+            Container(
+              .config(
+                w: on ? 300 : 120
+                h: 36
+                color: gold
+                cornerRadius: 8
+                objAlign: midLeft
+                padding: sym(x: 12)
+              )
+              .obj(Text(.config(color: ink) .obj('snappy')))
+            )
           )
-          .obj(Text(.config(color: ink) .obj('snappy')))
-        ))
-      )
-      Animate(
-        .config(ease: spring.bounce)
-        .obj(Container(
-          .config(
-            w: on ? 300 : 120
-            h: 36
-            color: teal
-            cornerRadius: 8
-            objAlign: midLeft
-            padding: sym(x: 12)
+        )
+        Animate(
+          .config(ease: spring.bounce)
+          .obj(
+            Container(
+              .config(
+                w: on ? 300 : 120
+                h: 36
+                color: teal
+                cornerRadius: 8
+                objAlign: midLeft
+                padding: sym(x: 12)
+              )
+              .obj(Text(.config(color: onAccent) .obj('bounce')))
+            )
           )
-          .obj(Text(.config(color: onAccent) .obj('bounce')))
-        ))
-      )
-      Animate(
-        .config(ease: spring.slow)
-        .obj(Container(
-          .config(
-            w: on ? 300 : 120
-            h: 36
-            color: violet
-            cornerRadius: 8
-            objAlign: midLeft
-            padding: sym(x: 12)
+        )
+        Animate(
+          .config(ease: spring.slow)
+          .obj(
+            Container(
+              .config(
+                w: on ? 300 : 120
+                h: 36
+                color: violet
+                cornerRadius: 8
+                objAlign: midLeft
+                padding: sym(x: 12)
+              )
+              .obj(Text(.config(color: onAccent) .obj('slow')))
+            )
           )
-          .obj(Text(.config(color: onAccent) .obj('slow')))
-        ))
+        )
       )
-    ))
+    )
   )
 )
 ```
@@ -143,31 +163,37 @@ Page(
   var bool shown = false
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 16, padding: all(24))
-      Button(
-        .preset(default)
-        .config(label: shown ? 'Dismiss' : 'Save')
-        .fnc { shown = !shown }
-      )
-      If(
-        .cnd(shown)
-        .obj(Animate(
-          .config(duration: 220ms, ease: ease.out)
-          .enter(fade, slide(y: 12))
-          .exit(fade)
-          .obj(Container(
-            .config(
-              .border(color: line, width: 1)
-              color: panel
-              cornerRadius: 12
-              padding: sym(x: 16, y: 12)
+    .body(
+      Column(
+        .config(gap: 16, padding: all(24))
+        Button(
+          .preset(default)
+          .config(label: shown ? 'Dismiss' : 'Save')
+          .fnc { shown = !shown }
+        )
+        If(
+          .cnd(shown)
+          .obj(
+            Animate(
+              .config(duration: 220ms, ease: ease.out)
+              .enter(fade, slide(y: 12))
+              .exit(fade)
+              .obj(
+                Container(
+                  .config(
+                    .border(color: line, width: 1)
+                    color: panel
+                    cornerRadius: 12
+                    padding: sym(x: 16, y: 12)
+                  )
+                  .obj(Text('Saved. Your changes are live.'))
+                )
+              )
             )
-            .obj(Text('Saved. Your changes are live.'))
-          ))
-        ))
+          )
+        )
       )
-    ))
+    )
   )
 )
 ```
@@ -186,29 +212,33 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 16, padding: all(24))
-      Animate(
-        .config(ease: spring.snappy)
-        .obj(Container(
-          .id(box)
-          .config(w: 80, h: 80, color: accent, cornerRadius: 16)
-        ))
-      )
-      Button(
-        .preset(default)
-        .config(label: 'Play')
-        .fnc(
-          .loop(
-            .times(2)
-            .exe(box.w = 240)
-            .wait(300ms)
-            .exe(box.w = 80)
-            .wait(300ms)
+    .body(
+      Column(
+        .config(gap: 16, padding: all(24))
+        Animate(
+          .config(ease: spring.snappy)
+          .obj(
+            Container(
+              .id(box)
+              .config(w: 80, h: 80, color: accent, cornerRadius: 16)
+            )
+          )
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Play')
+          .fnc(
+            .loop(
+              .times(2)
+              .exe(box.w = 240)
+              .wait(300ms)
+              .exe(box.w = 80)
+              .wait(300ms)
+            )
           )
         )
       )
-    ))
+    )
   )
 )
 ```

@@ -28,7 +28,13 @@ export async function loadReference() {
 
 export async function loadWidget(name: string) {
   const ref = await loadReference();
-  return ref.widgets.find((w: { slug: string }) => w.slug === name) ?? null;
+  const w = ref.widgets.find((x: { slug: string }) => x.slug === name);
+  if (!w) return null;
+  // Previous and next follow the reference index: widgets grouped by module, in index order.
+  const order = (ref.modules as Array<{ widgets: Array<{ name: string; slug: string }> }>).flatMap((m) => m.widgets);
+  const i = order.findIndex((x) => x.slug === name);
+  const link = (x: { name: string; slug: string } | undefined) => (x ? { title: x.name, href: `/api/${x.slug}` } : null);
+  return { ...w, prev: link(order[i - 1]), next: link(order[i + 1]) };
 }
 
 export async function widgetPaths() {

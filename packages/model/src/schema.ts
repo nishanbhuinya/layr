@@ -41,7 +41,7 @@ export interface KeyDef {
   dimension?: boolean;
   /** Animatable by `Animate` (and interpolated by `.at` frames when numeric). */
   animatable?: boolean;
-  /** Written as a modifier in canonical form (`Order(.pos(1))`). */
+  /** Written as a modifier in canonical form (`Order(.posOrder(1))`). */
   modifier?: boolean;
 }
 
@@ -139,7 +139,7 @@ const ALIGN_VALUES = ["topLeft", "topMid", "topRight", "midLeft", "mid", "midRig
 export const AXIS_VALUES = ["start", "mid", "end", "between", "around", "evenly", "stretch"] as const;
 export const OVERFLOW_VALUES = ["auto", "wrap", "stack", "scroll", "clip", "shrink", "warn", "error"] as const;
 
-const OBJ_ALIGN = k("objAlign", "align", "Where the object's content sits inside it.", { default: "topLeft", aliases: ["alignment", "contentAlign"] });
+const OBJ_ALIGN = k("objAlign", "align", "Where the object's content sits inside it.", { default: "topLeft", aliases: ["align", "alignment", "contentAlign"] });
 const OVERFLOW = k("overflow", "enum", "What happens when content does not fit. `auto` adapts deterministically (see Layout & Adaptation).", { values: OVERFLOW_VALUES, default: "auto" });
 
 const box = (...extra: KeyDef[]): KeyDef[] => [...SIZE_KEYS, ...DECOR_KEYS, ...COMMON_KEYS, ...extra];
@@ -149,6 +149,7 @@ const MANY: SlotDef = { name: "objs", kind: "many", doc: "Child objects, in orde
 const TEXT: SlotDef = { name: "obj", kind: "text", doc: "The text.", default: true, required: true };
 
 const FLEX_KEYS = (dir: "row" | "col"): KeyDef[] => [
+  k("align", "align", "Both axes at once, e.g. `align: mid` or `align: bottomRight`; `xAlign` and `yAlign` override one axis.", { aliases: ["alignment"] }),
   k("xAlign", "axis", dir === "row" ? "Horizontal distribution along the row." : "Horizontal alignment of children.", { default: "start", aliases: dir === "row" ? ["mainAxisAlignment"] : ["crossAxisAlignment"] }),
   k("yAlign", "axis", dir === "row" ? "Vertical alignment of children." : "Vertical distribution down the column.", { default: "start", aliases: dir === "row" ? ["crossAxisAlignment"] : ["mainAxisAlignment"] }),
   k("gap", "len", "Space between children.", { animatable: true, aliases: ["spacing"] }),
@@ -163,7 +164,7 @@ const TEXT_KEYS: readonly KeyDef[] = [
   k("weight", "enum", "Font weight: `thin`…`black` or 100–900.", { values: ["thin", "light", "regular", "medium", "semibold", "bold", "black"], aliases: ["fontWeight", "wight"] }),
   k("italic", "bool", "Italic style.", { aliases: ["italics"] }),
   k("color", "paint", "Text colour (a gradient paints the glyphs).", { animatable: true }),
-  k("align", "enum", "Text alignment.", { values: ["left", "mid", "right", "start", "end", "justify"], aliases: ["textAlign", "textAlight"] }),
+  k("align", "enum", "Text alignment.", { values: ["left", "mid", "right", "start", "end", "justify"], aliases: ["textAlign", "textAlight", "alignment"] }),
   k("lineHeight", "num", "Line height as a multiple of the font size.", { animatable: true }),
   k("letterSpacing", "len", "Space between letters.", { animatable: true }),
   k("type", "enum", "Semantic type (sets the element and default style): h1–h6, p, label, code, span.", { values: ["h1", "h2", "h3", "h4", "h5", "h6", "p", "label", "code", "span", "strong", "em"], default: "p" }),
@@ -259,11 +260,11 @@ export const WIDGETS: readonly WidgetDef[] = [
     name: "Order",
     module: "layout",
     doc: "Sets an object's layer in a Stack, Mask or Subtract. 0 is the base; negatives go below.",
-    keys: [k("pos", "int", "Layer position.", { modifier: true, default: "0" }), ...COMMON_KEYS],
+    keys: [k("posOrder", "int", "Layer position, like z-index: any integer; higher paints above, 0 is the base, negatives go below.", { modifier: true, default: "0", aliases: ["pos", "pOrd", "pO"] }), ...COMMON_KEYS],
     slots: [ONE],
     tag: "div",
     layout: "passthrough",
-    example: "Order(.pos(1) .obj(Container(.config(size: 100, color: red))))",
+    example: "Order(.posOrder(1) .obj(Container(.config(size: 100, color: red))))",
   },
   {
     name: "Mid",
@@ -312,7 +313,7 @@ export const WIDGETS: readonly WidgetDef[] = [
     name: "Wrap",
     module: "layout",
     doc: "Lays objects out in rows that wrap onto new lines.",
-    keys: box(k("gap", "len", "Space between objects on a line.", { animatable: true }), k("runGap", "len", "Space between lines.", { animatable: true }), ...FLEX_KEYS("row").filter((x) => x.name === "xAlign" || x.name === "yAlign")),
+    keys: box(k("gap", "len", "Space between objects on a line.", { animatable: true }), k("runGap", "len", "Space between lines.", { animatable: true }), ...FLEX_KEYS("row").filter((x) => x.name === "align" || x.name === "xAlign" || x.name === "yAlign")),
     groups: [BORDER_GROUP],
     slots: [MANY],
     tag: "div",
@@ -325,7 +326,7 @@ export const WIDGETS: readonly WidgetDef[] = [
     module: "layout",
     doc: "A grid with a fixed column count or columns that fit a minimum item width.",
     keys: box(
-      k("cols", "int", "Number of columns."),
+      k("cols", "int", "Number of columns.", { aliases: ["columns"] }),
       k("minItemW", "len", "Minimum item width; columns fit automatically (ignored when `cols` is set)."),
       k("gap", "len", "Space between items.", { animatable: true }),
       k("rowGap", "len", "Space between rows (defaults to `gap`).", { animatable: true }),
@@ -460,8 +461,8 @@ export const WIDGETS: readonly WidgetDef[] = [
   {
     name: "Svg",
     module: "content",
-    doc: "An SVG from a URL; `color` sets currentColor.",
-    keys: [k("src", "src", "SVG URL."), k("alt", "txt", "Text alternative."), k("color", "color", "currentColor.", { animatable: true }), ...SIZE_KEYS, ...COMMON_KEYS],
+    doc: "An SVG from a URL. Without `color` it shows the file's own colours; with `color` its shape is filled with that colour (for one-colour icons and logos).",
+    keys: [k("src", "src", "SVG URL."), k("alt", "txt", "Text alternative."), k("color", "color", "Fills the SVG's shape with this colour.", { animatable: true }), ...SIZE_KEYS, ...COMMON_KEYS],
     slots: [],
     tag: "img",
     layout: "leaf",
@@ -470,7 +471,7 @@ export const WIDGETS: readonly WidgetDef[] = [
   {
     name: "Icon",
     module: "content",
-    doc: "An icon by name from the registered icon set (e.g. the `icons` addon).",
+    doc: "An icon by name from a registered icon set: register SVG strings once with `icons({ name: '<svg…>' })` from `@dynshift/layr/react`. `color` is the icon's colour (`currentColor`).",
     keys: [k("name", "txt", "Icon name."), k("size", "len", "Icon size.", { default: "24", animatable: true }), k("color", "color", "Icon colour.", { animatable: true }), k("label", "txt", "Accessible label; omit for decorative icons."), ...COMMON_KEYS],
     slots: [{ name: "name", kind: "text", doc: "Icon name (positional).", default: true }],
     tag: "span",
@@ -533,17 +534,17 @@ export const WIDGETS: readonly WidgetDef[] = [
     slots: [MANY],
     tag: "div",
     layout: "stack",
-    example: "Mask(\n  Order(.pos(0) .obj(Container(.config(size: 200, color: LinearGradient(.colors(black.alpha(0), black))))))\n  Order(.pos(1) .obj(Container(.config(size: 200, color: red))))\n)",
+    example: "Mask(\n  Order(.posOrder(0) .obj(Container(.config(size: 200, color: LinearGradient(.colors(black.alpha(0), black))))))\n  Order(.posOrder(1) .obj(Container(.config(size: 200, color: red))))\n)",
   },
   {
     name: "Subtract",
     module: "effects",
     doc: "Cuts the upper layer's shape out of the base layer.",
-    keys: [k("align", "align", "Where the cut sits by default.", { default: "mid" }), ...SIZE_KEYS, ...COMMON_KEYS],
+    keys: [k("align", "align", "Where the cut sits by default.", { aliases: ["alignment"], default: "mid" }), ...SIZE_KEYS, ...COMMON_KEYS],
     slots: [MANY],
     tag: "div",
     layout: "stack",
-    example: "Subtract(\n  Order(.pos(0) .obj(Container(.config(size: 200, color: black))))\n  Order(.pos(1) .obj(Position(.config(bottom: -10) .obj(Container(.config(size: 100, cornerRadius: 50))))))\n)",
+    example: "Subtract(\n  Order(.posOrder(0) .obj(Container(.config(size: 200, color: black))))\n  Order(.posOrder(1) .obj(Position(.config(bottom: -10) .obj(Container(.config(size: 100, cornerRadius: 50))))))\n)",
   },
   {
     name: "Clip",
@@ -766,14 +767,17 @@ export const CONSTRUCTS: readonly ConstructDef[] = [
 /** Modifiers every widget accepts. */
 export const COMMON_MODIFIERS: readonly string[] = ["id", "preset", "config", "at", "export", "fnc", "on", "a11y", "react", "props", "slot", "obj", "objs"];
 
-/** Modifier aliases → canonical. */
+/**
+ * Modifier aliases → canonical: short forms for fast typing. They mean the canonical modifier
+ * everywhere, and `layr format` writes the canonical name.
+ */
 export const MODIFIER_ALIASES: Readonly<Record<string, string>> = {
   exc: "exe",
-  lookUp: "from",
-  body: "body",
+  exeOrd: "exeOrder",
+  eOrd: "exeOrder",
+  eO: "exeOrder",
   children: "objs",
   child: "obj",
-  child_: "obj",
 };
 
 /** Canonical modifier order inside a node. Unlisted modifiers keep their relative position after `.on`. */

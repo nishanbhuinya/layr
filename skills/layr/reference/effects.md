@@ -18,66 +18,72 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Stack(
-      .config(w: fill, h: 340, clip: true)
-      Scroll(
-        .config(w: fill, h: fill)
-        Column(
-          .config(
-            w: fill
-            gap: 12
-            padding: only(left: 16, right: 16, top: 76, bottom: 16)
-          )
-          Container(
+    .body(
+      Stack(
+        .config(w: fill, h: 340, clip: true)
+        Scroll(
+          .config(w: fill, h: fill)
+          Column(
             .config(
               w: fill
-              h: 110
-              color: LinearGradient(.colors(ember, gold))
-              cornerRadius: 14
+              gap: 12
+              padding: only(left: 16, right: 16, top: 76, bottom: 16)
+            )
+            Container(
+              .config(
+                w: fill
+                h: 110
+                color: LinearGradient(.colors(ember, gold))
+                cornerRadius: 14
+              )
+            )
+            Container(
+              .config(
+                w: fill
+                h: 110
+                color: LinearGradient(.colors(violet, teal))
+                cornerRadius: 14
+              )
+            )
+            Container(
+              .config(
+                w: fill
+                h: 110
+                color: LinearGradient(.colors(ink, ember))
+                cornerRadius: 14
+              )
+            )
+            Container(
+              .config(
+                w: fill
+                h: 110
+                color: LinearGradient(.colors(teal, gold))
+                cornerRadius: 14
+              )
             )
           )
-          Container(
-            .config(
-              w: fill
-              h: 110
-              color: LinearGradient(.colors(violet, teal))
-              cornerRadius: 14
-            )
-          )
-          Container(
-            .config(
-              w: fill
-              h: 110
-              color: LinearGradient(.colors(ink, ember))
-              cornerRadius: 14
-            )
-          )
-          Container(
-            .config(
-              w: fill
-              h: 110
-              color: LinearGradient(.colors(teal, gold))
-              cornerRadius: 14
+        )
+        Position(
+          .config(left: 0, right: 0, top: 0)
+          .obj(
+            Blur(
+              .config(
+                w: fill
+                color: panel.alpha(55%)
+                padding: sym(x: 20, y: 18)
+                value: 16
+              )
+              .obj(
+                Text(
+                  .config(size: 17, color: ink, weight: semibold)
+                  .obj('Frosted header')
+                )
+              )
             )
           )
         )
       )
-      Position(
-        .config(left: 0, right: 0, top: 0)
-        .obj(Blur(
-          .config(
-            w: fill
-            color: panel.alpha(55%)
-            padding: sym(x: 20, y: 18)
-            value: 16
-          )
-          .obj(Text(
-            .config(size: 17, color: ink, weight: semibold)
-            .obj('Frosted header')
-          ))
-        ))
-      )
-    ))
+    )
   )
 )
 ```
@@ -98,58 +104,62 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Stack(
-      .config(w: fill, h: 360, clip: true)
-      Column(
-        .config(w: fill, gap: 10, padding: all(16))
-        Text(.config(size: 13, color: muted) .obj('Today'))
-        Container(
-          .config(
-            w: fill
-            h: 72
-            color: LinearGradient(.colors(ember, gold))
-            cornerRadius: 12
+    .body(
+      Stack(
+        .config(w: fill, h: 360, clip: true)
+        Column(
+          .config(w: fill, gap: 10, padding: all(16))
+          Text(.config(size: 13, color: muted) .obj('Today'))
+          Container(
+            .config(
+              w: fill
+              h: 72
+              color: LinearGradient(.colors(ember, gold))
+              cornerRadius: 12
+            )
+          )
+          Container(
+            .config(
+              w: fill
+              h: 72
+              color: LinearGradient(.colors(violet, accent))
+              cornerRadius: 12
+            )
+          )
+          Container(
+            .config(
+              w: fill
+              h: 72
+              color: LinearGradient(.colors(teal, violet))
+              cornerRadius: 12
+            )
+          )
+          Container(
+            .config(
+              w: fill
+              h: 72
+              color: LinearGradient(.colors(gold, ember))
+              cornerRadius: 12
+            )
           )
         )
-        Container(
-          .config(
-            w: fill
-            h: 72
-            color: LinearGradient(.colors(violet, accent))
-            cornerRadius: 12
-          )
-        )
-        Container(
-          .config(
-            w: fill
-            h: 72
-            color: LinearGradient(.colors(teal, violet))
-            cornerRadius: 12
-          )
-        )
-        Container(
-          .config(
-            w: fill
-            h: 72
-            color: LinearGradient(.colors(gold, ember))
-            cornerRadius: 12
+        Position(
+          .config(bottom: 0, left: 0, right: 0)
+          .obj(
+            Blur(
+              .config(
+                w: fill
+                h: 180
+                edge: bottom
+                fade: canvas
+                type: progressive
+                value: 28
+              )
+            )
           )
         )
       )
-      Position(
-        .config(bottom: 0, left: 0, right: 0)
-        .obj(Blur(
-          .config(
-            w: fill
-            h: 180
-            edge: bottom
-            fade: canvas
-            type: progressive
-            value: 28
-          )
-        ))
-      )
-    ))
+    )
   )
 )
 ```
@@ -179,32 +189,38 @@ Page(
   var bool hidden = true
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(w: fill, gap: 16, padding: all(24))
-      Animate(
-        .config(duration: 450ms, ease: ease.out)
-        .obj(Blur(
-          .config(
-            blurOn: object
-            color: panel
-            cornerRadius: 12
-            padding: all(20)
-            value: hidden ? 10 : 0
-          )
-          .obj(Text(
-            .config(size: 18, color: ink, lineHeight: 1.5)
-            .obj(
-              'The layout was authoritative all along: every number in the file was the one on the screen.'
+    .body(
+      Column(
+        .config(w: fill, gap: 16, padding: all(24))
+        Animate(
+          .config(duration: 450ms, ease: ease.out)
+          .obj(
+            Blur(
+              .config(
+                blurOn: object
+                color: panel
+                cornerRadius: 12
+                padding: all(20)
+                value: hidden ? 10 : 0
+              )
+              .obj(
+                Text(
+                  .config(size: 18, color: ink, lineHeight: 1.5)
+                  .obj(
+                    'The layout was authoritative all along: every number in the file was the one on the screen.'
+                  )
+                )
+              )
             )
-          ))
-        ))
+          )
+        )
+        Button(
+          .preset(default)
+          .config(label: hidden ? 'Reveal the ending' : 'Hide it again')
+          .fnc { hidden = !hidden }
+        )
       )
-      Button(
-        .preset(default)
-        .config(label: hidden ? 'Reveal the ending' : 'Hide it again')
-        .fnc { hidden = !hidden }
-      )
-    ))
+    )
   )
 )
 ```

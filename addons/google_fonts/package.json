@@ -36,7 +36,7 @@
   "layr": {
     "id": "google_fonts",
     "kind": "utility",
-    "layr": "^3.0.0-0",
+    "layr": "^3.0.0",
     "categories": [
       "utilities",
       "typography"
@@ -48,7 +48,7 @@
     "examples": "./examples"
   },
   "peerDependencies": {
-    "@dynshift/layr": "^3.0.0-0"
+    "@dynshift/layr": "^3.0.0"
   },
   "devDependencies": {
     "@dynshift/layr": "workspace:*",

@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { readAppConfig } from "../src/app.ts";
 import { compileProject } from "../src/compile.ts";
 
-const DOCS = join(import.meta.dirname, "../../../docs/content");
+const ROOT = join(import.meta.dirname, "../../..");
+/** The docs, and the site's widget reference pages (site/content/reference). */
+const DIRS = [join(ROOT, "docs/content"), join(ROOT, "site/content/reference")];
 /** Docs examples use the site's theme tokens (canvas, panel, ink, accent...), as the site compiles them. */
 const SITE_THEME = readAppConfig(readFileSync(join(import.meta.dirname, "../../../site/src/app.layr"), "utf8")).theme;
 
@@ -18,14 +20,14 @@ function markdown(dir: string, out: string[] = []): string[] {
 }
 
 /** Every ```layr block in the docs compiles without errors (```layr noexec opts out for illustrative fragments). */
-const snippets = markdown(DOCS).flatMap((file) => {
+const snippets = DIRS.flatMap((d) => markdown(d)).flatMap((file) => {
   const text = readFileSync(file, "utf8");
   const out: Array<[string, string]> = [];
   const re = /```layr( noexec)?\n([\s\S]*?)```/g;
   for (let m = re.exec(text); m; m = re.exec(text)) {
     if (m[1]) continue;
     const line = text.slice(0, m.index).split("\n").length;
-    out.push([`${relative(DOCS, file).replace(/\\/g, "/")}:${line}`, m[2] as string]);
+    out.push([`${relative(ROOT, file).replace(/\\/g, "/")}:${line}`, m[2] as string]);
   }
   return out;
 });

@@ -83,9 +83,14 @@ const BASE_RULES = `
 dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
 dialog.l:not([open]){display:none}
 dialog.l::backdrop{background:var(--l-backdrop,rgb(0 0 0 / .35))}
-button.l{cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),filter 160ms}
-button.l:disabled{cursor:not-allowed}
-/* A button answers the press: it gives a little under the finger, and brightens under a mouse. */
+button.l{cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),filter 160ms;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+a.l{-webkit-tap-highlight-color:transparent}
+[data-l="Icon"]>svg{display:block;width:100%;height:100%}
+button.l:disabled{cursor:not-allowed;opacity:.5}
+input.l,select.l,textarea.l{accent-color:var(--layr-color-accent,auto)}
+/* A button answers the press: it gives a little under the finger, and brightens under a mouse. On
+   touch screens it shows no grey tap flash and a long press does not select its label; the press
+   scale is the feedback, and keyboard focus keeps its ring. */
 button.l:active:not(:disabled){transform:scale(.97)}
 @media (hover:hover) and (pointer:fine){button.l:hover:not(:disabled){filter:brightness(1.06)}}
 @media (prefers-reduced-motion: reduce){button.l{transition:none}button.l:active:not(:disabled){transform:none}}
@@ -96,9 +101,11 @@ button.l:active:not(:disabled){transform:scale(.97)}
 /**
  * Parent-to-child layout rules also apply through pass-through wrappers (`.l-pass`: Animate,
  * Focus, and If's presence wrapper render `display: contents`), so wrapping an object never
- * changes how its parent lays it out.
+ * changes how its parent lays it out: compound selectors (`.l-row.l-stacked>`) included, and two
+ * wrappers deep (an If around an Animate). The wrapper forms sit in `:where()`, so every rule keeps
+ * the specificity it was written with.
  */
-export const BASE_CSS = BASE_RULES.replace(/\.l-(row|col|box|wrap|stack|grid|scroll)>/g, ":is(.l-$1,.l-$1>.l-pass)>");
+export const BASE_CSS = BASE_RULES.replace(/\.l-(row|col|box|wrap|stack|grid|scroll)((?:\.[\w-]+)*)>/g, ":is(.l-$1$2,:where(.l-$1$2>.l-pass,.l-$1$2>.l-pass>.l-pass))>");
 
 const AXIS_CSS: Record<string, string> = {
   start: "flex-start",
@@ -297,8 +304,8 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
   if (has("cursor")) d.cursor = cfg.cursor === "notAllowed" ? "not-allowed" : String(cfg.cursor);
   if (has("z")) d["z-index"] = String(cfg.z);
 
-  // ---- decoration
-  if (has("color") && layout !== "text" && layout !== "inline") {
+  // ---- decoration (an Icon's or Svg's `color` is its ink, `currentColor`, not a fill behind it)
+  if (has("color") && layout !== "text" && layout !== "inline" && name !== "Icon" && name !== "Svg") {
     const p = paintCss(cfg.color);
     if (p.color) d["background-color"] = p.color;
     if (p.image) d["background-image"] = p.image;
@@ -368,8 +375,14 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
       if (layout === "col" && cfg.reverse === true) d["flex-direction"] = "column-reverse";
       const main = dir === "row" ? "xAlign" : "yAlign";
       const cross = dir === "row" ? "yAlign" : "xAlign";
-      if (has(main)) d["justify-content"] = AXIS_CSS[cfg[main] as string] ?? "flex-start";
-      if (has(cross)) d["align-items"] = AXIS_CSS[cfg[cross] as string] ?? "flex-start";
+      // `align: bottomRight` sets both axes; `xAlign`/`yAlign` override one of them.
+      const both = has("align") ? alignPoint(canonicalAlign(String(cfg.align)) ?? "topLeft") : null;
+      const axisOf = (n: number) => (n === 0 ? "start" : n === 1 ? "end" : "mid");
+      const axis = (key: string, i: 0 | 1) => (has(key) ? (cfg[key] as string) : both ? axisOf(both[i]) : undefined);
+      const mainV = axis(main, main === "xAlign" ? 0 : 1);
+      const crossV = axis(cross, cross === "xAlign" ? 0 : 1);
+      if (mainV !== undefined) d["justify-content"] = AXIS_CSS[mainV] ?? "flex-start";
+      if (crossV !== undefined) d["align-items"] = AXIS_CSS[crossV] ?? "flex-start";
       if (has("gap")) d.gap = lengthCss(cfg.gap as Length);
       if (layout === "wrap" && has("runGap")) d["row-gap"] = lengthCss(cfg.runGap as Length);
       if (name === "Scaffold") {
@@ -519,7 +532,6 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
         d.display = "inline-flex";
         if (has("color")) d.color = (toColor(cfg.color) ?? new Color(0, 0, 0)).toCss();
       }
-      if (name === "Svg" && has("color")) d.color = (toColor(cfg.color) ?? new Color(0, 0, 0)).toCss();
       break;
     }
     case "passthrough": {
@@ -532,10 +544,12 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
         } else if (edges.length) {
           d.position = "absolute";
           for (const e of edges) d[e] = lengthCss(cfg[e] as Length);
+          // Pinned to opposite edges it has a size of its own: its object fills it with `w`/`h: fill`.
+          out.classes.push("l-box");
         } else d.position = "relative";
         if (has("x") || has("y")) d.translate = `${lengthCss((cfg.x as Length) ?? 0)} ${lengthCss((cfg.y as Length) ?? 0)}`;
       }
-      if (name === "Order") d["z-index"] = String(cfg.pos ?? 0);
+      if (name === "Order") d["z-index"] = String(cfg.posOrder ?? 0);
       if (name === "Expand") {
         out.classes.push("l-wfill");
         if (has("flex")) d["--l-flex"] = num(cfg.flex as number);
@@ -558,7 +572,27 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
     out.attrs.type = cfg.submit === true ? "submit" : "button";
     if (cfg.disabled === true) out.attrs.disabled = true;
   }
-  if (name === "Image" || name === "Svg") {
+  if (name === "Svg" && has("color") && typeof cfg.src === "string") {
+    // A coloured Svg is its shape filled with `color`: the file becomes a mask, so a one-colour icon
+    // takes the theme's colour (an <img> cannot be recoloured).
+    out.tag = "span";
+    const url = `url(${JSON.stringify(cfg.src)})`;
+    d["background-color"] = (toColor(cfg.color) ?? new Color(0, 0, 0)).toCss();
+    for (const p of ["mask", "-webkit-mask"]) {
+      d[`${p}-image`] = url;
+      d[`${p}-size`] = "contain";
+      d[`${p}-repeat`] = "no-repeat";
+      d[`${p}-position`] = "center";
+    }
+    d.display = "inline-block";
+    d.width ??= "1em";
+    d.height ??= "1em";
+    if (cfg.decorative === true || typeof cfg.alt !== "string") out.attrs["aria-hidden"] = true;
+    else {
+      out.attrs.role = "img";
+      out.attrs["aria-label"] = cfg.alt;
+    }
+  } else if (name === "Image" || name === "Svg") {
     if (typeof cfg.src === "string") out.attrs.src = cfg.src;
     if (cfg.decorative === true) {
       out.attrs.alt = "";

@@ -182,7 +182,12 @@ natural.textContent = "[data-l=Scaffold]{min-height:0!important}";
 let autoHeight = true;
 const measure = () => {
   const root = document.querySelector(".l-root");
-  post({ type: "size", h: Math.ceil(root ? root.getBoundingClientRect().height : document.documentElement.scrollHeight) });
+  if (!root) return post({ type: "size", h: Math.ceil(document.documentElement.scrollHeight) });
+  // What hangs outside its parent (a Position with a negative `bottom`) is part of the example too.
+  const box = root.getBoundingClientRect();
+  let bottom = box.bottom;
+  for (const el of root.querySelectorAll("[data-l]")) bottom = Math.max(bottom, el.getBoundingClientRect().bottom);
+  post({ type: "size", h: Math.ceil(bottom - box.top + (bottom > box.bottom + 0.5 ? 16 : 0)) });
 };
 const ro = new ResizeObserver(() => requestAnimationFrame(measure));
 ro.observe(document.body);

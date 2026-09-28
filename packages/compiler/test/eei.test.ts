@@ -16,6 +16,38 @@ describe("Export/Extract/Inject", () => {
   });
 });
 
+describe("Inject targets and exeOrder", () => {
+  const withId = `Page(.name(Room) .route('/') Scaffold(.body(Column(Column(Text(.id(txtChg) .obj('This week')), Row(Text('a')))))))`;
+  const compile = (inject: string) => {
+    const r = compileProject([{ path: "src/pages/index.layr", text: `${withId}\n${inject}` }]);
+    return { js: r.modules.get("src/pages/index.layr")?.js ?? "", diags: r.diagnostics };
+  };
+  it("a target reached by a path answers to the written name and to its id", () => {
+    for (const local of ["text", "txtChg"]) {
+      const { js, diags } = compile(`Inject(.exeOrder(-5) .into(Room.scaffold.column.column.text) ${local}.color = #ff0000\n${local}.obj = 'Changed')`);
+      expect(diags.filter((d) => d.severity === "error")).toEqual([]);
+      expect(js).toContain('{ a: "Room::txtChg", k: "color", o: -5');
+      expect(js).toContain('{ a: "Room::txtChg", k: "obj", o: -5');
+    }
+  });
+  it("names the target when an assignment misses it", () => {
+    const { diags } = compile("Inject(.into(Room.scaffold.column.column.text) card.color = #ff0000)");
+    expect(diags.find((d) => d.code === "L3301")?.message).toMatch(/`text` or `txtChg`/);
+  });
+  it("takes any constant integer, signed either way, and the short forms", () => {
+    for (const [order, o] of [["-9999", "-9999"], ["+3", "3"], ["- 5", "-5"], ["-0", "0"], ["2147483647", "2147483647"]]) {
+      const { js, diags } = compile(`Inject(.into(Room.txtChg) .exeOrder(${order}) txtChg.color = #ff0000)`);
+      expect(diags.filter((d) => d.severity === "error")).toEqual([]);
+      expect(js).toContain(`k: "color", o: ${o},`);
+    }
+    for (const alias of ["exeOrd", "eOrd", "eO"]) {
+      const { js, diags } = compile(`Inject(.into(Room.txtChg) .${alias}(7) txtChg.color = #ff0000)`);
+      expect(js).toContain('k: "color", o: 7,');
+      expect(diags.find((d) => d.code === "L1011")?.message).toBe(`\`.${alias}\` is written \`.exeOrder\`.`);
+    }
+  });
+});
+
 describe("lookup paths into widget instances", () => {
   const files = (inject: string) => [
     { path: "src/widgets/tag.layr", text: "Widget(.name(Tag) .param(txt label = '') .obj(Row(Text(.obj(param.label)), Text(.obj('!')))))" },
@@ -116,6 +148,17 @@ Page(
     expect(p.js).toContain('{ a: "Store::tag", k: "obj"');
     // Widgets resolve their params through the cascade.
     expect(p.js).toContain("$p = $.useParams($p, {");
+  });
+});
+
+describe("measured features", () => {
+  const page = "Page(.name(S) .route('/') Scaffold(.body(Column(Text(.id(title) .obj('Room B')), Container(.id(box) .config(w: 40, h: 40))))))";
+  const errors = (inject: string) => compileProject([{ path: "src/pages/index.layr", text: `${page}\n${inject}` }]).diagnostics.filter((d) => d.severity === "error").map((d) => d.code);
+  it("size changes the object's own size key (a Text's font size); pos and visible stay read-only", () => {
+    expect(errors("Inject(.into(S.title) title.size = 26)")).toEqual([]);
+    expect(errors("Inject(.into(S.box) box.size = 80)")).toEqual([]);
+    expect(errors("Inject(.into(S.box) box.pos = 3)")).toContain("L3104");
+    expect(errors("Inject(.into(S.box) box.visible = false)")).toContain("L3104");
   });
 });
 

@@ -1,5 +1,5 @@
 import { DocsShell, TopBar } from '../../widgets/shell.layr'
-import { Article } from '../../widgets/article.layr'
+import { Article, PagerLink } from '../../widgets/article.layr'
 import { loadWidget, widgetPaths } from '../../lib/content.ts'
 import { Prose } from '../../react/Prose.tsx'
 
@@ -27,6 +27,11 @@ Page(
             )
             Prose(.props(html: data.head))
             Prose(.props(html: data.html))
+          )
+          Row(
+            .config(w: fill, gap: 12, margin: only(top: 48))
+            If(.cnd(data.prev != null) .obj(PagerLink(.config(label: 'Previous', title: data.prev.title, href: data.prev.href))) .fb(Expand(Container())))
+            If(.cnd(data.next != null) .obj(PagerLink(.config(label: 'Next', title: data.next.title, href: data.next.href, next: true))) .fb(Expand(Container())))
           )
         ))
       )

@@ -110,6 +110,24 @@ test("layout adapts deterministically", async ({ page }) => {
   await expect.poll(async () => new Set(await top(panes.locator(":scope > *"))).size).toBe(1);
 });
 
+test("wrappers and scroll containers keep layout: Animate in a stacking row, a sideways shelf, a pinned Position", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 900 });
+  await page.goto("/layout");
+  const anim = page.locator('[data-a="Layout::anim"]');
+  const plain = page.locator('[data-l=Row]').nth(1).locator(":scope > *").nth(1);
+  // Stacked, the Animate-wrapped fill child keeps its height, exactly like the plain one.
+  await expect.poll(async () => Math.round((await anim.boundingBox())?.height ?? 0)).toBe(Math.round((await plain.boundingBox())?.height ?? -1));
+  expect((await anim.boundingBox())?.height ?? 0).toBeGreaterThan(30);
+  // The shelf's four boxes share one line (the Scroll scrolls instead of the row wrapping).
+  const tops = await page.locator('[data-a="Layout::shelf"] > *').evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
+  expect(new Set(tops).size).toBe(1);
+  // The pinned Position's fill object fills the space between its edges.
+  const pinned = await page.locator('[data-a="Layout::pinned"]').boundingBox();
+  const stack = await page.locator('[data-a="Layout::pinned"]').evaluate((e) => (e.closest("[data-l=Stack]") as HTMLElement).getBoundingClientRect());
+  expect(Math.round(pinned?.width ?? 0)).toBeGreaterThan(Math.round(stack.width * 0.8));
+  expect(Math.round(pinned?.height ?? 0)).toBeGreaterThan(Math.round(stack.height * 0.7));
+});
+
 test("per-frame values interpolate between frames", async ({ page }) => {
   const width = async (w: number) => {
     await page.setViewportSize({ width: w, height: 900 });
@@ -150,14 +168,14 @@ test("effects render", async ({ page }) => {
   await page.goto("/effects");
   const masked = page.locator("[data-l=Mask]");
   await expect(masked).toBeVisible();
-  const maskImage = await masked.evaluate((el) => {
-    const layer = [...el.children].find((c) => (c as HTMLElement).style.visibility !== "hidden") as HTMLElement;
-    return layer.style.maskImage || layer.style.getPropertyValue("-webkit-mask-image");
-  });
-  expect(maskImage).toContain("gradient");
-  const cut = page.locator("[data-l=Subtract]");
-  const composite = await cut.evaluate((el) => (el.firstElementChild as HTMLElement).style.maskImage || (el.firstElementChild as HTMLElement).style.getPropertyValue("-webkit-mask-image"));
-  expect(composite).toContain("svg");
+  // The mask goes on the object a layer paints (past its Order/Position wrappers), not on the wrapper.
+  const maskOf = (sel: string) =>
+    page.locator(sel).evaluate((el) => {
+      const masked = [el, ...el.querySelectorAll<HTMLElement>("*")].find((e) => (e as HTMLElement).style.maskImage || (e as HTMLElement).style.getPropertyValue("-webkit-mask-image")) as HTMLElement | undefined;
+      return masked ? masked.style.maskImage || masked.style.getPropertyValue("-webkit-mask-image") : "";
+    });
+  await expect.poll(() => maskOf("[data-l=Mask]")).toContain("gradient");
+  await expect.poll(() => maskOf("[data-l=Subtract]")).toContain("svg");
   expect(errors).toEqual([]);
 });
 

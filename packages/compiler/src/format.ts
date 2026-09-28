@@ -68,11 +68,16 @@ class Formatter {
     return items.map((it, i) => `${i > 0 && this.blankBetween(items[i - 1], it) ? "\n" : ""}${this.itemWithTriviaOwner(it, ind, owner, group)}`).join("\n");
   }
 
-  /** A single multi-line call as the only item hugs its parent: `Mid(Column(` … `))`. */
+  /**
+   * A single multi-line value call as the only item hugs its parent (`color: LinearGradient(.colors(`).
+   * Objects never hug: each object in a multi-line tree starts its own line one level deeper, so the
+   * UI's hierarchy reads straight down the indentation (`.obj(` / `Mid(` / `Container(` …).
+   */
   private hug(items: Item[], ind: string): string | null {
     if (items.length !== 1) return null;
     const only = items[0] as Item;
     if (only.type !== "ExprItem" || only.expr.type !== "Call" || only.leading?.length || only.trailing || only.after?.length) return null;
+    if (isObjectCall(only.expr)) return null;
     return this.call(only.expr, ind);
   }
 
@@ -153,7 +158,9 @@ class Formatter {
   }
 
   private modifier(m: Modifier, ind: string, owner: WidgetDef | null): string {
-    const name = STEP_ALIASES[m.name] ?? m.name;
+    // A key written as a modifier keeps its canonical name (`Order(.pos(1))` → `.posOrder(1)`).
+    const asKey = owner ? keyOf(owner, m.name) : undefined;
+    const name = (asKey?.modifier ? asKey.name : undefined) ?? STEP_ALIASES[m.name] ?? m.name;
     const block = m.block ? ` ${this.block(m.block, ind)}` : "";
     if (m.items === null) return `.${name}${block}`;
     let items = m.items;
@@ -264,6 +271,16 @@ class Formatter {
     const nested = `${ind}${this.unit}`;
     return `${callee}(\n${this.lines(items, nested, def ?? null)}\n${ind})${block}`;
   }
+}
+
+/** Calls that make values, not objects: they may hug their parent. */
+const VALUE_CALLS = new Set(["LinearGradient", "RadialGradient", "ConicGradient", "AngularGradient"]);
+
+/** An object in the tree: a widget, a project widget, a construct or a React component (a capitalised name that is not a value). */
+function isObjectCall(c: Call): boolean {
+  if (c.jsx) return true;
+  const name = c.callee.type === "Ident" ? c.callee.name : c.callee.type === "Member" ? c.callee.name : "";
+  return !!name && /^[A-Z]/.test(name) && !VALUE_CALLS.has(name);
 }
 
 // ---------------------------------------------------------------- ordering

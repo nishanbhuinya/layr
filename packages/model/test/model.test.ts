@@ -193,8 +193,15 @@ describe("per-frame visibility from a later frame", () => {
 });
 
 describe("explicit stackAt", () => {
+  it("layout rules reach through pass-through wrappers without changing specificity", () => {
+    // Animate/Focus/If wrappers (display: contents) must not change how a parent lays out its
+    // children, stacked rows included (a fill child inside Animate collapsed to 0px high).
+    expect(BASE_CSS).toContain(":is(.l-row.l-stacked,:where(.l-row.l-stacked>.l-pass,.l-row.l-stacked>.l-pass>.l-pass))>*");
+    expect(BASE_CSS).not.toMatch(/(^|[^(,])\.l-row>/m);
+  });
+
   it("wins over the fill rule for fill children (specificity)", () => {
-    expect(BASE_CSS).toContain(".l-row.l-stackable>.l-wfill.l-wfill{");
+    expect(BASE_CSS).toContain(":is(.l-row.l-stackable,:where(.l-row.l-stackable>.l-pass,.l-row.l-stackable>.l-pass>.l-pass))>.l-wfill.l-wfill{");
     const l = lower("Row", { stackAt: 600 }, ctx);
     expect(l.classes).toContain("l-stackable");
     expect(l.notes).not.toContain("adapt-row");

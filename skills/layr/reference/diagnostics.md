@@ -32,18 +32,18 @@ This token cannot start an item. Items are modifiers (`.config(...)`), props (`k
 
 ## L0012: Missing separator (error)
 
-Two items on one line must be separated by a comma. Items on separate lines need nothing.
+Commas between items are optional, but an item cannot be followed on the same line by an operator that does not continue it. Put the next item on its own line, or add a `,`.
 
 Wrong:
 
 ```layr
-Column(Text('a') Text('b'))
+Row(Text('a') ] Text('b'))
 ```
 
 Right:
 
 ```layr
-Column(Text('a'), Text('b'))
+Row(Text('a') Text('b'))
 ```
 
 ## L0013: Invalid import (error)
@@ -186,7 +186,7 @@ Two Injects without `.exeOrder` target the same feature. They apply in file/line
 
 ## L3104: Rendered features are read-only (error)
 
-`size`, `pos` and `visible` are measured from layout and cannot be injected or written.
+`pos` and `visible` are measured from layout and cannot be injected or written. `size` is measured too, but an object with a `size` key of its own (a Text's font size, a box's size) takes writes and Injects there; reading `size` still gives the measurement.
 
 ## L3105: Force outside access.force (error)
 
@@ -202,7 +202,7 @@ A dynamic rendered-feature dependency did not settle within two passes; the last
 
 ## L3203: Extract reads its own Inject (error)
 
-An Extract without `.exeOrder` reads the final value, after every Inject. An Inject that uses that value to change the same feature would read its own output. Give the Extract an order below the Inject's (`.exeOrder(-1)` reads the declared value).
+An Extract without `.exeOrder` reads the final value, after every Inject. An Inject that uses that value to change the same feature would read its own output. Give the Extract an order at or below the Inject's: it then reads the value under that Inject.
 
 Wrong:
 

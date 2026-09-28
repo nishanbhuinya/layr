@@ -53,7 +53,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `flex` | num | 1 |  | Share of remaining space for `fill` sizes. |
 | `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
-| `objAlign` | align | topLeft | alignment, contentAlign | Where the object's content sits inside it. |
+| `objAlign` | align | topLeft | align, alignment, contentAlign | Where the object's content sits inside it. |
 | `overflow` | auto \| wrap \| stack \| scroll \| clip \| shrink \| warn \| error | auto |  | What happens when content does not fit. `auto` adapts deterministically (see Layout & Adaptation). |
 
 Group `.border(align, color, width, style, sides)`: Border settings grouped: `.border(align: in, color: #0d0d0d, width: 2)`.
@@ -98,6 +98,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `flex` | num | 1 |  | Share of remaining space for `fill` sizes. |
 | `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
+| `align` | align |  | alignment | Both axes at once, e.g. `align: mid` or `align: bottomRight`; `xAlign` and `yAlign` override one axis. |
 | `xAlign` | axis | start | mainAxisAlignment | Horizontal distribution along the row. |
 | `yAlign` | axis | start | crossAxisAlignment | Vertical alignment of children. |
 | `gap` | len |  | spacing | Space between children. |
@@ -147,6 +148,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `flex` | num | 1 |  | Share of remaining space for `fill` sizes. |
 | `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
+| `align` | align |  | alignment | Both axes at once, e.g. `align: mid` or `align: bottomRight`; `xAlign` and `yAlign` override one axis. |
 | `xAlign` | axis | start | crossAxisAlignment | Horizontal alignment of children. |
 | `yAlign` | axis | start | mainAxisAlignment | Vertical distribution down the column. |
 | `gap` | len |  | spacing | Space between children. |
@@ -199,7 +201,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `flex` | num | 1 |  | Share of remaining space for `fill` sizes. |
 | `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
-| `objAlign` | align | topLeft | alignment, contentAlign | Where the object's content sits inside it. |
+| `objAlign` | align | topLeft | align, alignment, contentAlign | Where the object's content sits inside it. |
 
 Group `.border(align, color, width, style, sides)`: Border settings grouped: `.border(align: in, color: #0d0d0d, width: 2)`.
 
@@ -243,14 +245,14 @@ Slots: `.obj` (one, default).
 Sets an object's layer in a Stack, Mask or Subtract. 0 is the base; negatives go below.
 
 ```layr
-Order(.pos(1) .obj(Container(.config(size: 100, color: red))))
+Order(.posOrder(1) .obj(Container(.config(size: 100, color: red))))
 ```
 
 Slots: `.obj` (one, default).
 
 | Key | Type | Default | Aliases | Meaning |
 |---|---|---|---|---|
-| `pos` | int | 0 |  | Layer position. |
+| `posOrder` | int | 0 | pos, pOrd, pO | Layer position, like z-index: any integer; higher paints above, 0 is the base, negatives go below. |
 | `margin` | insets |  |  | Space outside the object: `all(8)`, `sym(x: 8, y: 4)`, `only(top: 8)`. |
 | `opacity` | num |  |  | Opacity from 0 to 1. |
 | `hide` | bool |  | hidden | Removes the object from layout and the accessibility tree. |
@@ -376,6 +378,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
 | `gap` | len |  |  | Space between objects on a line. |
 | `runGap` | len |  |  | Space between lines. |
+| `align` | align |  | alignment | Both axes at once, e.g. `align: mid` or `align: bottomRight`; `xAlign` and `yAlign` override one axis. |
 | `xAlign` | axis | start | mainAxisAlignment | Horizontal distribution along the row. |
 | `yAlign` | axis | start | crossAxisAlignment | Vertical alignment of children. |
 
@@ -421,7 +424,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `flex` | num | 1 |  | Share of remaining space for `fill` sizes. |
 | `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
-| `cols` | int |  |  | Number of columns. |
+| `cols` | int |  | columns | Number of columns. |
 | `minItemW` | len |  |  | Minimum item width; columns fit automatically (ignored when `cols` is set). |
 | `gap` | len |  |  | Space between items. |
 | `rowGap` | len |  |  | Space between rows (defaults to `gap`). |
@@ -601,7 +604,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `weight` | thin \| light \| regular \| medium \| semibold \| bold \| black |  | fontWeight, wight | Font weight: `thin`…`black` or 100–900. |
 | `italic` | bool |  | italics | Italic style. |
 | `color` | paint |  |  | Text colour (a gradient paints the glyphs). |
-| `align` | left \| mid \| right \| start \| end \| justify |  | textAlign, textAlight | Text alignment. |
+| `align` | left \| mid \| right \| start \| end \| justify |  | textAlign, textAlight, alignment | Text alignment. |
 | `lineHeight` | num |  |  | Line height as a multiple of the font size. |
 | `letterSpacing` | len |  |  | Space between letters. |
 | `type` | h1 \| h2 \| h3 \| h4 \| h5 \| h6 \| p \| label \| code \| span \| strong \| em | p |  | Semantic type (sets the element and default style): h1–h6, p, label, code, span. |
@@ -648,7 +651,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `weight` | thin \| light \| regular \| medium \| semibold \| bold \| black |  | fontWeight, wight | Font weight: `thin`…`black` or 100–900. |
 | `italic` | bool |  | italics | Italic style. |
 | `color` | paint |  |  | Text colour (a gradient paints the glyphs). |
-| `align` | left \| mid \| right \| start \| end \| justify |  | textAlign, textAlight | Text alignment. |
+| `align` | left \| mid \| right \| start \| end \| justify |  | textAlign, textAlight, alignment | Text alignment. |
 | `lineHeight` | num |  |  | Line height as a multiple of the font size. |
 | `letterSpacing` | len |  |  | Space between letters. |
 | `underline` | bool |  |  | Underline. |
@@ -704,7 +707,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 
 ### Svg
 
-An SVG from a URL; `color` sets currentColor.
+An SVG from a URL. Without `color` it shows the file's own colours; with `color` its shape is filled with that colour (for one-colour icons and logos).
 
 ```layr
 Svg(.config(src: 'logo.svg', alt: 'LAYR', h: 24))
@@ -714,7 +717,7 @@ Svg(.config(src: 'logo.svg', alt: 'LAYR', h: 24))
 |---|---|---|---|---|
 | `src` | src |  |  | SVG URL. |
 | `alt` | txt |  |  | Text alternative. |
-| `color` | color |  |  | currentColor. |
+| `color` | color |  |  | Fills the SVG's shape with this colour. |
 | `w` | len \| fill \| hug |  | width | Width: a length, `fill` (share the remaining space) or `hug` (fit content, default). |
 | `h` | len \| fill \| hug |  | height | Height: a length, `fill` or `hug` (default). |
 | `size` | size |  | s | Width and height together: `size: 200` or `size: (200, 120)`. |
@@ -733,7 +736,7 @@ Svg(.config(src: 'logo.svg', alt: 'LAYR', h: 24))
 
 ### Icon
 
-An icon by name from the registered icon set (e.g. the `icons` addon).
+An icon by name from a registered icon set: register SVG strings once with `icons({ name: '<svg…>' })` from `@dynshift/layr/react`. `color` is the icon's colour (`currentColor`).
 
 ```layr
 Icon('arrow-right')
@@ -851,8 +854,8 @@ Masks layers with the lowest `Order` layer (a paint: colour, gradient or image).
 
 ```layr
 Mask(
-  Order(.pos(0) .obj(Container(.config(size: 200, color: LinearGradient(.colors(black.alpha(0), black))))))
-  Order(.pos(1) .obj(Container(.config(size: 200, color: red))))
+  Order(.posOrder(0) .obj(Container(.config(size: 200, color: LinearGradient(.colors(black.alpha(0), black))))))
+  Order(.posOrder(1) .obj(Container(.config(size: 200, color: red))))
 )
 ```
 
@@ -883,8 +886,8 @@ Cuts the upper layer's shape out of the base layer.
 
 ```layr
 Subtract(
-  Order(.pos(0) .obj(Container(.config(size: 200, color: black))))
-  Order(.pos(1) .obj(Position(.config(bottom: -10) .obj(Container(.config(size: 100, cornerRadius: 50))))))
+  Order(.posOrder(0) .obj(Container(.config(size: 200, color: black))))
+  Order(.posOrder(1) .obj(Position(.config(bottom: -10) .obj(Container(.config(size: 100, cornerRadius: 50))))))
 )
 ```
 
@@ -892,7 +895,7 @@ Slots: `.objs` (many, default).
 
 | Key | Type | Default | Aliases | Meaning |
 |---|---|---|---|---|
-| `align` | align | mid |  | Where the cut sits by default. |
+| `align` | align | mid | alignment | Where the cut sits by default. |
 | `w` | len \| fill \| hug |  | width | Width: a length, `fill` (share the remaining space) or `hug` (fit content, default). |
 | `h` | len \| fill \| hug |  | height | Height: a length, `fill` or `hug` (default). |
 | `size` | size |  | s | Width and height together: `size: 200` or `size: (200, 120)`. |
@@ -1015,7 +1018,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `label` | txt |  |  | Button text (and accessible name). |
 | `disabled` | bool |  |  | Disabled. |
 | `submit` | bool |  |  | Submits its Form. |
-| `objAlign` | align | topLeft | alignment, contentAlign | Where the object's content sits inside it. |
+| `objAlign` | align | topLeft | align, alignment, contentAlign | Where the object's content sits inside it. |
 
 Group `.border(align, color, width, style, sides)`: Border settings grouped: `.border(align: in, color: #0d0d0d, width: 2)`.
 
@@ -1066,7 +1069,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `label` | txt |  |  | Link text (when there is no object). |
 | `external` | bool |  |  | Open in a new tab. |
 | `underline` | bool |  |  | Underline the link (browsers underline links by default). |
-| `objAlign` | align | topLeft | alignment, contentAlign | Where the object's content sits inside it. |
+| `objAlign` | align | topLeft | align, alignment, contentAlign | Where the object's content sits inside it. |
 
 Group `.border(align, color, width, style, sides)`: Border settings grouped: `.border(align: in, color: #0d0d0d, width: 2)`.
 

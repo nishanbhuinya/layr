@@ -44,22 +44,28 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .bar(Row(
-      .config(w: fill, color: sunken, padding: all(14))
-      Text(.config(weight: semibold) .obj('.bar'))
-    ))
-    .body(Column(
-      .config(w: fill, gap: 8, padding: all(20))
-      Text('.body: the page content')
-      Text(
-        .config(color: muted)
-        .obj('It scrolls when it is taller than the screen.')
+    .bar(
+      Row(
+        .config(w: fill, color: sunken, padding: all(14))
+        Text(.config(weight: semibold) .obj('.bar'))
       )
-    ))
-    .footer(Row(
-      .config(w: fill, color: sunken, padding: all(14))
-      Text(.config(color: muted) .obj('.footer'))
-    ))
+    )
+    .body(
+      Column(
+        .config(w: fill, gap: 8, padding: all(20))
+        Text('.body: the page content')
+        Text(
+          .config(color: muted)
+          .obj('It scrolls when it is taller than the screen.')
+        )
+      )
+    )
+    .footer(
+      Row(
+        .config(w: fill, color: sunken, padding: all(14))
+        Text(.config(color: muted) .obj('.footer'))
+      )
+    )
   )
 )
 ```
@@ -101,12 +107,14 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Row(
-      .config(gap: 12, padding: all(24))
-      Button(.preset(pill) .config(label: 'Save'))
-      Button(.preset(pill) .config(label: 'Share'))
-      Button(.preset(default) .config(label: 'Cancel'))
-    ))
+    .body(
+      Row(
+        .config(gap: 12, padding: all(24))
+        Button(.preset(pill) .config(label: 'Save'))
+        Button(.preset(pill) .config(label: 'Share'))
+        Button(.preset(default) .config(label: 'Cancel'))
+      )
+    )
   )
 )
 ```
@@ -124,10 +132,12 @@ Config written on the object wins over its preset: `Button(.preset(pill) .config
 Container(
   .config(w: 160, color: accent, padding: all(16))
   .at(w, w: 480)
-  .obj(Text(
-    .config(color: onAccent, weight: semibold)
-    .obj('160 on phones, 480 on desktop')
-  ))
+  .obj(
+    Text(
+      .config(color: onAccent, weight: semibold)
+      .obj('160 on phones, 480 on desktop')
+    )
+  )
 )
 ```
 
@@ -150,19 +160,23 @@ Page(
 
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 10, padding: all(24))
-      Button(
-        .preset(default)
-        .config(label: showAll ? 'Show fewer' : 'Show everyone')
-        .fnc { showAll = !showAll }
+    .body(
+      Column(
+        .config(gap: 10, padding: all(24))
+        Button(
+          .preset(default)
+          .config(label: showAll ? 'Show fewer' : 'Show everyone')
+          .fnc { showAll = !showAll }
+        )
+        If(
+          .cnd(showAll)
+          .obj(Each(.of(names) .as(name, i) .obj(Text('${i + 1}. $name'))))
+          .fb(
+            Text(.config(color: muted) .obj('${names.length} people, hidden'))
+          )
+        )
       )
-      If(
-        .cnd(showAll)
-        .obj(Each(.of(names) .as(name, i) .obj(Text('${i + 1}. $name'))))
-        .fb(Text(.config(color: muted) .obj('${names.length} people, hidden')))
-      )
-    ))
+    )
   )
 )
 ```

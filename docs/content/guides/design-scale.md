@@ -18,25 +18,27 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Container(
-        .id(bar)
-        .config(
-          w: 240
-          h: 44
-          color: accent
-          cornerRadius: 10
-          objAlign: midLeft
-          padding: sym(x: 14)
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Container(
+          .id(bar)
+          .config(
+            w: 240
+            h: 44
+            color: accent
+            cornerRadius: 10
+            objAlign: midLeft
+            padding: sym(x: 14)
+          )
+          .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: 240')))
         )
-        .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: 240')))
+        Text(
+          .config(color: muted)
+          .obj('On this screen: ${Math.round(Scale.bar.size?.w ?? 0)} px wide')
+        )
       )
-      Text(
-        .config(color: muted)
-        .obj('On this screen: ${Math.round(Scale.bar.size?.w ?? 0)} px wide')
-      )
-    ))
+    )
   )
 )
 ```
@@ -62,11 +64,13 @@ Set yours in `src/app.layr` to match your design files:
 
 ```layr
 App(
-  .scale(DesignScale(
-    .m(w: 375, h: 812)
-    .w(w: 1280, h: 800)
-    .config(min: 0.9, max: 1.2)
-  ))
+  .scale(
+    DesignScale(
+      .m(w: 375, h: 812)
+      .w(w: 1280, h: 800)
+      .config(min: 0.9, max: 1.2)
+    )
+  )
 )
 ```
 
@@ -115,37 +119,45 @@ Row(
   .config(gap: 16, yAlign: start)
   Container(
     .config(w: 200)
-    .obj(DesignScale(
-      .frame(card, w: 400, h: 300, from: 0)
-      .config(min: 0.25, max: 4)
-      .obj(Container(
-        .config(
-          w: 400
-          .border(color: line, width: 2)
-          color: panel
-          cornerRadius: 20
-          padding: all(24)
+    .obj(
+      DesignScale(
+        .frame(card, w: 400, h: 300, from: 0)
+        .config(min: 0.25, max: 4)
+        .obj(
+          Container(
+            .config(
+              w: 400
+              .border(color: line, width: 2)
+              color: panel
+              cornerRadius: 20
+              padding: all(24)
+            )
+            .obj(Text(.config(size: 28, weight: bold) .obj('Designed at 400')))
+          )
         )
-        .obj(Text(.config(size: 28, weight: bold) .obj('Designed at 400')))
-      ))
-    ))
+      )
+    )
   )
   Container(
     .config(w: 320)
-    .obj(DesignScale(
-      .frame(card, w: 400, h: 300, from: 0)
-      .config(min: 0.25, max: 4)
-      .obj(Container(
-        .config(
-          w: 400
-          .border(color: line, width: 2)
-          color: panel
-          cornerRadius: 20
-          padding: all(24)
+    .obj(
+      DesignScale(
+        .frame(card, w: 400, h: 300, from: 0)
+        .config(min: 0.25, max: 4)
+        .obj(
+          Container(
+            .config(
+              w: 400
+              .border(color: line, width: 2)
+              color: panel
+              cornerRadius: 20
+              padding: all(24)
+            )
+            .obj(Text(.config(size: 28, weight: bold) .obj('Designed at 400')))
+          )
         )
-        .obj(Text(.config(size: 28, weight: bold) .obj('Designed at 400')))
-      ))
-    ))
+      )
+    )
   )
 )
 ```

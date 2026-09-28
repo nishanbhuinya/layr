@@ -26,12 +26,14 @@ Page(
 
   Scaffold(
     .config(color: canvas)
-    .body(Row(
-      .config(gap: 12, padding: all(24), yAlign: mid)
-      Text(.config(size: 32, weight: bold) .obj('$count'))
-      Button(.preset(default) .config(label: 'Step') .fnc(step(count)))
-      Button(.preset(default) .config(label: 'Reset') .fnc(reset(count)))
-    ))
+    .body(
+      Row(
+        .config(gap: 12, padding: all(24), yAlign: mid)
+        Text(.config(size: 32, weight: bold) .obj('$count'))
+        Button(.preset(default) .config(label: 'Step') .fnc(step(count)))
+        Button(.preset(default) .config(label: 'Reset') .fnc(reset(count)))
+      )
+    )
   )
 )
 ```
@@ -77,13 +79,15 @@ Page(
   )
   Scaffold(
     .config(color: canvas)
-    .body(Row(
-      .config(gap: 16, padding: all(24), yAlign: mid)
-      Container(
-        .config(size: 40, color: on ? accent : sunken, cornerRadius: 999)
+    .body(
+      Row(
+        .config(gap: 16, padding: all(24), yAlign: mid)
+        Container(
+          .config(size: 40, color: on ? accent : sunken, cornerRadius: 999)
+        )
+        Button(.preset(default) .config(label: 'Blink three times') .fnc(blink))
       )
-      Button(.preset(default) .config(label: 'Blink three times') .fnc(blink))
-    ))
+    )
   )
 )
 ```
@@ -106,24 +110,32 @@ Page(
   var int taps = 0
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Container(
-        .config(
-          w: 220
-          .border(color: line, width: 1)
-          color: over ? accent : panel
-          cornerRadius: 14
-          padding: all(20)
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Container(
+          .config(
+            w: 220
+            .border(color: line, width: 1)
+            color: over ? accent : panel
+            cornerRadius: 14
+            padding: all(20)
+          )
+          .on(
+            hover: { over = true }
+            hoverEnd: { over = false }
+            tap: { taps++ }
+          )
+          .obj(
+            Text(
+              .config(color: over ? onAccent : ink)
+              .obj(over ? 'Pointer inside' : 'Point at me')
+            )
+          )
         )
-        .on(hover: { over = true }, hoverEnd: { over = false }, tap: { taps++ })
-        .obj(Text(
-          .config(color: over ? onAccent : ink)
-          .obj(over ? 'Pointer inside' : 'Point at me')
-        ))
+        Text(.config(color: muted) .obj('Tapped $taps times'))
       )
-      Text(.config(color: muted) .obj('Tapped $taps times'))
-    ))
+    )
   )
 )
 ```

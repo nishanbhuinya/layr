@@ -41,7 +41,13 @@ class Feature {
   readonly rendered = new Signal<unknown>(undefined, deepEq);
 }
 
+/** Features measured from layout: reads return the measurement. */
 const RENDERED = new Set(["size", "pos", "visible"]);
+/**
+ * Of those, the ones nothing may change. `size` can be written or injected: that changes the declared
+ * `size` key (a Text's font size, a box's size), while reads keep returning what was measured.
+ */
+const READ_ONLY = new Set(["pos", "visible"]);
 const features = new Map<string, Map<string, Feature>>();
 const objectVersion = new Map<string, Signal<number>>();
 const immutableTable = new Map<string, Set<string>>();
@@ -119,18 +125,32 @@ export function setRendered(address: string, key: string, value: unknown) {
   feature(address, key).rendered.set(value);
 }
 
+/** Layers are kept sorted (ascending exeOrder, unordered last), so a read below `k` stops at the first layer at or above it. */
 function applyLayers(f: Feature, base: unknown, below: number | null): unknown {
   let v = base;
   for (const l of f.layers.get()) {
-    if (below !== null && (l.o === null || l.o >= below)) continue;
+    if (below !== null && (l.o === null || l.o >= below)) break;
     v = l.f(v);
   }
   return v;
 }
 
+/** Where a layer goes: after every layer with a lower order, or the same order registered earlier (binary search). */
+function insertAt(list: Registered[], o: number | null): number {
+  const key = o ?? Number.POSITIVE_INFINITY;
+  let lo = 0;
+  let hi = list.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >>> 1;
+    if (((list[mid] as Registered).o ?? Number.POSITIVE_INFINITY) <= key) lo = mid + 1;
+    else hi = mid;
+  }
+  return lo;
+}
+
 /**
  * Reads a feature. With `order`, returns the value below that exeOrder (base plus layers with
- * `exeOrder < order`), so Extract(.exeOrder(-1)) sees the value before any injection.
+ * `exeOrder < order`), so Extract(.exeOrder(-1)) sees the value before every injection at 0 or above.
  */
 export function read(address: string, key: string, order: number | null = null): unknown {
   const f = feature(address, key);
@@ -159,7 +179,7 @@ export function overriddenKeys(address: string): string[] {
 
 /** Imperative write from a Function / TS body (`box.w = 200`). */
 export function write(address: string, key: string, value: unknown) {
-  if (RENDERED.has(key)) {
+  if (READ_ONLY.has(key)) {
     warn(`\`${key}\` of ${address} is measured and read-only; the write was ignored.`);
     return;
   }
@@ -173,7 +193,7 @@ export function write(address: string, key: string, value: unknown) {
 
 /** Adds an injection layer. Returns a disposer that removes it (the value reverts). */
 export function addLayer(layer: Layer): () => void {
-  if (RENDERED.has(layer.k)) {
+  if (READ_ONLY.has(layer.k)) {
     warn(`\`${layer.k}\` of ${layer.a} is measured and read-only; the Inject${layer.src ? ` at ${layer.src}` : ""} was ignored.`);
     return () => {};
   }
@@ -183,8 +203,9 @@ export function addLayer(layer: Layer): () => void {
   }
   const f = feature(layer.a, layer.k);
   const reg: Registered = { ...layer, seq: seq++ };
-  const sorted = [...f.layers.peek(), reg].sort((x, y) => (x.o ?? Number.POSITIVE_INFINITY) - (y.o ?? Number.POSITIVE_INFINITY) || x.seq - y.seq);
-  f.layers.set(sorted);
+  const next = f.layers.peek().slice();
+  next.splice(insertAt(next, layer.o), 0, reg);
+  f.layers.set(next);
   bump(layer.a);
   return () => {
     f.layers.set(f.layers.peek().filter((l) => l !== reg));

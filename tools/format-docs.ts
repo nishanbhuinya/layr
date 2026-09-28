@@ -1,16 +1,18 @@
 /**
- * Rewrites every ```layr block in docs/content into canonical form (`layr format`) at the width a
+ * Rewrites every ```layr block in docs/content and site/content/reference into canonical form (`layr format`) at the width a
  * docs code pane shows without scrolling. Blocks the formatter cannot parse are left as written.
  * Run: node tools/format-docs.ts   (CI checks the docs stay canonical)
  */
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { format } from "../packages/compiler/src/index.ts";
 
 export const DOCS_WIDTH = 80;
 
-const root = join(dirname(fileURLToPath(import.meta.url)), "..", "docs", "content");
+const repo = join(dirname(fileURLToPath(import.meta.url)), "..");
+/** The docs, and the site's widget reference pages. */
+const roots = [join(repo, "docs", "content"), join(repo, "site", "content", "reference")].filter((d) => existsSync(d));
 
 function files(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
@@ -36,7 +38,7 @@ export function formatMarkdown(md: string): { text: string; changed: number } {
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const check = process.argv.includes("--check");
   let total = 0;
-  for (const f of files(root)) {
+  for (const f of roots.flatMap((r) => files(r))) {
     const src = readFileSync(f, "utf8").replace(/\r\n/g, "\n");
     const { text, changed } = formatMarkdown(src);
     if (!changed) continue;

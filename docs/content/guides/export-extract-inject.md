@@ -59,22 +59,24 @@ Page(
   Inject(.into(Reader.card) .exeOrder(0) card.padding = original * 2)
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 8, padding: all(24))
-      Container(
-        .id(card)
-        .config(color: accent, cornerRadius: 12, padding: all(12))
-        .obj(Text(.config(color: onAccent) .obj('The card')))
-      )
-      Text('now: $pad')
-      Text('before any Inject: $original')
-      Text(
-        .config(color: muted)
-        .obj(
-          'rendered: ${Math.round(Reader.card.size?.w ?? 0)} × ${Math.round(Reader.card.size?.h ?? 0)}'
+    .body(
+      Column(
+        .config(gap: 8, padding: all(24))
+        Container(
+          .id(card)
+          .config(color: accent, cornerRadius: 12, padding: all(12))
+          .obj(Text(.config(color: onAccent) .obj('The card')))
+        )
+        Text('now: $pad')
+        Text('before any Inject: $original')
+        Text(
+          .config(color: muted)
+          .obj(
+            'rendered: ${Math.round(Reader.card.size?.w ?? 0)} × ${Math.round(Reader.card.size?.h ?? 0)}'
+          )
         )
       )
-    ))
+    )
   )
 )
 ```
@@ -83,7 +85,7 @@ Page(
 > - Change `original * 2` to `original * 3`: the card grows, "now" follows, "before any Inject" does not.
 > - Delete the `Inject` line: both readouts show the declared `all(12)`.
 
-Extracts are reactive: they update when the feature changes. Features are config keys (`padding`, `w`, `color`…), widget params, what the object shows (`obj`, [below](#objects-change-what-an-object-shows)), and the **rendered** features `size`, `pos` and `visible`, measured from layout and read-only. `.exeOrder(k)` reads the value **below** that point in the cascade: `.exeOrder(-1)` sees it before any Inject.
+Extracts are reactive: they update when the feature changes. Features are config keys (`padding`, `w`, `color`…), widget params, what the object shows (`obj`, [below](#objects-change-what-an-object-shows)), and the **rendered** features `size`, `pos` and `visible`, measured from layout. You cannot change a measurement: `pos` and `visible` are read-only, and writing `size` changes the object's own `size` key instead (a Text's font size, a box's size), while reading it still gives what was measured. `.exeOrder(k)` reads the value **below** that point in the cascade: every Inject with a lower order, none at `k` or above. Here `.exeOrder(-1)` reads the card before the Inject at `0`.
 
 Inline references (`Source.card.size` in an expression) are Extracts too.
 
@@ -98,20 +100,22 @@ Page(
   var bool loud = false
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Container(
-        .id(card)
-        .config(color: accent, cornerRadius: 12, padding: all(10))
-        .obj(Text(.config(color: onAccent) .obj('card')))
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Container(
+          .id(card)
+          .config(color: accent, cornerRadius: 12, padding: all(10))
+          .obj(Text(.config(color: onAccent) .obj('card')))
+        )
+        Button(
+          .preset(default)
+          .config(label: loud ? 'Remove Louder' : 'Show Louder')
+          .fnc { loud = !loud }
+        )
+        If(.cnd(loud) .obj(Louder()))
       )
-      Button(
-        .preset(default)
-        .config(label: loud ? 'Remove Louder' : 'Show Louder')
-        .fnc { loud = !loud }
-      )
-      If(.cnd(loud) .obj(Louder()))
-    ))
+    )
   )
 )
 
@@ -119,7 +123,9 @@ Widget(
   .name(Louder)
   Inject(.into(Target.card) .exeOrder(0) card.padding = card.padding * 2)
   Inject(.into(Target.card) .exeOrder(1) card.color = teal)
-  .obj(Text(.config(color: muted) .obj('Louder is shown, so its two layers apply')))
+  .obj(
+    Text(.config(color: muted) .obj('Louder is shown, so its two layers apply'))
+  )
 )
 ```
 
@@ -129,7 +135,8 @@ Widget(
 
 Each Inject is a **layer**: a change applied on top of the value below it. The rules:
 
-- Layers apply in ascending `.exeOrder`. Two Injects on the same feature with the same order are an error (L3102). Injects without an order go after ordered ones, in file order, with a warning if two share a feature (L3103).
+- Layers apply in ascending `.exeOrder`, like `z-index`: any integer works, negative and large ones included. `-9999` runs under everything and `9999` over everything; the highest order has the last word. Two Injects on the same feature with the same order are an error (L3102). Injects without an order go after ordered ones, in file order, with a warning if two share a feature (L3103).
+- `.exeOrder` has short forms for fast typing: `.exeOrd`, `.eOrd` and `.eO`. `layr format` writes them as `.exeOrder`.
 - Inside an Inject, the target's current value is the value from the layer below: `card.padding * 2` doubles whatever came before.
 - A layer lives as long as its owner: a file-level Inject is permanent, a Page's while it is shown, a Widget's while that instance is shown. When the owner goes away, the layer goes and the value **reverts**.
 - Writing a feature from a Function (`card.w = 360`) is the imperative form. It sets the base value; layers still apply above it.
@@ -145,33 +152,37 @@ Page(
   var bool shipped = false
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Container(
-        .id(card)
-        .config(
-          .border(color: line, width: 1)
-          color: panel
-          cornerRadius: 12
-          padding: all(16)
-        )
-        .obj(Column(
-          .config(gap: 4)
-          Text(
-            .id(title)
-            .config(size: 17, weight: semibold)
-            .obj('Order 1042')
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Container(
+          .id(card)
+          .config(
+            .border(color: line, width: 1)
+            color: panel
+            cornerRadius: 12
+            padding: all(16)
           )
-          Text(.id(status) .config(color: muted) .obj('Packing'))
-        ))
+          .obj(
+            Column(
+              .config(gap: 4)
+              Text(
+                .id(title)
+                .config(size: 17, weight: semibold)
+                .obj('Order 1042')
+              )
+              Text(.id(status) .config(color: muted) .obj('Packing'))
+            )
+          )
+        )
+        Button(
+          .preset(default)
+          .config(label: shipped ? 'Undo' : 'Ship it')
+          .fnc { shipped = !shipped }
+        )
+        If(.cnd(shipped) .obj(Shipped()))
       )
-      Button(
-        .preset(default)
-        .config(label: shipped ? 'Undo' : 'Ship it')
-        .fnc { shipped = !shipped }
-      )
-      If(.cnd(shipped) .obj(Shipped()))
-    ))
+    )
   )
 )
 
@@ -179,7 +190,9 @@ Widget(
   .name(Shipped)
   Inject(.into(Order.status) status.obj = 'Shipped, arriving Tuesday')
   Inject(.into(Order.title) title.obj = title.obj + ' · paid')
-  .obj(Text(.config(color: muted) .obj('Shipped is shown, so its layers apply')))
+  .obj(
+    Text(.config(color: muted) .obj('Shipped is shown, so its layers apply'))
+  )
 )
 ```
 
@@ -194,10 +207,17 @@ The same works for widgets and lists. A widget instance's params are features by
 Widget(
   .name(Tag)
   .param(txt label = 'New')
-  .obj(Container(
-    .config(color: accent, cornerRadius: 999, padding: sym(x: 10, y: 4))
-    .obj(Text(.config(size: 13, color: onAccent, weight: medium) .obj(param.label)))
-  ))
+  .obj(
+    Container(
+      .config(color: accent, cornerRadius: 999, padding: sym(x: 10, y: 4))
+      .obj(
+        Text(
+          .config(size: 13, color: onAccent, weight: medium)
+          .obj(param.label)
+        )
+      )
+    )
+  )
 )
 
 Page(
@@ -205,11 +225,13 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24), xAlign: start)
-      Tag(.id(tag))
-      Column(.id(dishes) .config(gap: 4) Text('Soup'), Text('Bread'))
-    ))
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24), xAlign: start)
+        Tag(.id(tag))
+        Column(.id(dishes) .config(gap: 4) Text('Soup'), Text('Bread'))
+      )
+    )
   )
 )
 
@@ -272,13 +294,15 @@ Page(
   .name(Shared)
   bind size doubled = boxFeatures.boxSize * 2
   Scaffold(
-    .body(Column(
-      Container(
-        .config(w: 120, h: 30, color: violet)
-        .export(id: boxFeatures, size boxSize = container.size)
+    .body(
+      Column(
+        Container(
+          .config(w: 120, h: 30, color: violet)
+          .export(id: boxFeatures, size boxSize = container.size)
+        )
+        Text('doubled: $doubled')
       )
-      Text('doubled: $doubled')
-    ))
+    )
   )
 )
 ```

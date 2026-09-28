@@ -278,6 +278,12 @@ function nav(docs: DocEntry[]) {
 
 // ------------------------------------------------------------------ reference
 
+/** A schema example (written on one line to stay short for the Skill) in the canonical, multi-line form the docs use. */
+function formatCode(code: string): string {
+  const r = format(code, { width: 80 });
+  return r.errors ? code : r.text.replace(/\n+$/, "");
+}
+
 function typeLabel(k: { type: string; values?: readonly string[] }): string {
   if (k.type === "enum") return (k.values ?? []).join(" | ");
   return k.values?.length ? `${k.type} | ${k.values.join(" | ")}` : k.type;
@@ -300,7 +306,7 @@ async function reference(repo: string) {
     groups: (w.groups ?? []).map((g) => ({ name: g.name, keys: Object.keys(g.keys).join(", "), doc: inlineMarkdown(g.doc) })),
   }));
   const modules = [...new Set(widgets.map((w) => w.module))].map((m) => ({ name: m, title: m.charAt(0).toUpperCase() + m.slice(1), widgets: widgets.filter((w) => w.module === m).map((w) => ({ name: w.name, slug: w.slug, summary: w.summary })) }));
-  const constructs = CONSTRUCTS.map((c) => ({ name: c.name, doc: inlineMarkdown(c.doc), modifiers: c.modifiers.map((m) => `.${m}`).join(" "), example: codeBlock(h, c.example, "layr") }));
+  const constructs = CONSTRUCTS.map((c) => ({ name: c.name, doc: inlineMarkdown(c.doc), modifiers: c.modifiers.map((m) => `.${m}`).join(" "), example: codeBlock(h, formatCode(c.example), "layr") }));
   const diagnostics = DIAGNOSTICS.map((d) => ({
     code: d.code,
     severity: d.severity,
@@ -323,12 +329,12 @@ async function reference(repo: string) {
       w.doc,
       w.aliases?.length ? `\nAlso written ${w.aliases.map((a) => `\`${a}\``).join(", ")}; \`layr format\` rewrites these to \`${w.name}\`.` : "",
     ].join("\n");
+    // The page's examples: site/content/reference/<widget>.md (themed, live, with "Try it"), or the
+    // schema's portable example in canonical form when a widget has no page yet.
+    const own = join(repo, "site", "content", "reference", `${entry.slug}.md`);
+    const examples = existsSync(own) ? readFileSync(own, "utf8").replace(/\r\n/g, "\n").trim() : ["## Example", "", "```layr", formatCode(w.example), "```"].join("\n");
     const md = [
-      "## Example",
-      "",
-      "```layr",
-      w.example,
-      "```",
+      examples,
       "",
       "## Config keys",
       "",

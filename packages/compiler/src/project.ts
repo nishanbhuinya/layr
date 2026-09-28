@@ -3,7 +3,7 @@
  * of every Page/Widget. Object trees give every object a stable address for lookup paths, ids,
  * Export/Extract/Inject and devtools.
  */
-import { DEFAULT_DESIGN_SCALE, type DesignScaleConfig, widget, type WidgetDef } from "@layr-internal/model";
+import { DEFAULT_DESIGN_SCALE, type DesignScaleConfig, keyOf, widget, type WidgetDef } from "@layr-internal/model";
 import type { Block, Call, Decl, Expr, FileNode, Import, Item, Modifier, Prop } from "./ast.ts";
 import { CONSTRUCT_NAMES, lowerFirst, pascal, suggest } from "./names.ts";
 import { parse } from "./parser.ts";
@@ -715,7 +715,8 @@ function buildTree(project: Project, mod: Module, comp: CompDef, call: Call, par
           if (sub.type === "ExprItem") addExprChild(slotName, sub);
           else report(mod, "L1007", `\`.${item.name}\` holds objects.`, sub.span);
         }
-      } else if (def?.keys.some((k) => k.modifier && k.name === item.name)) {
+      } else if (def && keyOf(def, item.name)?.modifier) {
+        // A key written as a modifier (`Order(.posOrder(1))`), aliases included (`.pos`, `.pO`).
         const v = exprItems(item.items)[0];
         if (v) node.config.push({ key: item.name, written: item.name, value: v, immutable: false, step: false, span: item.span, keySpan: item.nameSpan });
       } else if (node.kind === "construct" || PASS_MODIFIERS.has(item.name) || node.kind === "foreign" || node.kind === "user") {

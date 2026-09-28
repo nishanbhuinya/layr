@@ -18,16 +18,18 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Text(.config(size: 28, type: h1) .obj('Home'))
-      Link(.config(label: 'Read about us', to: About))
-      Button(
-        .preset(default)
-        .config(label: 'Open post 3')
-        .fnc(.go(Post, id: 3))
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Text(.config(size: 28, type: h1) .obj('Home'))
+        Link(.config(label: 'Read about us', to: About))
+        Button(
+          .preset(default)
+          .config(label: 'Open post 3')
+          .fnc(.go(Post, id: 3))
+        )
       )
-    ))
+    )
   )
 )
 
@@ -36,11 +38,13 @@ Page(
   .route('/about')
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Text(.config(size: 28, type: h1) .obj('About'))
-      Link(.config(label: '← Home', to: Home))
-    ))
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Text(.config(size: 28, type: h1) .obj('About'))
+        Link(.config(label: '← Home', to: Home))
+      )
+    )
   )
 )
 
@@ -51,11 +55,13 @@ Page(
   .load { return { title: 'Post number ' + route.id } }
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Text(.config(size: 28, type: h1) .obj('${data?.title ?? "Loading"}'))
-      Link(.config(label: '← Home', to: Home))
-    ))
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Text(.config(size: 28, type: h1) .obj('${data?.title ?? "Loading"}'))
+        Link(.config(label: '← Home', to: Home))
+      )
+    )
   )
 )
 ```
@@ -82,17 +88,21 @@ Routes come from file paths unless a page sets `.route(...)`: `src/pages/index.l
 
 ```layr
 App(
-  .scale(DesignScale(
-    .m(w: 390, h: 844)
-    .t(w: 834, h: 1194)
-    .w(w: 1440, h: 900)
-    .uw(w: 2560, h: 1080)
-  ))
-  .theme(Theme(
-    .colors(canvas: #f4efe7, panel: #fffcf7, ink: #1c1917, accent: #c93f12)
-    .dark(canvas: #121110, panel: #1a1816, ink: #f3ede6, accent: #ff6a3d)
-    .font(body: 'Inter')
-  ))
+  .scale(
+    DesignScale(
+      .m(w: 390, h: 844)
+      .t(w: 834, h: 1194)
+      .w(w: 1440, h: 900)
+      .uw(w: 2560, h: 1080)
+    )
+  )
+  .theme(
+    Theme(
+      .colors(canvas: #f4efe7, panel: #fffcf7, ink: #1c1917, accent: #c93f12)
+      .dark(canvas: #121110, panel: #1a1816, ink: #f3ede6, accent: #ff6a3d)
+      .font(body: 'Inter')
+    )
+  )
 )
 ```
 

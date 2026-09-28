@@ -19,30 +19,35 @@ Page(
 
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(w: fill, padding: all(32), xAlign: mid)
-      Row(
-        .config(
-          .border(color: line, width: 1)
-          color: panel
-          cornerRadius: 16
-          gap: 16
-          padding: all(20)
-          yAlign: mid
-        )
-        Container(.config(size: 56, color: accent, cornerRadius: 999))
-        Column(
-          .config(gap: 2)
-          Text(.config(size: 18, weight: semibold) .obj('Ada Lovelace'))
-          Text(
-            .config(color: muted)
-            .obj('Wrote the first published program, in 1843')
+    .body(
+      Column(
+        .config(w: fill, padding: all(32), xAlign: mid)
+        Row(
+          .config(
+            .border(color: line, width: 1)
+            color: panel
+            cornerRadius: 16
+            gap: 16
+            padding: all(20)
+            yAlign: mid
           )
-          Text(.config(size: 13, color: faint) .obj('$likes people like this'))
+          Container(.config(size: 56, color: accent, cornerRadius: 999))
+          Column(
+            .config(gap: 2)
+            Text(.config(size: 18, weight: semibold) .obj('Ada Lovelace'))
+            Text(
+              .config(color: muted)
+              .obj('Wrote the first published program, in 1843')
+            )
+            Text(
+              .config(size: 13, color: faint)
+              .obj('$likes people like this')
+            )
+          )
+          Button(.preset(default) .config(label: 'Like') .fnc { likes++ })
         )
-        Button(.preset(default) .config(label: 'Like') .fnc { likes++ })
       )
-    ))
+    )
   )
 )
 ```

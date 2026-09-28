@@ -18,16 +18,18 @@ Page(
 
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Text(.config(size: 24, type: h2) .obj(greeting))
-      Input(
-        .preset(default)
-        .config(label: 'Name', value: name)
-        .fnc { name = value }
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Text(.config(size: 24, type: h2) .obj(greeting))
+        Input(
+          .preset(default)
+          .config(label: 'Name', value: name)
+          .fnc { name = value }
+        )
+        Button(.preset(default) .config(label: 'Visit') .fnc { visits++ })
       )
-      Button(.preset(default) .config(label: 'Visit') .fnc { visits++ })
-    ))
+    )
   )
 )
 ```

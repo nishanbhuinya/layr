@@ -1,7 +1,8 @@
 /**
  * An ad slot. Renders nothing unless both the publisher id and this placement's ad-unit id are set
  * at build time (repository variables), so an unconfigured build has no ads and no empty boxes.
- * When configured it reserves its height up front, so the page never shifts when the ad arrives.
+ * It takes no room and shows no label until Google has actually filled it: where the ad script is
+ * blocked, slow or has nothing to show (a site still under review), the page shows nothing at all.
  * Placements are decided in the pages: the home band, one Library slot, the docs rail at xl.
  */
 import { useEffect, useRef } from "react";
@@ -13,7 +14,8 @@ const SLOTS: Record<string, string | undefined> = {
   docs: import.meta.env.VITE_AD_SLOT_DOCS,
 };
 
-export function Ad({ placement, height = 250 }: { placement: string; height?: number }) {
+/** `height` is kept for the pages that pass it; the slot no longer reserves space before an ad arrives. */
+export function Ad({ placement }: { placement: string; height?: number }) {
   const slot = SLOTS[placement];
   const pushed = useRef(false);
   useEffect(() => {
@@ -24,14 +26,14 @@ export function Ad({ placement, height = 250 }: { placement: string; height?: nu
       w.adsbygoogle = w.adsbygoogle ?? [];
       w.adsbygoogle.push({});
     } catch {
-      // Blocked by the reader's browser: the reserved space simply stays empty.
+      // Blocked by the reader's browser: the slot stays empty and takes no room.
     }
   }, [slot]);
   if (!CLIENT || !slot) return null;
   return (
     <aside className="ad" aria-label="Advertisement">
       <span className="ad-label">Advertisement</span>
-      <ins className="adsbygoogle" style={{ display: "block", minHeight: height }} data-ad-client={CLIENT} data-ad-slot={slot} data-ad-format="auto" data-full-width-responsive="true" />
+      <ins className="adsbygoogle" style={{ display: "block" }} data-ad-client={CLIENT} data-ad-slot={slot} data-ad-format="auto" data-full-width-responsive="true" />
     </aside>
   );
 }

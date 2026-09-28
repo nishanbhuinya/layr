@@ -26,11 +26,13 @@ Page(
   var int count = 0
   Scaffold(
     .config(color: canvas)
-    .body(Row(
-      .config(gap: 12, padding: all(24), yAlign: mid)
-      Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
-      Text('Clicked $count times')
-    ))
+    .body(
+      Row(
+        .config(gap: 12, padding: all(24), yAlign: mid)
+        Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
+        Text('Clicked $count times')
+      )
+    )
   )
 )
 ```
@@ -134,14 +136,16 @@ Page(
   const list<txt> tasks = ['Write', 'Format', 'Ship']
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 8, padding: all(24))
-      Each(.of(tasks.filter((t) => t != 'Format')) .as(t) .obj(Text('• $t')))
-      Text(
-        .config(color: muted)
-        .obj('${tasks.map((t) => t.toUpperCase()).join(", ")}')
+    .body(
+      Column(
+        .config(gap: 8, padding: all(24))
+        Each(.of(tasks.filter((t) => t != 'Format')) .as(t) .obj(Text('• $t')))
+        Text(
+          .config(color: muted)
+          .obj('${tasks.map((t) => t.toUpperCase()).join(", ")}')
+        )
       )
-    ))
+    )
   )
 )
 ```

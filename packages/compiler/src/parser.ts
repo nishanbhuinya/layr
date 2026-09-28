@@ -16,6 +16,7 @@ import type {
 } from "./ast.ts";
 import { type Comment, LAYR_IN_JSX, lex, scanBlock, skipCall, type Token } from "./lexer.ts";
 import type { Diagnostic, Span } from "./source.ts";
+import { MODIFIER_ALIASES } from "@layr-internal/model";
 
 export interface ParseResult {
   file: FileNode;
@@ -185,7 +186,10 @@ class Parser {
       } else {
         const tc = sep.nl || sep.kind === "eof" ? this.trailingComment(item.span.end) : undefined;
         if (tc) item.trailing = tc;
-        if (!sep.nl && sep.kind !== "eof" && !(close === ")" && this.is(")")) && !this.startsModifier() && item.type !== "Modifier") {
+        // Commas are optional: a name, value or object that cannot continue the item before it
+        // starts the next one (`Column(Text('a') Text('b'))`). A stray operator still needs a separator.
+        const startsItem = sep.kind === "ident" || sep.kind === "number" || sep.kind === "string" || sep.kind === "color" || sep.kind === "jsx" || (sep.kind === "punct" && sep.value === "!");
+        if (!sep.nl && sep.kind !== "eof" && !startsItem && !(close === ")" && this.is(")")) && !this.startsModifier() && item.type !== "Modifier") {
           this.error("L0012", `Expected a line break or \`,\` before ${describe(sep)}.`, sep.span);
         }
       }
@@ -254,7 +258,11 @@ class Parser {
       block = this.blockFrom(this.next());
       end = block.span.end;
     }
-    return { type: "Modifier", name: name.value, nameSpan: name.span, items, block, span: { start: dot.span.start, end } };
+    // Aliases (`.eO`, `.exeOrd`…) mean their canonical modifier everywhere after parsing; `layr format`
+    // writes the canonical name (L1011 carries the fix).
+    const canonical = MODIFIER_ALIASES[name.value];
+    if (canonical) this.diagnostics.push({ code: "L1011", severity: "info", message: `\`.${name.value}\` is written \`.${canonical}\`.`, span: name.span, fixes: [{ title: `Rename to .${canonical}`, edits: [{ span: name.span, text: canonical }] }] });
+    return { type: "Modifier", name: canonical ?? name.value, nameSpan: name.span, items, block, span: { start: dot.span.start, end } };
   }
 
   private blockFrom(t: Token): Block {
@@ -468,6 +476,9 @@ class Parser {
     for (;;) {
       const t = this.t;
       if (t.nl && this.exprDepth === 0) return expr;
+      // Between items, a `.` after a space starts a modifier (`size: 120 .border(width: 2)`);
+      // written against the value (`red.alpha(50%)`) it is a member.
+      if (this.exprDepth === 0 && this.is(".") && this.peek().kind === "ident" && t.span.start > this.prevEnd()) return expr;
       if (this.is(".") && this.peek().kind === "ident") {
         this.next();
         const name = this.next();

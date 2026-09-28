@@ -426,7 +426,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       if (attrs.length) props.push(`x: ${JSON.stringify(Object.fromEntries(attrs))}`);
       const behaviour = Object.entries(staticCfg).filter(([k]) => BEHAVIOUR_KEYS.has(k)).sort((x, y) => (x[0] < y[0] ? -1 : 1));
       if (behaviour.length) props.push(`b: { ${behaviour.map(([k, v]) => `${JSON.stringify(k)}: ${this.constCode(v)}`).join(", ")} }`);
-      if (l.notes.includes("adapt-row")) {
+      // A row in a sideways Scroll has all the room it wants: it stays one line and scrolls.
+      if (l.notes.includes("adapt-row") && !inSidewaysScroll(n)) {
         if (this.rowHasFill(n)) props.push("ad: 1");
         else props[props.findIndex((p) => p.startsWith("c: "))] = `c: ${JSON.stringify(`${classes.join(" ")} l-wrap-auto`)}`;
       }
@@ -1024,7 +1025,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     const ref = this.resolveRef(target, sc);
     if (ref && ref.key) {
       const key = ref.key;
-      this.checkMutation(ref.address, key, target.span, false);
+      this.checkMutation(ref.address, key, target.span, false, ref.node);
       this.graphWrite(ref.address, key, target.span, null, "write");
       const slot = ref.node ? slotType(ref.node, key) : null;
       const g = this.expr(value, sc, slot ? { type: slot } : {});
@@ -1037,8 +1038,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     return `${t} ${op} ${this.expr(value, sc).code}`;
   }
 
-  private checkMutation(address: string, key: string, span: Span, force: boolean) {
-    if (RENDERED_FEATURES[key]) this.err("L3104", `\`${key}\` is measured from layout and read-only.`, span);
+  private checkMutation(address: string, key: string, span: Span, force: boolean, node?: ObjNode | null) {
+    // `size` is measured, but an object with a `size` key of its own (a Text's font size, a box's
+    // size) takes writes and Injects there; reads keep returning the measurement.
+    const ownSize = key === "size" && !!node && (!!node.def?.keys.some((k) => k.name === "size") || !!node.user?.params.some((p) => p.name === "size"));
+    if (RENDERED_FEATURES[key] && !ownSize) this.err("L3104", `\`${key}\` is measured from layout and read-only.`, span);
     const imm = this.graph.immutable.get(address) ?? this.pendingImmutable.get(address);
     if (imm?.has(key) && !force) {
       const site = this.graph.immutableSites.get(`${address}#${key}`);
@@ -1082,7 +1086,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     const force = !!firstModifier(call.items, "force");
     if (force && !this.forceAllowed()) this.err("L3105", "`Inject(.force …)` is only allowed in files matched by `access.force` in layr.yaml.", call.span);
     const tsc = new Scope(sc);
-    if (target) tsc.set(target.local, { kind: "object", node: target.node as ObjNode, comp: target.comp, address: target.address });
+    if (target) for (const name of target.names ?? [target.local]) tsc.set(name, { kind: "object", node: target.node as ObjNode, comp: target.comp, address: target.address });
     const out: string[] = [];
 
     if (e.kind === "Extract" || e.kind === "Export") {
@@ -1114,7 +1118,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         tgt = ex.target;
         const ref = this.resolveRef(tgt, tsc);
         if (!ref?.key) {
-          this.err("L3301", "Inject assigns features of objects: `card.padding = ...`.", ex.target.span);
+          const t = target?.names?.map((n) => `\`${n}\``).join(" or ");
+          this.err("L3301", t ? `Inject assigns features of its target, named ${t} here: \`${target?.local}.color = …\`, or any object's feature by id or path.` : "Inject assigns features of objects: `card.padding = ...`.", ex.target.span);
           continue;
         }
         const psc = new Scope(tsc);
@@ -1127,7 +1132,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         this.prevTarget = null;
         this.checkSelfRead(ex.value, ref.address, ref.key as string);
         valueFn = ex.op === "=" ? `($prev) => ${v}` : `($prev) => $V.arith(${JSON.stringify(ex.op.slice(0, -1))}, $prev, ${v})`;
-        this.injectLayer({ address: ref.address, key: ref.key as string }, order, force, ex.target.span, valueFn, layers);
+        this.injectLayer({ address: ref.address, key: ref.key as string, node: ref.node }, order, force, ex.target.span, valueFn, layers);
       } else if (ex.type === "Update" || (ex.type === "Unary" && (ex.op === "++" || ex.op === "--"))) {
         tgt = ex.argument;
         const ref = this.resolveRef(tgt, tsc);
@@ -1136,7 +1141,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
           continue;
         }
         valueFn = `($prev) => $V.arith(${JSON.stringify(ex.op === "++" ? "+" : "-")}, $prev, 1)`;
-        this.injectLayer({ address: ref.address, key: ref.key as string }, order, force, ex.span, valueFn, layers);
+        this.injectLayer({ address: ref.address, key: ref.key as string, node: ref.node }, order, force, ex.span, valueFn, layers);
       } else this.err("L0011", "Inject holds assignments such as `card.padding = pad * 2`.", ex.span);
     }
     if (!layers.length) return "";
@@ -1166,7 +1171,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       this.mod.diagnostics.push({
         code: "L3203",
         severity: "error",
-        message: `\`${name}\` is extracted without \`.exeOrder\`, so it reads the final \`${key}\`, which this Inject writes. Give the Extract \`.exeOrder(-1)\` to read the declared value.`,
+        message: `\`${name}\` is extracted without \`.exeOrder\`, so it reads the final \`${key}\`, which this Inject writes. Give the Extract an \`.exeOrder\` at or below this Inject's to read the value under it.`,
         span: value.span,
         file: this.mod.path,
         related: [{ message: "Extracted here.", span: x.span, file: this.mod.path }],
@@ -1174,8 +1179,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
   }
 
-  private injectLayer(ref: { address: string; key: string }, order: number | null, force: boolean, span: Span, fn: string, layers: string[]) {
-    this.checkMutation(ref.address, ref.key, span, force);
+  private injectLayer(ref: { address: string; key: string; node?: ObjNode | null }, order: number | null, force: boolean, span: Span, fn: string, layers: string[]) {
+    this.checkMutation(ref.address, ref.key, span, force, ref.node);
     this.graph.entries.push({ kind: force ? "force" : "inject", address: ref.address, key: ref.key, order, file: this.mod.path, span, owner: this.currentComp?.name ?? null });
     const pos = this.mod.source.position(span.start);
     layers.push(`{ a: ${JSON.stringify(ref.address)}, k: ${JSON.stringify(ref.key)}, o: ${order ?? "null"}, f: ${fn}, src: ${JSON.stringify(`${this.mod.path}:${pos.line}`)}${force ? ", force: true" : ""} }`);
@@ -1187,7 +1192,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   }
 
   /** `.from(SomePage.card)` / `.into(...)` / `.lookUp(page: SomePage, id: card)`. */
-  private eeiTarget(call: Call, sc: Scope): { comp: CompDef; node: ObjNode | null; local: string; address?: string } | null {
+  private eeiTarget(call: Call, sc: Scope): { comp: CompDef; node: ObjNode | null; local: string; names?: string[]; address?: string } | null {
     const m = firstModifier(call.items, "from") ?? firstModifier(call.items, "into") ?? firstModifier(call.items, "lookUp");
     if (!m) return null;
     if (m.name === "lookUp") {
@@ -1212,8 +1217,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       return null;
     }
     const segs = flatten(e);
-    const local = ref.node.id ?? segs?.[segs.length - 1]?.name ?? ref.node.seg;
-    return { comp: ref.comp, node: ref.node, local, address: ref.address };
+    const written = segs?.[segs.length - 1]?.name;
+    // The target answers to the name written at the end of the path and to its id: an `.id` on an
+    // object reached by a path must not break `text.color = …` in that Inject.
+    const names = [...new Set([written, ref.node.id, ref.node.seg].filter((n): n is string => !!n))];
+    return { comp: ref.comp, node: ref.node, local: names[0] as string, names, address: ref.address };
   }
 
   // -------------------------------------------------------------- references (ids, paths)
@@ -1407,7 +1415,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       case "Unary": {
         if (e.op === "++" || e.op === "--") return { code: this.assign(e.argument, e.op === "++" ? "+=" : "-=", { type: "Number", value: 1, unit: "", raw: "1", span: e.span }, sc), type: "any" };
         const a = this.expr(e.argument, sc, e.op === "!" ? { type: "bool" } : expect);
-        if (e.op === "-" && typeof a.konst === "number") return { code: `-${a.code}`, type: a.type, konst: -a.konst };
+        if (e.op === "-" && typeof a.konst === "number") return { code: `-${a.code}`, type: a.type, konst: a.konst === 0 ? 0 : -a.konst };
+        if (e.op === "+" && typeof a.konst === "number") return { code: a.code, type: a.type, konst: a.konst };
         if (e.op === "-" && a.type !== "num" && a.type !== "int" && a.type !== "len") return { code: `$V.arith("*", ${a.code}, -1)`, type: a.type };
         return { code: `${e.op}${a.code}`, type: e.op === "!" ? "bool" : a.type, konst: e.op === "!" && typeof a.konst === "boolean" ? !a.konst : NOT_CONST };
       }
@@ -1515,6 +1524,9 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
           if (expect.type === "page" && b.comp.kind === "page") return { code: JSON.stringify(b.comp.name), type: "page", konst: b.comp.name };
           return { code: b.code, type: "obj" };
         case "object":
+          // Where a colour is expected, a colour name stays a colour even if an object has that id
+          // (`.id(red)` must not turn `color: red` into an object reference).
+          if ((expect.type === "color" || expect.type === "paint") && (this.project.config.theme.colors[name] || NAMED_COLORS[name])) break;
           return { code: JSON.stringify(runtimeAddress(b.comp, b.node)), type: "object" };
         case "params":
           return { code: "$p", type: "any" };
@@ -2085,6 +2097,15 @@ function defaultFor(t: string): string {
  * Whether an object fills its row: its own `w: fill`, a fill primitive, a user widget whose root
  * fills (unless the caller sets `w`), or a pass-through wrapper around a filling object.
  */
+/** True when the object's nearest laid-out parent is a Scroll along x (or both): width there is unbounded. */
+function inSidewaysScroll(n: ObjNode): boolean {
+  let p = n.parent;
+  while (p && (p.name === "Animate" || p.name === "Focus" || p.name === "Order" || p.name === "Position" || p.kind === "construct")) p = p.parent;
+  if (!p || p.name !== "Scroll") return false;
+  const axis = p.config.find((e) => e.key === "axis")?.value;
+  return axis?.type === "Ident" && (axis.name === "x" || axis.name === "both");
+}
+
 function fills(k: ObjNode, depth = 0): boolean {
   if (depth > 6) return false;
   if (k.name === "Expand" || k.name === "Mid" || k.name === "Align") return true;

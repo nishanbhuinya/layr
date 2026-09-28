@@ -25,37 +25,42 @@
 .l-fade{mask-image:linear-gradient(to bottom,transparent,#000 var(--l-fa),#000 calc(100% - var(--l-fb)),transparent);animation:l-fade linear both;animation-timeline:scroll(self block)}
 .l-fade-x{mask-image:linear-gradient(to right,transparent,#000 var(--l-fa),#000 calc(100% - var(--l-fb)),transparent);animation:l-fade linear both;animation-timeline:scroll(self inline)}
 @keyframes l-fade{0%{--l-fa:0px;--l-fb:var(--l-fade)}8%{--l-fa:var(--l-fade)}92%{--l-fb:var(--l-fade)}100%{--l-fa:var(--l-fade);--l-fb:0px}}
-:is(.l-stack,.l-stack>.l-pass)>*{grid-area:1/1}
+:is(.l-stack,:where(.l-stack>.l-pass,.l-stack>.l-pass>.l-pass))>*{grid-area:1/1}
 .l-grid{display:grid}
 .l-scroll{overflow:auto}
 .l-text{display:block;overflow-wrap:break-word}
 .l-inline{display:inline}
 .l-leaf{display:block;flex-shrink:0}
-:is(.l-row,.l-row>.l-pass)>.l-wfill,:is(.l-wrap,.l-wrap>.l-pass)>.l-wfill{flex:var(--l-flex,1) 1 0;min-width:0}
-:is(.l-col,.l-col>.l-pass)>.l-hfill,:is(.l-box,.l-box>.l-pass)>.l-hfill,:is(.l-scroll,.l-scroll>.l-pass)>.l-hfill{flex:var(--l-flex,1) 1 0}
-:is(.l-col,.l-col>.l-pass)>.l-wfill,:is(.l-box,.l-box>.l-pass)>.l-wfill,:is(.l-scroll,.l-scroll>.l-pass)>.l-wfill{width:100%;width:-webkit-fill-available;width:-moz-available;width:stretch}
-:is(.l-row,.l-row>.l-pass)>.l-hfill,:is(.l-wrap,.l-wrap>.l-pass)>.l-hfill{align-self:stretch}
-:is(.l-stack,.l-stack>.l-pass)>.l-wfill,:is(.l-grid,.l-grid>.l-pass)>.l-wfill{justify-self:stretch;width:100%}
-:is(.l-stack,.l-stack>.l-pass)>.l-hfill,:is(.l-grid,.l-grid>.l-pass)>.l-hfill{align-self:stretch;height:100%}
-:is(.l-row,.l-row>.l-pass)>.l-wfix,:is(.l-wrap,.l-wrap>.l-pass)>.l-wfix{flex-shrink:0}
-:is(.l-col,.l-col>.l-pass)>.l-hfix,:is(.l-box,.l-box>.l-pass)>.l-hfix{flex-shrink:0}
-:is(.l-row,.l-row>.l-pass)>*{flex-shrink:var(--l-shrink,1)}
+:is(.l-row,:where(.l-row>.l-pass,.l-row>.l-pass>.l-pass))>.l-wfill,:is(.l-wrap,:where(.l-wrap>.l-pass,.l-wrap>.l-pass>.l-pass))>.l-wfill{flex:var(--l-flex,1) 1 0;min-width:0}
+:is(.l-col,:where(.l-col>.l-pass,.l-col>.l-pass>.l-pass))>.l-hfill,:is(.l-box,:where(.l-box>.l-pass,.l-box>.l-pass>.l-pass))>.l-hfill,:is(.l-scroll,:where(.l-scroll>.l-pass,.l-scroll>.l-pass>.l-pass))>.l-hfill{flex:var(--l-flex,1) 1 0}
+:is(.l-col,:where(.l-col>.l-pass,.l-col>.l-pass>.l-pass))>.l-wfill,:is(.l-box,:where(.l-box>.l-pass,.l-box>.l-pass>.l-pass))>.l-wfill,:is(.l-scroll,:where(.l-scroll>.l-pass,.l-scroll>.l-pass>.l-pass))>.l-wfill{width:100%;width:-webkit-fill-available;width:-moz-available;width:stretch}
+:is(.l-row,:where(.l-row>.l-pass,.l-row>.l-pass>.l-pass))>.l-hfill,:is(.l-wrap,:where(.l-wrap>.l-pass,.l-wrap>.l-pass>.l-pass))>.l-hfill{align-self:stretch}
+:is(.l-stack,:where(.l-stack>.l-pass,.l-stack>.l-pass>.l-pass))>.l-wfill,:is(.l-grid,:where(.l-grid>.l-pass,.l-grid>.l-pass>.l-pass))>.l-wfill{justify-self:stretch;width:100%}
+:is(.l-stack,:where(.l-stack>.l-pass,.l-stack>.l-pass>.l-pass))>.l-hfill,:is(.l-grid,:where(.l-grid>.l-pass,.l-grid>.l-pass>.l-pass))>.l-hfill{align-self:stretch;height:100%}
+:is(.l-row,:where(.l-row>.l-pass,.l-row>.l-pass>.l-pass))>.l-wfix,:is(.l-wrap,:where(.l-wrap>.l-pass,.l-wrap>.l-pass>.l-pass))>.l-wfix{flex-shrink:0}
+:is(.l-col,:where(.l-col>.l-pass,.l-col>.l-pass>.l-pass))>.l-hfix,:is(.l-box,:where(.l-box>.l-pass,.l-box>.l-pass>.l-pass))>.l-hfix{flex-shrink:0}
+:is(.l-row,:where(.l-row>.l-pass,.l-row>.l-pass>.l-pass))>*{flex-shrink:var(--l-shrink,1)}
 .l-hide{display:none!important}
 .l-row.l-stackable{flex-wrap:wrap}
 .l-row.l-stacked{flex-direction:column;align-items:stretch!important}
-.l-row.l-adapt>.l-wfill{min-width:min-content}
-.l-row.l-adapt.l-stacked>.l-wfill{min-width:0}
+:is(.l-row.l-adapt,:where(.l-row.l-adapt>.l-pass,.l-row.l-adapt>.l-pass>.l-pass))>.l-wfill{min-width:min-content}
+:is(.l-row.l-adapt.l-stacked,:where(.l-row.l-adapt.l-stacked>.l-pass,.l-row.l-adapt.l-stacked>.l-pass>.l-pass))>.l-wfill{min-width:0}
 .l-row.l-wrap-auto{flex-wrap:wrap}
-.l-row.l-stackable>*,.l-row.l-stackable>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
+:is(.l-row.l-stackable,:where(.l-row.l-stackable>.l-pass,.l-row.l-stackable>.l-pass>.l-pass))>*,:is(.l-row.l-stackable,:where(.l-row.l-stackable>.l-pass,.l-row.l-stackable>.l-pass>.l-pass))>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
 /* Stacked, a row's children keep their own heights: a fill share was for the width. */
-.l-row.l-stacked>*,.l-row.l-stacked.l-stacked>.l-wfill.l-wfill{flex:0 0 auto}
+:is(.l-row.l-stacked,:where(.l-row.l-stacked>.l-pass,.l-row.l-stacked>.l-pass>.l-pass))>*,:is(.l-row.l-stacked.l-stacked,:where(.l-row.l-stacked.l-stacked>.l-pass,.l-row.l-stacked.l-stacked>.l-pass>.l-pass))>.l-wfill.l-wfill{flex:0 0 auto}
 .l-root{color:CanvasText;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / 1000);line-height:1.5}
 dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
 dialog.l:not([open]){display:none}
 dialog.l::backdrop{background:var(--l-backdrop,rgb(0 0 0 / .35))}
-button.l{cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),filter 160ms}
-button.l:disabled{cursor:not-allowed}
-/* A button answers the press: it gives a little under the finger, and brightens under a mouse. */
+button.l{cursor:pointer;transition:transform 160ms cubic-bezier(.23,1,.32,1),filter 160ms;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+a.l{-webkit-tap-highlight-color:transparent}
+[data-l="Icon"]>svg{display:block;width:100%;height:100%}
+button.l:disabled{cursor:not-allowed;opacity:.5}
+input.l,select.l,textarea.l{accent-color:var(--layr-color-accent,auto)}
+/* A button answers the press: it gives a little under the finger, and brightens under a mouse. On
+   touch screens it shows no grey tap flash and a long press does not select its label; the press
+   scale is the feedback, and keyboard focus keeps its ring. */
 button.l:active:not(:disabled){transform:scale(.97)}
 @media (hover:hover) and (pointer:fine){button.l:hover:not(:disabled){filter:brightness(1.06)}}
 @media (prefers-reduced-motion: reduce){button.l{transition:none}button.l:active:not(:disabled){transform:none}}

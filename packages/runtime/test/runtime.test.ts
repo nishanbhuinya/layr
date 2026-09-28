@@ -82,12 +82,35 @@ describe("Export / Extract / Inject registry", () => {
     registry.declare({ "P::x": { color: "red" } });
     registry.addLayer({ a: "P::x", k: "color", o: 0, f: () => "blue" });
     registry.write("P::x", "color", "green");
-    registry.write("P::x", "size", 1);
+    registry.write("P::x", "pos", 1);
     expect(registry.read("P::x", "color")).toBe("red");
     expect(warn).toHaveBeenCalledTimes(3);
     // force overrides !mut
     registry.addLayer({ a: "P::x", k: "color", o: 0, f: () => "blue", force: true });
     expect(registry.read("P::x", "color")).toBe("blue");
+  });
+
+  it("orders layers along the whole number line, like z-index", () => {
+    // Negative, zero, huge and unordered layers in random registration order: the final value
+    // applies them ascending (unordered last, in registration order), and a read below k stops there.
+    const orders = [-2147483648, -9999, -10, -5, -1, 0, 1, 5, 9999, 2147483647, null, null];
+    let seed = 7;
+    const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let trial = 0; trial < 200; trial++) {
+      registry.resetRegistry();
+      registry.declare({ "P::x": { v: "" } });
+      const picked = orders.filter(() => rand() < 0.6).sort(() => rand() - 0.5);
+      picked.forEach((o, i) => registry.addLayer({ a: "P::x", k: "v", o, f: (prev) => `${prev}[${i}]` }));
+      const sorted = picked.map((o, i) => ({ o, i })).sort((a, b) => (a.o ?? Number.POSITIVE_INFINITY) - (b.o ?? Number.POSITIVE_INFINITY) || a.i - b.i);
+      expect(registry.read("P::x", "v")).toBe(sorted.map((t) => `[${t.i}]`).join(""));
+      for (const k of [-9999, -1, 0, 10000])
+        expect(registry.read("P::x", "v", k)).toBe(
+          sorted
+            .filter((t) => t.o !== null && t.o < k)
+            .map((t) => `[${t.i}]`)
+            .join(""),
+        );
+    }
   });
 
   it("drops !mut so later layers apply, and restores it", () => {
@@ -104,6 +127,16 @@ describe("Export / Extract / Inject registry", () => {
     registry.immutable({ "P::x": ["color"] });
     registry.addLayer({ a: "P::x", k: "color", o: 0, f: () => "blue" });
     expect(registry.read("P::x", "color")).toBe("red");
+  });
+
+  it("size reads what was measured; a size layer changes the declared size", () => {
+    registry.declare({ "P::t": { size: 14 } });
+    registry.setRendered("P::t", "size", { w: 100, h: 20 });
+    const off = registry.addLayer({ a: "P::t", k: "size", o: 0, f: () => 26 });
+    expect(registry.read("P::t", "size")).toEqual({ w: 100, h: 20 });
+    expect(registry.resolve("P::t", "size", 14)).toBe(26);
+    off();
+    expect(registry.resolve("P::t", "size", 14)).toBe(14);
   });
 
   it("explains the cascade", () => {

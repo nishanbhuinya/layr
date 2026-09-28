@@ -266,7 +266,7 @@ export function N(props: NodeProps): ReactNode {
         let w = p.clientWidth - px(cs.paddingLeft) - px(cs.paddingRight);
         if (cs.display.includes("flex") && cs.flexDirection.startsWith("row")) {
           const gap = px(cs.columnGap);
-          for (const c of p.children) if (c !== node && c instanceof HTMLElement && getComputedStyle(c).position !== "absolute") w -= c.getBoundingClientRect().width + gap;
+          for (const c of layoutChildren(p)) if (c !== node && !c.contains(node) && c instanceof HTMLElement && getComputedStyle(c).position !== "absolute") w -= c.getBoundingClientRect().width + gap;
         }
         return Math.max(node.clientWidth, w);
       };
@@ -334,6 +334,8 @@ export function N(props: NodeProps): ReactNode {
         break;
       case "Image":
       case "Svg": {
+        // A coloured Svg lowers to a masked span (see lower): it has no src or alt of its own.
+        if (tag === "span") break;
         if (beh.src !== undefined) attrs.src = String(beh.src);
         if (beh.decorative) {
           attrs.alt = "";
@@ -462,13 +464,21 @@ const UNSTACK_SLACK = 4;
  * row really has: its own width when it fills its parent (stacking does not change that), else its
  * parent's content box. Comparing against anything wider (a padded parent) oscillates.
  */
+/** The objects a container lays out: its children, seen through pass-through wrappers (Animate, Focus, If). */
+function* layoutChildren(node: Element): Generator<Element> {
+  for (const child of node.children) {
+    if (child.classList.contains("l-pass")) yield* layoutChildren(child);
+    else yield child;
+  }
+}
+
 function adapt(node: HTMLElement, setStacked: (v: boolean) => void) {
   const stacked = node.classList.contains("l-stacked");
   if (!stacked) {
     // Fitting is not enough: a fill child squeezed below its comfortable width (a button label
     // wrapping, chips one per line, prose a few words wide) also stacks the row.
     let short = 0;
-    for (const child of node.children) {
+    for (const child of layoutChildren(node)) {
       if (!(child instanceof HTMLElement) || !child.classList.contains("l-wfill")) continue;
       const want = comfortable(child);
       const has = child.getBoundingClientRect().width;
@@ -678,6 +688,19 @@ function progressiveBlur(beh: Record<string, unknown>, over: boolean): ReactNode
   );
 }
 
+/**
+ * The object a layer draws: past wrappers that have no box of their own (Animate, Focus:
+ * `display: contents`) and past Order and Position, whose boxes are only where their object sits
+ * (empty when it is positioned). Masks go on this
+ * element and cuts are measured from it, so a layer offset outside the others (a negative
+ * `bottom`) keeps its real shape instead of a wrapper's empty box.
+ */
+function shapeOf(layer: HTMLElement): HTMLElement {
+  let e = layer;
+  while (e.firstElementChild instanceof HTMLElement && (getComputedStyle(e).display === "contents" || e.dataset.l === "Order" || e.dataset.l === "Position")) e = e.firstElementChild;
+  return e;
+}
+
 /** Mask and Subtract: the lowest-order layer is the mask (Mask) or the base (Subtract). */
 function composite(root: HTMLElement, kind: "Mask" | "Subtract", mode: string): () => void {
   const apply = () => {
@@ -686,32 +709,42 @@ function composite(root: HTMLElement, kind: "Mask" | "Subtract", mode: string): 
     const z = (e: HTMLElement) => Number.parseInt(getComputedStyle(e).zIndex, 10) || 0;
     const sorted = [...layers].sort((a, b) => z(a) - z(b));
     const base = sorted[0] as HTMLElement;
-    const rootBox = root.getBoundingClientRect();
     if (kind === "Mask") {
-      const target = base.firstElementChild instanceof HTMLElement ? base.firstElementChild : base;
+      const target = shapeOf(base);
       const cs = getComputedStyle(target);
       const paint = cs.backgroundImage !== "none" ? cs.backgroundImage : `linear-gradient(${cs.backgroundColor}, ${cs.backgroundColor})`;
       const r = target.getBoundingClientRect();
-      base.style.visibility = "hidden";
-      for (const el of sorted.slice(1)) {
-        el.style.maskImage = paint;
-        el.style.setProperty("-webkit-mask-image", paint);
-        el.style.maskSize = `${r.width}px ${r.height}px`;
-        el.style.setProperty("-webkit-mask-size", `${r.width}px ${r.height}px`);
+      target.style.visibility = "hidden";
+      // The mask is the layer's shape as well as its paint: rounded corners intersect the paint.
+      const radius = Math.min(Number.parseFloat(cs.borderTopLeftRadius) || 0, r.width / 2, r.height / 2);
+      const shape = radius > 0 ? `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${r.width}' height='${r.height}'><rect width='${r.width}' height='${r.height}' rx='${radius}' fill='white'/></svg>`)}")` : null;
+      const images = shape ? `${paint}, ${shape}` : paint;
+      const twice = (v: string) => (shape ? `${v}, ${v}` : v);
+      for (const layer of sorted.slice(1)) {
+        const el = shapeOf(layer);
+        el.style.maskImage = images;
+        el.style.setProperty("-webkit-mask-image", images);
+        el.style.maskSize = twice(`${r.width}px ${r.height}px`);
+        el.style.setProperty("-webkit-mask-size", twice(`${r.width}px ${r.height}px`));
         const er = el.getBoundingClientRect();
-        el.style.maskPosition = `${r.left - er.left}px ${r.top - er.top}px`;
-        el.style.setProperty("-webkit-mask-position", `${r.left - er.left}px ${r.top - er.top}px`);
+        el.style.maskPosition = twice(`${r.left - er.left}px ${r.top - er.top}px`);
+        el.style.setProperty("-webkit-mask-position", twice(`${r.left - er.left}px ${r.top - er.top}px`));
         el.style.maskRepeat = "no-repeat";
         el.style.setProperty("-webkit-mask-repeat", "no-repeat");
+        if (shape) {
+          el.style.maskComposite = "intersect";
+          el.style.setProperty("-webkit-mask-composite", "source-in");
+        }
         el.style.maskMode = mode === "luminance" ? "luminance" : "alpha";
       }
     } else {
-      const br = base.getBoundingClientRect();
+      const shape = shapeOf(base);
+      const br = shape.getBoundingClientRect();
       const rects = sorted
         .slice(1)
         .map((cut) => {
-          cut.style.visibility = "hidden";
-          const target = (cut.querySelector("[data-l=Container]") as HTMLElement | null) ?? cut;
+          const target = shapeOf(cut);
+          target.style.visibility = "hidden";
           const r = target.getBoundingClientRect();
           const radius = Number.parseFloat(getComputedStyle(target).borderTopLeftRadius) || 0;
           return `<rect x='${r.left - br.left}' y='${r.top - br.top}' width='${r.width}' height='${r.height}' rx='${radius}' fill='black'/>`;
@@ -719,14 +752,21 @@ function composite(root: HTMLElement, kind: "Mask" | "Subtract", mode: string): 
         .join("");
       const svg = `url("data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='${br.width}' height='${br.height}'>${rects}</svg>`)}")`;
       const img = `linear-gradient(#000 0 0), ${svg}`;
-      base.style.maskImage = img;
-      base.style.setProperty("-webkit-mask-image", img);
-      base.style.maskComposite = "exclude";
-      base.style.setProperty("-webkit-mask-composite", "xor");
-      base.style.maskRepeat = "no-repeat";
-      base.style.setProperty("-webkit-mask-repeat", "no-repeat");
+      // A mask on a rounded element leaves a hairline halo along its curve (Chromium); a Position or
+      // Order around it with the same box has no radius, so the mask goes there when there is one.
+      let host: HTMLElement = shape;
+      for (let p = shape.parentElement; p && p !== root; p = p.parentElement) {
+        if (p.dataset.l !== "Position" && p.dataset.l !== "Order") continue;
+        const r = p.getBoundingClientRect();
+        if (Math.abs(r.left - br.left) < 0.5 && Math.abs(r.top - br.top) < 0.5 && Math.abs(r.width - br.width) < 0.5 && Math.abs(r.height - br.height) < 0.5) host = p;
+      }
+      host.style.maskImage = img;
+      host.style.setProperty("-webkit-mask-image", img);
+      host.style.maskComposite = "exclude";
+      host.style.setProperty("-webkit-mask-composite", "xor");
+      host.style.maskRepeat = "no-repeat";
+      host.style.setProperty("-webkit-mask-repeat", "no-repeat");
     }
-    void rootBox;
   };
   apply();
   return observeResize([root], apply);

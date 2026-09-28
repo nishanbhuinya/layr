@@ -40,7 +40,9 @@ Row(
       flex: 2
       padding: all(12)
     )
-    .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: fill, flex: 2')))
+    .obj(
+      Text(.config(color: onAccent, weight: semibold) .obj('w: fill, flex: 2'))
+    )
   )
 )
 ```
@@ -60,7 +62,7 @@ These are the same three modes as Figma's auto layout, so a design translates di
 |---|---|
 | `Row`, `Column` | objects along an axis; `xAlign` and `yAlign` mean horizontal and vertical in both |
 | `Container` | one object, with size, paint, border, corners, shadow, padding; `objAlign` places the object |
-| `Stack` | objects on top of each other; `Order(.pos(n))` sets layers |
+| `Stack` | objects on top of each other; `Order(.posOrder(n))` sets layers |
 | `Position` | offsets an object in a Stack (`x`, `y`, or `top`/`right`/`bottom`/`left`, negatives allowed) |
 | `Mid`, `Align` | fill the parent and place the object in the middle or at an alignment |
 | `Expand` | makes its object fill the remaining space |
@@ -82,24 +84,28 @@ Stack(
       cornerRadius: 14
       padding: all(20)
     )
-    .obj(Column(
-      .config(gap: 4)
-      Text(.config(weight: semibold) .obj('Inbox'))
-      Text(.config(color: muted) .obj('3 unread messages'))
-    ))
+    .obj(
+      Column(
+        .config(gap: 4)
+        Text(.config(weight: semibold) .obj('Inbox'))
+        Text(.config(color: muted) .obj('3 unread messages'))
+      )
+    )
   )
   Position(
     .config(right: -8, top: -8)
-    .obj(Container(
-      .config(size: 26, color: accent, cornerRadius: 999, objAlign: mid)
-      .obj(Text(.config(size: 13, color: onAccent, weight: bold) .obj('3')))
-    ))
+    .obj(
+      Container(
+        .config(size: 26, color: accent, cornerRadius: 999, objAlign: mid)
+        .obj(Text(.config(size: 13, color: onAccent, weight: bold) .obj('3')))
+      )
+    )
   )
 )
 ```
 
 > **Try it**
-> - Change `top: -8, right: -8` to `bottom: 12, right: 12`: the badge moves inside the card.
+> - Change `right: -8, top: -8` to `bottom: 12, right: 12`: the badge moves inside the card.
 > - Change the Row of boxes above to a `Column`: every `w: fill` now fills the width, one under another.
 
 ## When space runs out
@@ -146,10 +152,12 @@ Column(
     )
     Container(
       .config(w: fill, h: 90, color: violet, cornerRadius: 10, padding: all(12))
-      .obj(Text(
-        .config(color: onAccent, weight: semibold)
-        .obj('w: fill: a pane that must not be squeezed')
-      ))
+      .obj(
+        Text(
+          .config(color: onAccent, weight: semibold)
+          .obj('w: fill: a pane that must not be squeezed')
+        )
+      )
     )
   )
 )

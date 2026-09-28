@@ -12,23 +12,27 @@ A `Widget` is an object you define once and use anywhere. Its **params** become 
 Widget(
   .name(Card)
   .param(req txt title, color tint = accent, len pad = 16)
-  .obj(Container(
-    .config(
-      w: fill
-      .border(color: param.tint, width: 2)
-      color: panel
-      cornerRadius: 14
-      padding: all(param.pad)
-    )
-    .obj(Column(
-      .config(gap: 6)
-      Text(
-        .config(size: 17, color: param.tint, weight: semibold)
-        .obj(param.title)
+  .obj(
+    Container(
+      .config(
+        w: fill
+        .border(color: param.tint, width: 2)
+        color: panel
+        cornerRadius: 14
+        padding: all(param.pad)
       )
-      .obj
-    ))
-  ))
+      .obj(
+        Column(
+          .config(gap: 6)
+          Text(
+            .config(size: 17, color: param.tint, weight: semibold)
+            .obj(param.title)
+          )
+          .obj
+        )
+      )
+    )
+  )
 )
 
 Page(
@@ -36,11 +40,13 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(gap: 12, padding: all(24))
-      Card(.config(title: 'Hello') .obj(Text('Any object can go inside.')))
-      Card(.config(title: 'Tinted, roomier', tint: teal, pad: 28))
-    ))
+    .body(
+      Column(
+        .config(gap: 12, padding: all(24))
+        Card(.config(title: 'Hello') .obj(Text('Any object can go inside.')))
+        Card(.config(title: 'Tinted, roomier', tint: teal, pad: 28))
+      )
+    )
   )
 )
 ```
@@ -91,11 +97,13 @@ Page(
   .route('/')
   Scaffold(
     .config(color: canvas)
-    .body(Row(
-      .config(gap: 12, padding: all(24))
-      Counter(.config(label: 'Apples'))
-      Counter(.config(label: 'Pears'))
-    ))
+    .body(
+      Row(
+        .config(gap: 12, padding: all(24))
+        Counter(.config(label: 'Apples'))
+        Counter(.config(label: 'Pears'))
+      )
+    )
   )
 )
 ```

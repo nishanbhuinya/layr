@@ -90,8 +90,28 @@ describe("commas before modifiers", () => {
     const r = format("Container(.config(size: 120, .border(width: 2)))");
     expect(r.text.trim()).toBe("Container(.config(size: 120, .border(width: 2)))");
   });
-  it("reports a missing comma instead of emitting a method call on a number", () => {
+  it("reads a spaced `.name(` after a value as the next modifier, not a method call on the value", () => {
     const c = compileProject([{ path: "src/pages/index.layr", text: "Page(.name(P) .route('/') Scaffold(.body(Container(.config(size: 120 .border(width: 2))))))" }]);
-    expect(c.diagnostics.map((d) => d.code)).toContain("L0012");
+    expect(c.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(c.modules.get("src/pages/index.layr")?.css).toMatch(/border:calc\(2 \* var\(--ds\) \/ 1000\) solid/);
+  });
+});
+
+describe("commas are optional", () => {
+  const errors = (body: string) =>
+    compileProject([{ path: "src/pages/index.layr", text: `Page(.name(P) .route('/') Scaffold(.body(${body})))` }]).diagnostics.filter((d) => d.severity === "error").map((d) => d.code);
+  it("between objects, config entries and !mut entries on one line", () => {
+    expect(errors("Column(Text('a') Text('b'))")).toEqual([]);
+    expect(errors("Row(.config(gap: 8 padding: all(4)) Text('a') Text('b'))")).toEqual([]);
+    expect(errors("Column(Container(.config(w: 100 h: 40 !mut color: red)))")).toEqual([]);
+  });
+  it("still refuse a stray operator between items (L0012)", () => {
+    expect(errors("Row(Text('a') ] Text('b'))")).toContain("L0012");
+  });
+  it("members written against the value stay members", () => {
+    expect(errors("Column(Container(.config(size: 40, color: red.alpha(50%))))")).toEqual([]);
+  });
+  it("the formatter still writes the canonical comma on one line", () => {
+    expect(format("Column(Text('a') Text('b'))").text.trim()).toBe("Column(Text('a'), Text('b'))");
   });
 });

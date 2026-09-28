@@ -27,6 +27,36 @@ Page(
         Container(.config(w: fill, h: 80, minW: 240, color: ink, cornerRadius: 12))
       )
 
+      // The same row with its fill child inside Animate: it must stack the same way.
+      Row(
+        .id(animated)
+        .config(w: fill, gap: 16)
+        Container(.config(w: 280, h: 80, color: brand, cornerRadius: 12))
+        Animate(Container(.id(anim) .config(w: fill, h: 80, minW: 240, color: ink, cornerRadius: 12)))
+      )
+
+      // A row in a sideways Scroll stays one line and scrolls.
+      Scroll(
+        .config(w: 300, axis: x)
+        .obj(Row(
+          .id(shelf)
+          .config(gap: 8)
+          Container(.config(w: 120, h: 40, color: brand))
+          Container(.config(w: 120, h: 40, color: ink))
+          Container(.config(w: 120, h: 40, color: brand))
+          Container(.config(w: 120, h: 40, color: ink))
+        ))
+      )
+
+      // Pinned to all four edges, a Position's fill object fills it.
+      Stack(
+        .config(w: 200, h: 100)
+        Position(
+          .config(left: 10, right: 10, top: 10, bottom: 10)
+          .obj(Container(.id(pinned) .config(w: fill, h: fill, color: brand)))
+        )
+      )
+
       // Per-frame values: numbers flow between frames.
       Container(.id(fluid) .config(w: 120, h: 40, color: brand) .at(w, w: 480))
 

@@ -37,7 +37,8 @@ function fill(dir: string, vars: Record<string, string>) {
 
 export async function create(args: Args) {
   let [kind, name] = args._ as [string | undefined, string | undefined];
-  if (kind !== "addon" && kind !== "proj" && kind !== "project" && kind !== "app") {
+  // `layr create app my-site` or `layr create my-site`; a lone `app` (or `project`) is the name itself.
+  if ((kind !== "addon" && kind !== "proj" && kind !== "project" && kind !== "app") || (kind !== "addon" && !name)) {
     name = kind;
     kind = "app";
   }
