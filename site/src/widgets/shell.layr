@@ -180,7 +180,8 @@ Widget(
   )
 )
 
-// The legal row every page carries: at the foot of the docs panel, and in the small-screen menu.
+// The legal row every page carries: under the docs panel, outside it and right-aligned, and in the
+// small-screen menu.
 Widget(
   .name(LegalLink)
   .param(req txt label, req txt href)
@@ -189,9 +190,10 @@ Widget(
 
 Widget(
   .name(LegalBar)
+  .param(bool right = false)
   .obj(
     Wrap(
-      .config(w: fill, gap: 16, runGap: 8, yAlign: mid)
+      .config(w: fill, gap: 16, runGap: 8, yAlign: mid, xAlign: param.right ? end : start)
       LegalLink(.config(label: 'Privacy', href: '/privacy'))
       LegalLink(.config(label: 'Cookies', href: '/cookies'))
       LegalLink(.config(label: 'Terms', href: '/terms'))
@@ -237,11 +239,11 @@ Widget(
           .at(m, cornerRadius: 0)
           .at(w, cornerRadius: 10)
           .obj
-          Column(
-            .config(w: fill, padding: sym(x: 48, y: 20), .border(color: line, width: 1, sides: top))
-            .at(m, padding: sym(x: 20, y: 20))
-            LegalBar()
-          )
+        )
+        Column(
+          .config(w: fill, padding: only(left: 4, right: 4, top: 14, bottom: 4))
+          .at(m, padding: sym(x: 20, y: 20))
+          LegalBar(.config(right: true))
         )
       )
     )
