@@ -55,7 +55,13 @@ Widget(
               FootLink(.config(label: 'GitHub', href: 'https://github.com/nishanbhuinya/layr', external: true))
               FootLink(.config(label: 'npm', href: 'https://www.npmjs.com/package/@dynshift/layr', external: true))
               FootLink(.config(label: 'LAYR v1', href: '/v1'))
+            )
+            FootCol(
+              .config(title: 'Legal')
               FootLink(.config(label: 'Privacy', href: '/privacy'))
+              FootLink(.config(label: 'Cookies', href: '/cookies'))
+              FootLink(.config(label: 'Terms', href: '/terms'))
+              FootLink(.config(label: 'Contact & grievances', href: '/contact'))
             )
           )
         )
@@ -68,6 +74,11 @@ Widget(
               .config(className: 'foot-link foot-privacy')
               .fnc { window.layrPrivacySettings?.() }
               .obj(Text(.config(size: 13, color: faint) .obj('Privacy settings')))
+            )
+            Button(
+              .config(className: 'foot-link foot-dns')
+              .fnc { window.layrUsOptOut?.() }
+              .obj(Text(.config(size: 13, color: faint) .obj('Do Not Sell or Share My Personal Information')))
             )
             Link(.config(href: 'https://dynshift.com', external: true, underline: false, className: 'foot-link') .obj(Text(.config(size: 13, color: faint) .obj('A DynShift project'))))
           )

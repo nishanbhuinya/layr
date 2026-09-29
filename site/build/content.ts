@@ -25,6 +25,8 @@ import { wrapSnippet } from "../src/lib/snippet.ts";
 export const SITE_URL = "https://layr.dynshift.com";
 /** The AdSense publisher (`ca-pub-…`), from the repository variable LAYR_ADSENSE_CLIENT at build time. */
 export const ADSENSE_CLIENT = process.env.VITE_ADSENSE_CLIENT ?? "";
+/** The GA4 measurement id, from the repository variable LAYR_GA_ID. Empty means no analytics at all. */
+export const GA_ID = process.env.VITE_GA_ID ?? "";
 export const REPO_URL = "https://github.com/nishanbhuinya/layr";
 
 const SECTIONS = [
@@ -617,15 +619,19 @@ export function siteContent(): Plugin {
       server.watcher.on("add", onChange);
     },
     transformIndexHtml(html) {
-      // AdSense, as on dynshift.com: the ownership tag and the loader on every built page. The
-      // loader also delivers Google's certified consent message (EEA, UK, Switzerland), so it is not
-      // gated behind a banner of ours. Ad slots stay empty until their unit ids are configured.
-      // Local dev loads nothing from Google.
+      // First the privacy runtime shared by the three DynShift sites (public/privacy.js): Consent
+      // Mode defaults before any Google script, analytics only after consent, lazy ad slots, and the
+      // footer's Privacy settings. Then AdSense, as on dynshift.com: the ownership tag and the loader
+      // on every built page. The loader also delivers Google's certified consent message (EEA, UK,
+      // Switzerland) and the US state opt-out, so it is not gated behind a banner of ours. Ad slots
+      // stay empty until their unit ids are configured. Local dev loads nothing from Google.
       const client = isBuild ? ADSENSE_CLIENT : "";
+      const ga = isBuild ? GA_ID : "";
+      const privacy = `<script src="/privacy.js" data-ga="${escapeHtml(ga)}" data-policy="/privacy" data-cookies="/cookies"></script>`;
       const tags = client
         ? `<meta name="google-adsense-account" content="${escapeHtml(client)}"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}" crossorigin="anonymous"></script>`
         : "";
-      return html.replace("%LAYR_HEAD%", tags);
+      return html.replace("%LAYR_HEAD%", privacy + tags);
     },
     resolveId(id) {
       if (id.startsWith("virtual:site/")) return PREFIX + id.slice("virtual:site/".length);
@@ -670,12 +676,14 @@ export function siteContent(): Plugin {
         return `export default ${JSON.stringify(addonSources(repo))};`;
       }
       if (what.startsWith("page/")) {
-        // Plain Markdown pages under site/content/pages (skills, privacy, v1, publishing).
+        // Plain Markdown pages under site/content/pages (skills, the legal pages, v1, publishing).
         const name = what.slice(5);
         const file = join(siteRoot, "content", "pages", `${name}.md`);
         const { data, body } = frontmatter(readFileSync(file, "utf8").replace(/\r\n/g, "\n"));
         const { html, toc } = renderMarkdown(await getHighlighter(repo), body);
-        return `export default ${JSON.stringify({ slug: name, title: String(data.title ?? name), description: String(data.description ?? ""), section: String(data.section ?? ""), html, toc, edit: `${REPO_URL}/edit/main/site/content/pages/${name}.md` })};`;
+        // Legal pages never carry advertising.
+        const legal = ["privacy", "cookies", "terms", "contact"].includes(name);
+        return `export default ${JSON.stringify({ slug: name, title: String(data.title ?? name), description: String(data.description ?? ""), section: String(data.section ?? ""), html, toc, legal, edit: `${REPO_URL}/edit/main/site/content/pages/${name}.md` })};`;
       }
       if (what === "examples") {
         // Playground examples: one file each, in order; the title map keeps the menu readable.
@@ -708,7 +716,7 @@ export function siteContent(): Plugin {
       this.emitFile({ type: "asset", fileName: "addons.json", source: `${JSON.stringify(index, null, 2)}\n` });
 
       const ref = await reference(repo);
-      const pages = ["/", "/docs", ...docs.map((d) => `/docs/${d.slug}`), "/api", ...ref.widgets.map((w) => `/api/${w.slug}`), "/errors", "/cli", "/playground", "/library", ...entries.map((e) => `/library/${e.id}`), "/library/publish", "/skills", "/privacy"];
+      const pages = ["/", "/docs", ...docs.map((d) => `/docs/${d.slug}`), "/api", ...ref.widgets.map((w) => `/api/${w.slug}`), "/errors", "/cli", "/playground", "/library", ...entries.map((e) => `/library/${e.id}`), "/library/publish", "/skills", "/privacy", "/cookies", "/terms", "/contact"];
       this.emitFile({ type: "asset", fileName: "sitemap.xml", source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((p) => `  <url><loc>${SITE_URL}${p}</loc></url>`).join("\n")}\n</urlset>\n` });
       this.emitFile({ type: "asset", fileName: "robots.txt", source: `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n` });
       this.emitFile({ type: "asset", fileName: "CNAME", source: "layr.dynshift.com\n" });

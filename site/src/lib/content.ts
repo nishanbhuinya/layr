@@ -69,6 +69,9 @@ export function fmtDownloads(n: number | null): string {
 const PAGES: Record<string, () => Promise<{ default: unknown }>> = {
   skills: () => import("virtual:site/page/skills"),
   privacy: () => import("virtual:site/page/privacy"),
+  cookies: () => import("virtual:site/page/cookies"),
+  terms: () => import("virtual:site/page/terms"),
+  contact: () => import("virtual:site/page/contact"),
   v1: () => import("virtual:site/page/v1"),
   publish: () => import("virtual:site/page/publish"),
 };

@@ -38,7 +38,7 @@ Widget(
 
 Widget(
   .name(Article)
-  .param(list<any> toc = [], txt edit = '')
+  .param(list<any> toc = [], txt edit = '', bool ads = true)
   .obj(
     Row(
       .config(w: fill, minW: 0, gap: 56, padding: sym(x: 48, y: 40), xAlign: mid, yAlign: stretch)
@@ -66,7 +66,8 @@ Widget(
           .obj(Column(
             .config(w: fill, gap: 32)
             Toc(.props(items: param.toc))
-            Ad(.props(placement: 'docs', height: 600))
+            // Never on a legal page (privacy, cookies, terms, contact): those pass ads: false.
+            If(.cnd(param.ads) .obj(Ad(.props(placement: 'docs', height: 600))))
           ))
         )
       )

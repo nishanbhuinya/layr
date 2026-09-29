@@ -38,7 +38,7 @@ declare module "virtual:site/examples" {
   export default examples;
 }
 declare module "virtual:site/page/*" {
-  const page: { slug: string; title: string; description: string; section: string; html: string; toc: Array<{ id: string; text: string; depth: number }>; edit: string };
+  const page: { slug: string; title: string; description: string; section: string; html: string; toc: Array<{ id: string; text: string; depth: number }>; legal: boolean; edit: string };
   export default page;
 }
 declare module "virtual:site/addons-src" {

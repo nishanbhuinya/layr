@@ -11,7 +11,7 @@ Widget(
       If(
         .cnd(param.page != null)
         .obj(Article(
-          .config(toc: param.page.toc, edit: param.page.edit ?? '')
+          .config(toc: param.page.toc, edit: param.page.edit ?? '', ads: param.page.legal != true)
           Column(
             .config(w: fill, gap: 20)
             Crumbs(.config(section: param.page.section))
