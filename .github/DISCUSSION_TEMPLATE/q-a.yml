@@ -1,0 +1,27 @@
+title: "[Q] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The **[docs](https://layr.dynshift.com/docs)** and the **[widget reference](https://layr.dynshift.com/api)**
+        answer most questions, and every diagnostic code is explained on the
+        **[Diagnostics](https://layr.dynshift.com/errors)** page. If LAYR is doing something wrong, a
+        **Bug report** issue is the better place.
+  - type: textarea
+    id: question
+    attributes:
+      label: Your question
+      description: What you are trying to build, and where you got stuck.
+    validations:
+      required: true
+  - type: textarea
+    id: code
+    attributes:
+      label: The `.layr` involved
+      description: The smallest file that shows it, or a playground Share link.
+      render: layr
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "`npx layr --version`"

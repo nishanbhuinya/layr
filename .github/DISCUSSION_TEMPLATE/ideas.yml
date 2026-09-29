@@ -1,0 +1,19 @@
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Ideas for the language, the tools or the site. Start from the problem: what is hard or impossible
+        today matters more than the shape of the fix.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is hard or impossible today.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea
+      description: How it could look in LAYR. A sketch in `.layr` is ideal.
+      render: layr
