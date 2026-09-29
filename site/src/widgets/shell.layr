@@ -99,6 +99,8 @@ Widget(
           )
           Container(.config(w: fill, h: 1px, color: line))
           DocsNav()
+          Container(.config(w: fill, h: 1px, color: line))
+          LegalBar()
         ))
       )
     )
@@ -178,6 +180,36 @@ Widget(
   )
 )
 
+// The legal row every page carries: at the foot of the docs panel, and in the small-screen menu.
+Widget(
+  .name(LegalLink)
+  .param(req txt label, req txt href)
+  .obj(Link(.config(href: param.href, underline: false, className: 'foot-link') .fnc { menuOpen = false } .obj(Text(.config(size: 13, color: faint) .obj(param.label)))))
+)
+
+Widget(
+  .name(LegalBar)
+  .obj(
+    Wrap(
+      .config(w: fill, gap: 16, runGap: 8, yAlign: mid)
+      LegalLink(.config(label: 'Privacy', href: '/privacy'))
+      LegalLink(.config(label: 'Cookies', href: '/cookies'))
+      LegalLink(.config(label: 'Terms', href: '/terms'))
+      LegalLink(.config(label: 'Contact & grievances', href: '/contact'))
+      Button(
+        .config(className: 'foot-link foot-privacy')
+        .fnc { window.layrPrivacySettings?.() }
+        .obj(Text(.config(size: 13, color: faint) .obj('Privacy settings')))
+      )
+      Button(
+        .config(className: 'foot-link foot-dns')
+        .fnc { window.layrUsOptOut?.() }
+        .obj(Text(.config(size: 13, color: faint) .obj('Do Not Sell or Share My Personal Information')))
+      )
+    )
+  )
+)
+
 // Rail | framed panel. The rail joins at `w`; below it the menu carries the tree.
 Widget(
   .name(DocsShell)
@@ -205,6 +237,11 @@ Widget(
           .at(m, cornerRadius: 0)
           .at(w, cornerRadius: 10)
           .obj
+          Column(
+            .config(w: fill, padding: sym(x: 48, y: 20), .border(color: line, width: 1, sides: top))
+            .at(m, padding: sym(x: 20, y: 20))
+            LegalBar()
+          )
         )
       )
     )
