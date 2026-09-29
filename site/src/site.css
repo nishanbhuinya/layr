@@ -348,13 +348,18 @@ body { margin: 0; }
 .ad:has(ins[data-ad-status="filled"]) .ad-label { display: block; }
 /* AdSense marks a slot it cannot fill; the label and the reserved space go with it. */
 .ad:has(ins[data-ad-status="unfilled"]) { display: none; }
-/* The shared DynShift privacy runtime (public/privacy.js) draws its banner and panel with these. */
-:root {
+/* The shared DynShift privacy runtime (public/privacy.js) draws its banner and panel with these.
+   They carry the `l-root` class (data-class in the head tag), so the theme's tokens, including a
+   picked palette and dark mode, resolve on them; mapping here, not on :root, is what lets them. */
+.ds-consent,
+.ds-privacy {
   --ds-bg: var(--layr-color-panel, #fff);
   --ds-ink: var(--layr-color-ink, #16181d);
   --ds-muted: var(--layr-color-muted, #5b6170);
   --ds-line: var(--layr-color-line, #e2e5ea);
   --ds-radius: 12px;
+  --ds-btn-radius: 8px;
+  --ds-font: var(--layr-font-body, system-ui, sans-serif);
 }
 /* The Do Not Sell or Share link appears only where Google reports a US state regulation applies. */
 .foot-dns { display: none !important; }

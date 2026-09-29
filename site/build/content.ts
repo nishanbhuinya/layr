@@ -627,7 +627,7 @@ export function siteContent(): Plugin {
       // stay empty until their unit ids are configured. Local dev loads nothing from Google.
       const client = isBuild ? ADSENSE_CLIENT : "";
       const ga = isBuild ? GA_ID : "";
-      const privacy = `<script src="/privacy.js" data-ga="${escapeHtml(ga)}" data-policy="/privacy" data-cookies="/cookies"></script>`;
+      const privacy = `<script src="/privacy.js" data-ga="${escapeHtml(ga)}" data-policy="/privacy" data-cookies="/cookies" data-class="l-root"></script>`;
       const tags = client
         ? `<meta name="google-adsense-account" content="${escapeHtml(client)}"><script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${encodeURIComponent(client)}" crossorigin="anonymous"></script>`
         : "";
