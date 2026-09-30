@@ -32,7 +32,7 @@ When analytics is switched on for this site, Google Analytics 4 loads only after
 
 ## Advertising
 
-Advertising pays for the time that goes into LAYR, which is free and MIT licensed. It is supplied by **Google AdSense**. A few places carry one advertisement each, labelled *Advertisement*: a band on the home page, one slot in the Library, and the docs' side rail on wide screens. Never inside documentation text, code, API tables, the playground or any legal page. Google may set cookies or read similar identifiers to serve, measure and protect those advertisements, and, where you have allowed it, to personalise them, under [its own policy](https://policies.google.com/technologies/partner-sites). The cookies are listed on the [cookies page](/cookies).
+Advertising on this site is supplied by **Google AdSense**. A few places carry one advertisement each, labelled *Advertisement*: a band on the home page, one slot in the Library, and the docs' side rail on wide screens. Never inside documentation text, code, API tables, the playground or any legal page. Google may set cookies or read similar identifiers to serve, measure and protect those advertisements, and, where you have allowed it, to personalise them, under [its own policy](https://policies.google.com/technologies/partner-sites). The cookies are listed on the [cookies page](/cookies).
 
 ## Your choices
 

@@ -19,7 +19,7 @@ Last updated 30 September 2026.
 - Email: [official@dynshift.com](mailto:official@dynshift.com?subject=Grievance)
 - Based in India.
 
-Handles complaints and requests about personal data on all DynShift sites (dynshift.com, layr.dynshift.com and phonepad.dynshift.com): access, correction, erasure, withdrawal of consent, nomination, and anything else about how your data is handled.
+Handles complaints and requests about personal data on all DynShift sites: access, correction, erasure, withdrawal of consent, nomination, and anything else about how your data is handled.
 
 ## How a request is handled
 
