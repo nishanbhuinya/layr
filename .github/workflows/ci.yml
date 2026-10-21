@@ -60,6 +60,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The site serves the extension's .vsix; the build checks it is there, as on Pages.
+      - name: Package the VS Code extension
+        run: pnpm --filter ./vscode run package
       - name: Build the website (every page prerenders)
         run: pnpm site:build
         env:
