@@ -4,28 +4,54 @@ Clip cuts its object to a `shape`: `rect` (with the Clip's `cornerRadius`), `cir
 
 ```layr
 Row(
-  .config(gap: 20, yAlign: mid)
+  .config(
+    gap: 20
+    yAlign: mid
+  )
   Clip(
-    .config(size: 110, shape: circle)
+    .config(
+      size: 110
+      shape: circle
+    )
     .obj(
       Container(
-        .config(w: 110, h: 110, color: LinearGradient(.colors(violet, teal)))
+        .config(
+          w: 110
+          h: 110
+          color: LinearGradient(.colors(violet, teal))
+        )
       )
     )
   )
   Clip(
-    .config(w: 170, h: 110, shape: ellipse)
+    .config(
+      w: 170
+      h: 110
+      shape: ellipse
+    )
     .obj(
       Container(
-        .config(w: 170, h: 110, color: LinearGradient(.colors(ember, gold)))
+        .config(
+          w: 170
+          h: 110
+          color: LinearGradient(.colors(ember, gold))
+        )
       )
     )
   )
   Clip(
-    .config(size: 110, cornerRadius: 28, shape: rect)
+    .config(
+      size: 110
+      cornerRadius: 28
+      shape: rect
+    )
     .obj(
       Container(
-        .config(w: 110, h: 110, color: LinearGradient(.colors(teal, gold)))
+        .config(
+          w: 110
+          h: 110
+          color: LinearGradient(.colors(teal, gold))
+        )
       )
     )
   )

@@ -6,17 +6,32 @@ A Container draws one box around one object: its size, paint, border, corners, s
 Container(
   .config(
     w: 280
-    .border(color: line, width: 1)
     color: panel
     cornerRadius: 14
     padding: all(18)
     shadow: shadow(y: 8, blur: 24, color: black.alpha(12%))
+    .border(
+      color: line
+      width: 1
+    )
   )
   .obj(
     Column(
       .config(gap: 6)
-      Text(.config(size: 13, color: muted) .obj('Order 1042'))
-      Text(.config(size: 18, weight: semibold) .obj('Two items, ships Monday'))
+      Text(
+        .config(
+          size: 13
+          color: muted
+        )
+        .obj('Order 1042')
+      )
+      Text(
+        .config(
+          size: 18
+          weight: semibold
+        )
+        .obj('Two items, ships Monday')
+      )
     )
   )
 )
@@ -40,7 +55,15 @@ Container(
     objAlign: bottomRight
     padding: all(12)
   )
-  .obj(Text(.config(size: 13, color: muted) .obj('bottom right')))
+  .obj(
+    Text(
+      .config(
+        size: 13
+        color: muted
+      )
+      .obj('bottom right')
+    )
+  )
 )
 ```
 

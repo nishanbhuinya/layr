@@ -13,16 +13,46 @@ Row(
     xAlign: between
     yAlign: mid
   )
-  Text(.config(size: 15, weight: semibold) .obj('Inbox'))
+  Text(
+    .config(
+      size: 15
+      weight: semibold
+    )
+    .obj('Inbox')
+  )
   Row(
     .config(gap: 8)
     Container(
-      .config(color: sunken, cornerRadius: 999, padding: sym(x: 10, y: 4))
-      .obj(Text(.config(size: 12, color: muted) .obj('12 new')))
+      .config(
+        color: sunken
+        cornerRadius: 999
+        padding: sym(x: 10, y: 4)
+      )
+      .obj(
+        Text(
+          .config(
+            size: 12
+            color: muted
+          )
+          .obj('12 new')
+        )
+      )
     )
     Container(
-      .config(color: accent, cornerRadius: 999, padding: sym(x: 10, y: 4))
-      .obj(Text(.config(size: 12, color: onAccent) .obj('Compose')))
+      .config(
+        color: accent
+        cornerRadius: 999
+        padding: sym(x: 10, y: 4)
+      )
+      .obj(
+        Text(
+          .config(
+            size: 12
+            color: onAccent
+          )
+          .obj('Compose')
+        )
+      )
     )
   )
 )
@@ -37,9 +67,28 @@ A row of `fill` objects stacks into a column when one of them would be squeezed 
 
 ```layr
 Row(
-  .config(w: fill, gap: 12)
-  Container(.config(w: fill, h: 64, minW: 220, color: violet, cornerRadius: 12))
-  Container(.config(w: fill, h: 64, minW: 220, color: teal, cornerRadius: 12))
+  .config(
+    w: fill
+    gap: 12
+  )
+  Container(
+    .config(
+      w: fill
+      h: 64
+      minW: 220
+      color: violet
+      cornerRadius: 12
+    )
+  )
+  Container(
+    .config(
+      w: fill
+      h: 64
+      minW: 220
+      color: teal
+      cornerRadius: 12
+    )
+  )
 )
 ```
 

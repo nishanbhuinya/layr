@@ -4,14 +4,35 @@ Span styles a run of text inside a Text: a bold word, a coloured price, a struck
 
 ```layr
 Text(
-  .config(size: 17, lineHeight: 1.5)
-  Span(.config(weight: semibold) .obj('Room B'))
+  .config(
+    size: 17
+    lineHeight: 1.5
+  )
+  Span(
+    .config(weight: semibold)
+    .obj('Room B')
+  )
   ' is free at '
-  Span(.config(color: accent, weight: semibold) .obj('10:30'))
+  Span(
+    .config(
+      color: accent
+      weight: semibold
+    )
+    .obj('10:30')
+  )
   ' for '
-  Span(.config(color: faint, strike: true) .obj('€60'))
+  Span(
+    .config(
+      color: faint
+      strike: true
+    )
+    .obj('€60')
+  )
   ' '
-  Span(.config(weight: semibold) .obj('€48'))
+  Span(
+    .config(weight: semibold)
+    .obj('€48')
+  )
   '.'
 )
 ```

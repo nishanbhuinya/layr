@@ -10,98 +10,306 @@ var bool menuOpen = false
 Widget(
   .name(Mark)
   .param(len size = 20)
-  .obj(Container(.config(w: param.size, h: param.size * 0.3, color: ink, cornerRadius: 999)))
+  .wgt(
+    Container(
+      .config(
+        w: param.size
+        h: param.size * 0.3
+        color: ink
+        cornerRadius: 999
+      )
+    )
+  )
 )
 
 Widget(
   .name(Wordmark)
-  .obj(
+  .wgt(
     Link(
-      .config(href: '/', padding: sym(x: 4, y: 6), underline: false)
+      .config(
+        href: '/'
+        padding: sym(x: 4, y: 6)
+        underline: false
+      )
       .a11y(label: 'LAYR home')
-      .obj(Row(
-        .config(gap: 10, yAlign: mid)
-        Mark()
-        Text(.config(size: 17, weight: semibold, letterSpacing: -0.2) .obj('LAYR'))
-      ))
+      .obj(
+        Row(
+          .config(
+            gap: 10
+            yAlign: mid
+          )
+          Mark()
+          Text(
+            .config(
+              size: 17
+              letterSpacing: -0.2
+              weight: semibold
+            )
+            .obj('LAYR')
+          )
+        )
+      )
     )
   )
 )
 
 Widget(
   .name(TopLink)
-  .param(req txt label, req txt href)
-  .obj(
+  .param(
+    req txt label
+    req txt href
+  )
+  .wgt(
     Link(
-      .config(href: param.href, padding: sym(x: 10, y: 7), cornerRadius: 6, underline: false, className: 'top-link nav-item')
-      .obj(Text(.config(size: 14, weight: medium, color: muted) .obj(param.label)))
+      .config(
+        className: 'top-link nav-item'
+        cornerRadius: 6
+        href: param.href
+        padding: sym(x: 10, y: 7)
+        underline: false
+      )
+      .obj(
+        Text(
+          .config(
+            size: 14
+            color: muted
+            weight: medium
+          )
+          .obj(param.label)
+        )
+      )
     )
   )
 )
 
 Widget(
   .name(TopBar)
-  .obj(
+  .wgt(
     Row(
-      .config(w: fill, h: 56, color: panel, padding: sym(x: 16), gap: 8, xAlign: between, yAlign: mid, .border(color: line, width: 1, sides: bottom))
-      Row(
-        .config(gap: 20, yAlign: mid)
-        Wordmark()
-        Row(
-          .config(gap: 2, yAlign: mid, hide: true)
-          .at(w, hide: false)
-          TopLink(.config(label: 'Docs', href: '/docs'))
-          TopLink(.config(label: 'Reference', href: '/api'))
-          TopLink(.config(label: 'Playground', href: '/playground'))
-          TopLink(.config(label: 'Library', href: '/library'))
+      .config(
+        w: fill
+        h: 56
+        color: panel
+        gap: 8
+        padding: sym(x: 16)
+        xAlign: between
+        yAlign: mid
+        .border(
+          color: line
+          width: 1
+          sides: bottom
         )
       )
       Row(
-        .config(gap: 6, yAlign: mid)
-        Container(.config(w: 280, hide: true) .at(t, hide: false) SearchButton())
-        Container(.config(hide: false) .at(t, hide: true) SearchButton(.props(compact: true)))
+        .config(
+          gap: 20
+          yAlign: mid
+        )
+        Wordmark()
+        Row(
+          .config(
+            gap: 2
+            hide: true
+            yAlign: mid
+          )
+          .at(
+            w
+            hide: false
+          )
+          TopLink(
+            .config(
+              label: 'Docs'
+              href: '/docs'
+            )
+          )
+          TopLink(
+            .config(
+              label: 'Reference'
+              href: '/api'
+            )
+          )
+          TopLink(
+            .config(
+              label: 'Playground'
+              href: '/playground'
+            )
+          )
+          TopLink(
+            .config(
+              label: 'Library'
+              href: '/library'
+            )
+          )
+        )
+      )
+      Row(
+        .config(
+          gap: 6
+          yAlign: mid
+        )
+        Container(
+          .config(
+            w: 280
+            hide: true
+          )
+          .at(
+            t
+            hide: false
+          )
+          SearchButton()
+        )
+        Container(
+          .config(hide: false)
+          .at(
+            t
+            hide: true
+          )
+          SearchButton(.props(compact: true))
+        )
         ThemePicker()
         Link(
-          .config(href: 'https://github.com/nishanbhuinya/layr', external: true, size: 34, cornerRadius: 8, objAlign: mid, underline: false, className: 'icon-btn')
+          .config(
+            size: 34
+            className: 'icon-btn'
+            cornerRadius: 8
+            external: true
+            href: 'https://github.com/nishanbhuinya/layr'
+            objAlign: mid
+            underline: false
+          )
           .a11y(label: 'LAYR on GitHub')
-          .obj(Icon(.props(name: 'github', size: 18)))
+          .obj(
+            Icon(
+              .props(
+                name: 'github'
+                size: 18
+              )
+            )
+          )
         )
         Button(
-          .config(size: 34, cornerRadius: 8, objAlign: mid, className: 'icon-btn')
-          .at(w, hide: true)
-          .a11y(label: 'Menu', expanded: menuOpen)
+          .config(
+            size: 34
+            className: 'icon-btn'
+            cornerRadius: 8
+            objAlign: mid
+          )
+          .at(
+            w
+            hide: true
+          )
           .fnc { menuOpen = true }
-          .obj(Icon(.props(name: 'menu', size: 18)))
+          .a11y(
+            label: 'Menu'
+            expanded: menuOpen
+          )
+          .obj(
+            Icon(
+              .props(
+                name: 'menu'
+                size: 18
+              )
+            )
+          )
         )
       )
       Palette()
       Overlay(
-        .config(h: 100vh, open: menuOpen, label: 'Menu', placement: midRight, color: panel, padding: all(16), backdrop: black.alpha(45%), .border(color: line, width: 1, sides: left))
+        .config(
+          h: 100vh
+          backdrop: black.alpha(45%)
+          color: panel
+          label: 'Menu'
+          open: menuOpen
+          padding: all(16)
+          placement: midRight
+          .border(
+            color: line
+            width: 1
+            sides: left
+          )
+        )
         .on(close: { menuOpen = false })
-        .obj(Column(
-          .config(w: 300, gap: 20)
-          Row(
-            .config(w: fill, xAlign: between, yAlign: mid)
-            Wordmark()
-            Button(
-              .config(size: 34, cornerRadius: 8, objAlign: mid, className: 'icon-btn')
-              .a11y(label: 'Close menu')
-              .fnc { menuOpen = false }
-              .obj(Icon(.props(name: 'close', size: 18)))
-            )
-          )
+        .obj(
           Column(
-            .config(w: fill, gap: 2)
-            MenuLink(.config(label: 'Docs', href: '/docs'))
-            MenuLink(.config(label: 'Reference', href: '/api'))
-            MenuLink(.config(label: 'Playground', href: '/playground'))
-            MenuLink(.config(label: 'Library', href: '/library'))
+            .config(
+              w: 300
+              gap: 20
+            )
+            Row(
+              .config(
+                w: fill
+                xAlign: between
+                yAlign: mid
+              )
+              Wordmark()
+              Button(
+                .config(
+                  size: 34
+                  className: 'icon-btn'
+                  cornerRadius: 8
+                  objAlign: mid
+                )
+                .fnc { menuOpen = false }
+                .a11y(label: 'Close menu')
+                .obj(
+                  Icon(
+                    .props(
+                      name: 'close'
+                      size: 18
+                    )
+                  )
+                )
+              )
+            )
+            Column(
+              .config(
+                w: fill
+                gap: 2
+              )
+              MenuLink(
+                .config(
+                  label: 'Docs'
+                  href: '/docs'
+                )
+              )
+              MenuLink(
+                .config(
+                  label: 'Reference'
+                  href: '/api'
+                )
+              )
+              MenuLink(
+                .config(
+                  label: 'Playground'
+                  href: '/playground'
+                )
+              )
+              MenuLink(
+                .config(
+                  label: 'Library'
+                  href: '/library'
+                )
+              )
+            )
+            Container(
+              .config(
+                w: fill
+                h: 1px
+                color: line
+              )
+            )
+            DocsNav()
+            Container(
+              .config(
+                w: fill
+                h: 1px
+                color: line
+              )
+            )
+            LegalBar()
           )
-          Container(.config(w: fill, h: 1px, color: line))
-          DocsNav()
-          Container(.config(w: fill, h: 1px, color: line))
-          LegalBar()
-        ))
+        )
       )
     )
   )
@@ -109,12 +317,30 @@ Widget(
 
 Widget(
   .name(MenuLink)
-  .param(req txt label, req txt href)
-  .obj(
+  .param(
+    req txt label
+    req txt href
+  )
+  .wgt(
     Link(
-      .config(w: fill, href: param.href, padding: sym(x: 10, y: 9), cornerRadius: 6, underline: false, className: 'nav-item')
+      .config(
+        w: fill
+        className: 'nav-item'
+        cornerRadius: 6
+        href: param.href
+        padding: sym(x: 10, y: 9)
+        underline: false
+      )
       .fnc { menuOpen = false }
-      .obj(Text(.config(size: 15, weight: medium) .obj(param.label)))
+      .obj(
+        Text(
+          .config(
+            size: 15
+            weight: medium
+          )
+          .obj(param.label)
+        )
+      )
     )
   )
 )
@@ -123,25 +349,83 @@ Widget(
 Widget(
   .name(DocsNav)
   var list<txt> folded = []
-  .obj(
+  .wgt(
     Column(
-      .config(w: fill, gap: 14)
+      .config(
+        w: fill
+        gap: 14
+      )
       Each(
         .of(docsNav)
         .as(section)
-        .obj(NavSection(
-          .config(title: section.title, open: !folded.includes(section.title))
-          .on(toggle: { folded = folded.includes(section.title) ? folded.filter((t) => t != section.title) : [...folded, section.title] })
-          Each(.of(section.items) .as(item) .obj(NavItem(.config(label: item.title, href: item.href))))
-        ))
+        .obj(
+          NavSection(
+            .config(
+              title: section.title
+              open: !folded.includes(section.title)
+            )
+            .on(
+              toggle: { folded = folded.includes(section.title) ? folded.filter((t) => t != section.title) : [...folded, section.title] }
+            )
+            Each(
+              .of(section.items)
+              .as(item)
+              .obj(
+                NavItem(
+                  .config(
+                    label: item.title
+                    href: item.href
+                  )
+                )
+              )
+            )
+          )
+        )
       )
       NavSection(
-        .config(title: 'Reference', open: !folded.includes('Reference'))
-        .on(toggle: { folded = folded.includes('Reference') ? folded.filter((t) => t != 'Reference') : [...folded, 'Reference'] })
-        NavItem(.config(label: 'Widgets and keys', href: '/api'))
-        NavItem(.config(label: 'Diagnostics', href: '/errors'))
-        NavItem(.config(label: 'CLI commands', href: '/cli'))
-        NavItem(.config(label: 'AI Skill and MCP', href: '/skills'))
+        .config(
+          title: 'Reference'
+          open: !folded.includes('Reference')
+        )
+        .on(
+          toggle: { folded = folded.includes('Reference') ? folded.filter((t) => t != 'Reference') : [...folded, 'Reference'] }
+        )
+        NavItem(
+          .config(
+            label: 'Widgets and keys'
+            href: '/api'
+          )
+        )
+        NavItem(
+          .config(
+            label: 'Diagnostics'
+            href: '/errors'
+          )
+        )
+        NavItem(
+          .config(
+            label: 'CLI commands'
+            href: '/cli'
+          )
+        )
+        NavItem(
+          .config(
+            label: 'AI Skill and MCP'
+            href: '/skills'
+          )
+        )
+        NavItem(
+          .config(
+            label: 'VS Code extension'
+            href: '/editor'
+          )
+        )
+        NavItem(
+          .config(
+            label: 'Changelog'
+            href: '/changelog'
+          )
+        )
       )
     )
   )
@@ -149,33 +433,92 @@ Widget(
 
 Widget(
   .name(NavSection)
-  .param(req txt title, bool open = true)
-  .obj(
+  .param(
+    req txt title
+    bool open = true
+  )
+  .wgt(
     Column(
-      .config(w: fill, gap: 2)
-      Button(
-        .config(w: fill, padding: sym(x: 10, y: 5), cornerRadius: 6, objAlign: midLeft, className: 'nav-item')
-        .a11y(expanded: param.open)
-        .fnc { emit('toggle') }
-        .obj(Row(
-          .config(w: fill, xAlign: between, yAlign: mid)
-          Text(.config(size: 12.5, weight: semibold, color: faint) .obj(param.title))
-          Icon(.props(name: param.open ? 'caretDown' : 'caretRight', size: 12))
-        ))
+      .config(
+        w: fill
+        gap: 2
       )
-      If(.cnd(param.open) .obj(Column(.config(w: fill, gap: 1) .obj)))
+      Button(
+        .config(
+          w: fill
+          className: 'nav-item'
+          cornerRadius: 6
+          objAlign: midLeft
+          padding: sym(x: 10, y: 5)
+        )
+        .fnc { emit('toggle') }
+        .a11y(expanded: param.open)
+        .obj(
+          Row(
+            .config(
+              w: fill
+              xAlign: between
+              yAlign: mid
+            )
+            Text(
+              .config(
+                size: 12.5
+                color: faint
+                weight: semibold
+              )
+              .obj(param.title)
+            )
+            Icon(
+              .props(
+                name: param.open ? 'caretDown' : 'caretRight'
+                size: 12
+              )
+            )
+          )
+        )
+      )
+      If(
+        .cnd(param.open)
+        .obj(
+          Column(
+            .config(
+              w: fill
+              gap: 1
+            )
+            .obj
+          )
+        )
+      )
     )
   )
 )
 
 Widget(
   .name(NavItem)
-  .param(req txt label, req txt href)
-  .obj(
+  .param(
+    req txt label
+    req txt href
+  )
+  .wgt(
     Link(
-      .config(w: fill, href: param.href, padding: sym(x: 10, y: 6), cornerRadius: 6, underline: false, className: 'nav-item')
+      .config(
+        w: fill
+        className: 'nav-item'
+        cornerRadius: 6
+        href: param.href
+        padding: sym(x: 10, y: 6)
+        underline: false
+      )
       .fnc { menuOpen = false }
-      .obj(Text(.config(size: 14, color: muted) .obj(param.label)))
+      .obj(
+        Text(
+          .config(
+            size: 14
+            color: muted
+          )
+          .obj(param.label)
+        )
+      )
     )
   )
 )
@@ -184,29 +527,92 @@ Widget(
 // small-screen menu.
 Widget(
   .name(LegalLink)
-  .param(req txt label, req txt href)
-  .obj(Link(.config(href: param.href, underline: false, className: 'foot-link') .fnc { menuOpen = false } .obj(Text(.config(size: 13, color: faint) .obj(param.label)))))
+  .param(
+    req txt label
+    req txt href
+  )
+  .wgt(
+    Link(
+      .config(
+        className: 'foot-link'
+        href: param.href
+        underline: false
+      )
+      .fnc { menuOpen = false }
+      .obj(
+        Text(
+          .config(
+            size: 13
+            color: faint
+          )
+          .obj(param.label)
+        )
+      )
+    )
+  )
 )
 
 Widget(
   .name(LegalBar)
   .param(bool right = false)
-  .obj(
+  .wgt(
     Wrap(
-      .config(w: fill, gap: 16, runGap: 8, yAlign: mid, xAlign: param.right ? end : start)
-      LegalLink(.config(label: 'Privacy', href: '/privacy'))
-      LegalLink(.config(label: 'Cookies', href: '/cookies'))
-      LegalLink(.config(label: 'Terms', href: '/terms'))
-      LegalLink(.config(label: 'Contact & grievances', href: '/contact'))
+      .config(
+        w: fill
+        gap: 16
+        runGap: 8
+        xAlign: param.right ? end : start
+        yAlign: mid
+      )
+      LegalLink(
+        .config(
+          label: 'Privacy'
+          href: '/privacy'
+        )
+      )
+      LegalLink(
+        .config(
+          label: 'Cookies'
+          href: '/cookies'
+        )
+      )
+      LegalLink(
+        .config(
+          label: 'Terms'
+          href: '/terms'
+        )
+      )
+      LegalLink(
+        .config(
+          label: 'Contact & grievances'
+          href: '/contact'
+        )
+      )
       Button(
         .config(className: 'foot-link foot-privacy')
         .fnc { window.layrPrivacySettings?.() }
-        .obj(Text(.config(size: 13, color: faint) .obj('Privacy settings')))
+        .obj(
+          Text(
+            .config(
+              size: 13
+              color: faint
+            )
+            .obj('Privacy settings')
+          )
+        )
       )
       Button(
         .config(className: 'foot-link foot-dns')
         .fnc { window.layrUsOptOut?.() }
-        .obj(Text(.config(size: 13, color: faint) .obj('Do Not Sell or Share My Personal Information')))
+        .obj(
+          Text(
+            .config(
+              size: 13
+              color: faint
+            )
+            .obj('Do Not Sell or Share My Personal Information')
+          )
+        )
       )
     )
   )
@@ -215,34 +621,89 @@ Widget(
 // Rail | framed panel. The rail joins at `w`; below it the menu carries the tree.
 Widget(
   .name(DocsShell)
-  .obj(
+  .wgt(
     // Stretched rows give the sticky rail (and the page's own rail) room to stay in view.
     Row(
-      .config(w: fill, color: canvas, yAlign: stretch, overflow: clip)
+      .config(
+        w: fill
+        color: canvas
+        overflow: clip
+        yAlign: stretch
+      )
       Column(
-        .config(w: 260, hide: true)
-        .at(w, hide: false)
+        .config(
+          w: 260
+          hide: true
+        )
+        .at(
+          w
+          hide: false
+        )
         Position(
-          .config(sticky: true, top: 56)
-          .obj(Scroll(
-            .config(w: 260, maxH: 100dvh - 56, padding: only(left: 12, right: 8, top: 20, bottom: 32), axis: y, fade: 32, className: 'rail')
-            .obj(DocsNav())
-          ))
+          .config(
+            sticky: true
+            top: 56
+          )
+          .obj(
+            Scroll(
+              .config(
+                w: 260
+                maxH: 100dvh - 56
+                axis: y
+                className: 'rail'
+                fade: 32
+                padding: only(left: 12, right: 8, top: 20, bottom: 32)
+              )
+              .obj(DocsNav())
+            )
+          )
         )
       )
       Column(
-        .config(w: fill, minW: 0, padding: all(12))
-        .at(m, padding: all(0))
-        .at(w, padding: all(12))
+        .config(
+          w: fill
+          minW: 0
+          padding: all(12)
+        )
+        .at(
+          m
+          padding: all(0)
+        )
+        .at(
+          w
+          padding: all(12)
+        )
         Column(
-          .config(w: fill, minW: 0, color: panel, cornerRadius: 10, xAlign: mid, .border(color: line, width: 1))
-          .at(m, cornerRadius: 0)
-          .at(w, cornerRadius: 10)
+          .config(
+            w: fill
+            minW: 0
+            color: panel
+            cornerRadius: 10
+            xAlign: mid
+            .border(
+              color: line
+              width: 1
+            )
+          )
+          .at(
+            m
+            cornerRadius: 0
+          )
+          .at(
+            w
+            cornerRadius: 10
+          )
           .obj
         )
         Column(
-          .config(w: fill, padding: only(left: 4, right: 4, top: 14, bottom: 4))
-          .at(m, padding: sym(x: 20, y: 20))
+          .config(
+            w: fill
+            padding: only(left: 4, right: 4, top: 14, bottom: 4)
+          )
+          .at(
+            m
+            padding: sym(x: 20, y: 20)
+          )
           LegalBar(.config(right: true))
         )
       )

@@ -231,6 +231,20 @@ class Parser {
       return this.parseProp(false, true, t.span.start);
     }
     if (t.kind === "ident" && this.is(":", this.peek())) return this.parseProp(false, false, t.span.start);
+    // A dotted key, `Card.text.color: blue` (a Duplicate's config reaching into its copy).
+    if (t.kind === "ident" && this.is(".", this.peek()) && this.peek(2).kind === "ident") {
+      let n = 1;
+      while (this.is(".", this.peek(n)) && this.peek(n + 1).kind === "ident") n += 2;
+      if (this.is(":", this.peek(n)) && !this.peek(n).nl) {
+        const parts: Token[] = [];
+        for (let k = 0; k < n; k++) parts.push(this.next());
+        this.next(); // ':'
+        const value = this.parseExpr();
+        const first = parts[0] as Token;
+        const last = parts[parts.length - 1] as Token;
+        return { type: "Prop", key: parts.map((p) => p.value).join(""), keySpan: { start: first.span.start, end: last.span.end }, value, immutable: false, step: false, span: { start: t.span.start, end: value.span.end } };
+      }
+    }
     const expr = this.parseExpr();
     const item: ExprItem = { type: "ExprItem", expr, span: expr.span };
     return item;
@@ -327,6 +341,16 @@ class Parser {
     f: { exported: boolean; immutable: boolean; required: boolean; ref: boolean },
     start: number,
   ): Decl {
+    // `= in | mid | out`: the allowed values, the first being the default.
+    const options: Expr[] = [];
+    if (init && this.is("|") && !this.t.nl) {
+      options.push(init);
+      while (this.is("|") && !this.t.nl) {
+        this.next();
+        options.push(this.parseExpr());
+      }
+    }
+    const end = options.length ? (options.at(-1) as Expr).span.end : init ? init.span.end : name.span.end;
     return {
       type: "Decl",
       kind,
@@ -334,11 +358,12 @@ class Parser {
       name: name.value,
       nameSpan: name.span,
       init,
+      ...(options.length ? { options } : {}),
       exported: f.exported,
       immutable: f.immutable,
       required: f.required,
       ref: f.ref,
-      span: { start, end: init ? init.span.end : name.span.end },
+      span: { start, end },
     };
   }
 

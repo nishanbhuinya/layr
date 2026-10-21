@@ -4,7 +4,12 @@ Blur blurs what shows through it from behind (`blurOn: background`, the default)
 
 ```layr
 Stack(
-  .config(w: 320, h: 190, clip: true, cornerRadius: 16)
+  .config(
+    w: 320
+    h: 190
+    clip: true
+    cornerRadius: 16
+  )
   Container(
     .config(
       w: fill
@@ -13,11 +18,27 @@ Stack(
     )
   )
   Position(
-    .config(left: 20, top: 20)
-    .obj(Container(.config(size: 70, color: gold, cornerRadius: 999)))
+    .config(
+      left: 20
+      top: 20
+    )
+    .obj(
+      Container(
+        .config(
+          size: 70
+          color: gold
+          cornerRadius: 999
+        )
+      )
+    )
   )
   Position(
-    .config(bottom: 56, left: 36, right: 36, top: 56)
+    .config(
+      bottom: 56
+      left: 36
+      right: 36
+      top: 56
+    )
     .obj(
       Blur(
         .config(
@@ -28,7 +49,15 @@ Stack(
           value: 18
         )
         .obj(
-          Mid(Text(.config(color: ink, weight: semibold) .obj('Frosted glass')))
+          Mid(
+            Text(
+              .config(
+                color: ink
+                weight: semibold
+              )
+              .obj('Frosted glass')
+            )
+          )
         )
       )
     )
@@ -46,9 +75,18 @@ Stack(
 
 ```layr
 Stack(
-  .config(w: 320, h: 170, clip: true, cornerRadius: 16)
+  .config(
+    w: 320
+    h: 170
+    clip: true
+    cornerRadius: 16
+  )
   Column(
-    .config(w: fill, gap: 8, padding: all(14))
+    .config(
+      w: fill
+      gap: 8
+      padding: all(14)
+    )
     Text('Mixing session · Tue 10:30')
     Text('Podcast recording · Thu 14:30')
     Text('Band rehearsal · Fri 09:00')
@@ -56,7 +94,11 @@ Stack(
     Text('Drum tracking · Sun 16:00')
   )
   Position(
-    .config(bottom: 0, left: 0, right: 0)
+    .config(
+      bottom: 0
+      left: 0
+      right: 0
+    )
     .obj(
       Blur(
         .config(

@@ -22,14 +22,45 @@ Each box below says which it is:
 
 ```layr
 Row(
-  .config(w: fill, gap: 12)
-  Container(
-    .config(w: 200, h: 72, color: ember, cornerRadius: 10, padding: all(12))
-    .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: 200')))
+  .config(
+    w: fill
+    gap: 12
   )
   Container(
-    .config(w: fill, h: 72, color: violet, cornerRadius: 10, padding: all(12))
-    .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: fill')))
+    .config(
+      w: 200
+      h: 72
+      color: ember
+      cornerRadius: 10
+      padding: all(12)
+    )
+    .obj(
+      Text(
+        .config(
+          color: onAccent
+          weight: semibold
+        )
+        .obj('w: 200')
+      )
+    )
+  )
+  Container(
+    .config(
+      w: fill
+      h: 72
+      color: violet
+      cornerRadius: 10
+      padding: all(12)
+    )
+    .obj(
+      Text(
+        .config(
+          color: onAccent
+          weight: semibold
+        )
+        .obj('w: fill')
+      )
+    )
   )
   Container(
     .config(
@@ -41,7 +72,13 @@ Row(
       padding: all(12)
     )
     .obj(
-      Text(.config(color: onAccent, weight: semibold) .obj('w: fill, flex: 2'))
+      Text(
+        .config(
+          color: onAccent
+          weight: semibold
+        )
+        .obj('w: fill, flex: 2')
+      )
     )
   )
 )
@@ -56,6 +93,10 @@ The first box takes its 200. The other two share what is left, and `flex: 2` tak
 
 These are the same three modes as Figma's auto layout, so a design translates directly. Add `minW`, `maxW`, `minH`, `maxH` and `aspect` when you need limits. `fill` needs space to share: `fill` along a scroll area's axis is a compile error (L2001).
 
+`hug` holds everywhere, including directly in a Scaffold's body: a Container there is as wide as its content until you give it `w: fill`. The body arranges its objects like a Column.
+
+`hug` and `fill` are worked out by layout, so they are not numbers to compute with: `card.h + 10` on a hugging card is an error (L2004). To make a hugging box bigger, change what it hugs, its `padding` for instance. Or give it a length, or read the measured `card.size.h` where that does not feed back into the same size.
+
 ## Arranging: the primitives
 
 | Widget | Lays out |
@@ -63,7 +104,7 @@ These are the same three modes as Figma's auto layout, so a design translates di
 | `Row`, `Column` | objects along an axis; `xAlign` and `yAlign` mean horizontal and vertical in both |
 | `Container` | one object, with size, paint, border, corners, shadow, padding; `objAlign` places the object |
 | `Stack` | objects on top of each other; `Order(.posOrder(n))` sets layers |
-| `Position` | offsets an object in a Stack (`x`, `y`, or `top`/`right`/`bottom`/`left`, negatives allowed) |
+| `Position` | pins an object to the edges of its box (`top`/`right`/`bottom`/`left`, negatives allowed) or offsets it (`x`, `y`) |
 | `Mid`, `Align` | fill the parent and place the object in the middle or at an alignment |
 | `Expand` | makes its object fill the remaining space |
 | `Gap` | fixed space: `Gap(24)` |
@@ -79,25 +120,51 @@ Stack(
   Container(
     .config(
       w: 220
-      .border(color: line, width: 1)
       color: panel
       cornerRadius: 14
       padding: all(20)
+      .border(
+        color: line
+        width: 1
+      )
     )
     .obj(
       Column(
         .config(gap: 4)
-        Text(.config(weight: semibold) .obj('Inbox'))
-        Text(.config(color: muted) .obj('3 unread messages'))
+        Text(
+          .config(weight: semibold)
+          .obj('Inbox')
+        )
+        Text(
+          .config(color: muted)
+          .obj('3 unread messages')
+        )
       )
     )
   )
   Position(
-    .config(right: -8, top: -8)
+    .config(
+      right: -8
+      top: -8
+    )
     .obj(
       Container(
-        .config(size: 26, color: accent, cornerRadius: 999, objAlign: mid)
-        .obj(Text(.config(size: 13, color: onAccent, weight: bold) .obj('3')))
+        .config(
+          size: 26
+          color: accent
+          cornerRadius: 999
+          objAlign: mid
+        )
+        .obj(
+          Text(
+            .config(
+              size: 13
+              color: onAccent
+              weight: bold
+            )
+            .obj('3')
+          )
+        )
       )
     )
   )
@@ -107,6 +174,47 @@ Stack(
 > **Try it**
 > - Change `right: -8, top: -8` to `bottom: 12, right: 12`: the badge moves inside the card.
 > - Change the Row of boxes above to a `Column`: every `w: fill` now fills the width, one under another.
+
+A Position pins to its **box**: the nearest Container, Stack, Scroll or Grid around it. Rows and Columns arrange their objects, but they are not a frame to pin to. So a Position inside a Column inside a card pins to the card's corners, not to the page's.
+
+```layr
+Container(
+  .config(
+    w: 260
+    h: 140
+    color: panel
+    cornerRadius: 12
+    padding: all(16)
+  )
+  Column(
+    .config(gap: 4)
+    Text(
+      .config(weight: semibold)
+      .obj('Order #2041')
+    )
+    Text(
+      .config(color: muted)
+      .obj('Packed, ships today')
+    )
+    Position(
+      .config(
+        bottom: 12
+        right: 12
+      )
+      Text(
+        .config(
+          color: accent
+          weight: semibold
+        )
+        .obj('Track →')
+      )
+    )
+  )
+)
+```
+
+> **Try it**
+> - Change `bottom: 12` to `top: 12`: the link moves to the card's top-right corner.
 
 ## When space runs out
 
@@ -122,39 +230,90 @@ The two rows below show both. Press **m** in the result bar, or drag the corner:
 
 ```layr
 Column(
-  .config(w: fill, gap: 20)
-  Text(.config(color: muted) .obj('Only hug children: they wrap'))
+  .config(
+    w: fill
+    gap: 20
+  )
+  Text(
+    .config(color: muted)
+    .obj('Only hug children: they wrap')
+  )
   Row(
     .config(gap: 8)
     Container(
-      .config(color: sunken, cornerRadius: 999, padding: sym(x: 14, y: 8))
+      .config(
+        color: sunken
+        cornerRadius: 999
+        padding: sym(x: 14, y: 8)
+      )
       .obj(Text('Layout'))
     )
     Container(
-      .config(color: sunken, cornerRadius: 999, padding: sym(x: 14, y: 8))
+      .config(
+        color: sunken
+        cornerRadius: 999
+        padding: sym(x: 14, y: 8)
+      )
       .obj(Text('Design Scale'))
     )
     Container(
-      .config(color: sunken, cornerRadius: 999, padding: sym(x: 14, y: 8))
+      .config(
+        color: sunken
+        cornerRadius: 999
+        padding: sym(x: 14, y: 8)
+      )
       .obj(Text('Animation'))
     )
     Container(
-      .config(color: sunken, cornerRadius: 999, padding: sym(x: 14, y: 8))
+      .config(
+        color: sunken
+        cornerRadius: 999
+        padding: sym(x: 14, y: 8)
+      )
       .obj(Text('Export, Extract, Inject'))
     )
   )
-  Text(.config(color: muted) .obj('A fill child: the row stacks'))
+  Text(
+    .config(color: muted)
+    .obj('A fill child: the row stacks')
+  )
   Row(
-    .config(w: fill, gap: 12)
-    Container(
-      .config(w: 200, h: 90, color: ember, cornerRadius: 10, padding: all(12))
-      .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: 200')))
+    .config(
+      w: fill
+      gap: 12
     )
     Container(
-      .config(w: fill, h: 90, color: violet, cornerRadius: 10, padding: all(12))
+      .config(
+        w: 200
+        h: 90
+        color: ember
+        cornerRadius: 10
+        padding: all(12)
+      )
       .obj(
         Text(
-          .config(color: onAccent, weight: semibold)
+          .config(
+            color: onAccent
+            weight: semibold
+          )
+          .obj('w: 200')
+        )
+      )
+    )
+    Container(
+      .config(
+        w: fill
+        h: 90
+        color: violet
+        cornerRadius: 10
+        padding: all(12)
+      )
+      .obj(
+        Text(
+          .config(
+            color: onAccent
+            weight: semibold
+          )
           .obj('w: fill: a pane that must not be squeezed')
         )
       )
@@ -178,7 +337,10 @@ Adapt(
     Text('Community')
     Text('Changelog')
   )
-  Text(.config(weight: semibold) .obj('☰ Menu'))
+  Text(
+    .config(weight: semibold)
+    .obj('☰ Menu')
+  )
 )
 ```
 

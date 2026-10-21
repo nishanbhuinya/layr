@@ -50,6 +50,20 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
   d("L1014", "error", "Invalid Widget", "A Widget needs `.name(...)` and one `.obj(...)` root."),
   d("L1015", "error", "Unknown frame", "`.at(frame, ...)` names a frame that the active DesignScale does not define."),
   d("L1016", "warning", "Unused declaration", "The declaration is never read."),
+  d(
+    "L1018",
+    "warning",
+    "Not a RichText style",
+    "In RichText, `(…)[text]` styles the text in brackets, and the parentheses hold styles: a colour (`blue`, `#000`, a theme colour, `green.50` for 50% opacity), a size (`24`), `weight.700` or `bold`, `italic`, `underline`, `strike`, `code`, `hL.colour` (a highlight) or `link: /path`. Something else there is shown as written. To show parentheses before brackets on purpose, write `/(`.",
+    { bad: "RichText('(blu)[Blue]')", good: "RichText('(blue)[Blue]')" },
+  ),
+  d(
+    "L1017",
+    "warning",
+    "Deprecated form",
+    "This form still compiles but has a newer spelling, and a later major version removes it. The message names the new form. `layr upgrade` lists every deprecated form in the project and rewrites them once you agree; in VS Code the quick fix or **Update all** does the same.",
+    { bad: "Widget(.name(Card) .obj(Container()))", good: "Widget(.name(Card) .wgt(Container()))" },
+  ),
 
   // L2 layout
   d(
@@ -60,6 +74,13 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
     { bad: "Scroll(Column(Container(.config(h: fill))))", good: "Scroll(Column(Container(.config(h: 400))))" },
   ),
   d("L2003", "warning", "Invisible box", "A `hug` Container with no child is 0×0, so its paint is never visible. Give it a size."),
+  d(
+    "L2004",
+    "error",
+    "Arithmetic on a layout size",
+    "`w` and `h` written as `hug` or `fill`, or not written at all, are sizes the layout works out; they are not numbers, so `box.w + 10` has nothing to add to. Give the size a length, change what the box hugs (its `padding`, its content), or read the measured size `box.size.w`. Do not feed a measured size back into the same size: it would grow on every measure.",
+    { bad: "Inject(.into(Home.button) button.h = button.h + 10)", good: "Inject(.into(Home.button) button.padding = all(10))" },
+  ),
   d("L2101", "warning", "Overflow cannot adapt", "The content cannot fit and no adaptation applies (for example a fixed child larger than its fixed parent on both axes). It is clipped. Make a size flexible or set `overflow` explicitly."),
   d("L2102", "info", "Layout adapted", "At some frame this Row wraps or stacks. The message says where. Set `overflow` to make the choice explicit."),
 
@@ -71,8 +92,19 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
     "The target was declared `!mut`, which refuses every Export/Extract/Inject mutation. Remove `!mut` at the declaration or stop mutating it. `Inject(.force …)` inside `access.force` paths can override it.",
     { bad: "Container(.id(card) .config(!mut color: red))\nInject(.into(Page.card) card.color = blue)", good: "Container(.id(card) .config(color: red))\nInject(.into(Page.card) card.color = blue)" },
   ),
-  d("L3102", "error", "Conflicting injection order", "Two Injects target the same feature with the same `.exeOrder`. Give them different orders so the result is unambiguous."),
-  d("L3103", "warning", "Unordered injections", "Two Injects without `.exeOrder` target the same feature. They apply in file/line order; add orders to make intent explicit."),
+  d(
+    "L3102",
+    "error",
+    "Two operations share an order on one object",
+    "Every Export, Extract, Inject and Duplicate on an object takes its own place in that object's chain: `.exeOrder` runs from the most negative to the most positive, and two operations on the same object cannot share a number (whichever features they touch), because then nothing says which comes first. Operations on different objects may share numbers. The fix suggests the nearest free order; `layr chain <object>` lists the chain.",
+    { bad: "Inject(.into(Home.card) .exeOrder(10) card.w = 200)\nExtract(.from(Home.card) .exeOrder(10) len w = card.w)", good: "Inject(.into(Home.card) .exeOrder(10) card.w = 200)\nExtract(.from(Home.card) .exeOrder(11) len w = card.w)" },
+  ),
+  d(
+    "L3103",
+    "error",
+    "Two unordered Injects on one feature",
+    "Two Injects without `.exeOrder` change the same feature of an object, so nothing says which comes first. Give at least one of them an order. (Unordered Injects of different features are fine; they apply after the ordered ones. An unordered Extract reads the final value.)",
+  ),
   d("L3104", "error", "Rendered features are read-only", "`pos` and `visible` are measured from layout and cannot be injected or written. `size` is measured too, but an object with a `size` key of its own (a Text's font size, a box's size) takes writes and Injects there; reading `size` still gives the measurement."),
   d("L3105", "error", "Force outside access.force", "`Inject(.force …)` is only allowed in files matched by `access.force` in layr.yaml (or everywhere with `access.inject: open`)."),
   d("L3201", "error", "Layout cycle", "An object's size depends on a rendered feature that depends on the object itself. Break the cycle."),
@@ -93,6 +125,7 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
     "Several same-type siblings match this path segment. Pick one with a zero-based index: `column.text(0)`, `column.text(1)`, … or give the object an `.id`.",
   ),
   d("L3304", "error", "Index out of range", "The `(n)` index in a lookup path is larger than the number of matching siblings."),
+  d("L3305", "error", "A Duplicate inside what it copies", "A Duplicate shows a copy of its `.from` object in its own place. Inside that object, the copy would contain the Duplicate, which would contain a copy, and so on. Put the Duplicate outside the object it copies."),
 
   // L4 design scale
   d("L4001", "error", "Invalid DesignScale", "Frames need a design width, height and a non-overlapping `from` width."),

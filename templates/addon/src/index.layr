@@ -5,10 +5,22 @@ Widget(
     req txt label
     color tint = #3b82f6
   )
-  .obj(
+  .wgt(
     Container(
-      .config(padding: sym(x: 16, y: 10), color: param.tint, cornerRadius: 12)
-      .obj(Text(.config(color: white, weight: semibold) .obj(param.label)))
+      .config(
+        color: param.tint
+        cornerRadius: 12
+        padding: sym(x: 16, y: 10)
+      )
+      .obj(
+        Text(
+          .config(
+            color: white
+            weight: semibold
+          )
+          .obj(param.label)
+        )
+      )
     )
   )
 )

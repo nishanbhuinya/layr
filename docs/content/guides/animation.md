@@ -17,7 +17,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 16, padding: all(24))
+        .config(
+          gap: 16
+          padding: all(24)
+        )
         Animate(
           .eases(w: spring.bounce)
           .obj(
@@ -31,14 +34,21 @@ Page(
               )
               .obj(
                 Text(
-                  .config(color: onAccent, weight: semibold)
+                  .config(
+                    color: onAccent
+                    weight: semibold
+                  )
                   .obj(big ? 'w: 320' : 'w: 160')
                 )
               )
             )
           )
         )
-        Button(.preset(default) .config(label: 'Toggle') .fnc { big = !big })
+        Button(
+          .preset(default)
+          .config(label: 'Toggle')
+          .fnc { big = !big }
+        )
       )
     )
   )
@@ -64,7 +74,11 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: fill, gap: 10, padding: all(24))
+        .config(
+          w: fill
+          gap: 10
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: 'Move all four')
@@ -82,7 +96,12 @@ Page(
                 objAlign: midLeft
                 padding: sym(x: 12)
               )
-              .obj(Text(.config(color: onAccent) .obj('gentle')))
+              .obj(
+                Text(
+                  .config(color: onAccent)
+                  .obj('gentle')
+                )
+              )
             )
           )
         )
@@ -98,7 +117,12 @@ Page(
                 objAlign: midLeft
                 padding: sym(x: 12)
               )
-              .obj(Text(.config(color: ink) .obj('snappy')))
+              .obj(
+                Text(
+                  .config(color: ink)
+                  .obj('snappy')
+                )
+              )
             )
           )
         )
@@ -114,7 +138,12 @@ Page(
                 objAlign: midLeft
                 padding: sym(x: 12)
               )
-              .obj(Text(.config(color: onAccent) .obj('bounce')))
+              .obj(
+                Text(
+                  .config(color: onAccent)
+                  .obj('bounce')
+                )
+              )
             )
           )
         )
@@ -130,7 +159,12 @@ Page(
                 objAlign: midLeft
                 padding: sym(x: 12)
               )
-              .obj(Text(.config(color: onAccent) .obj('slow')))
+              .obj(
+                Text(
+                  .config(color: onAccent)
+                  .obj('slow')
+                )
+              )
             )
           )
         )
@@ -146,11 +180,15 @@ For motion with a fixed length, use an ease and a duration: `.config(ease: ease.
 |---|---|
 | `.config(ease: spring.snappy)` | The motion for every property |
 | `.eases(w: spring.gentle, color: ease.inOut)` | Motion per property |
-| `.config(duration: 300ms)` | The duration for eased (non-spring) motion |
+| `.config(duration: 300ms)` | How long each change takes. An ease takes 300ms unless it says otherwise; a spring settles in its own time unless you give one, and then plays its curve over that time |
+| `.config(delay: 80ms)` | Wait before each change starts |
+| `.config(resize: animate)` | Also animate size changes from outside (a window resize, a parent's layout); by default (`follow`) they apply at once |
 | `.enter(fade, slide(y: 20))` | Motion when the object appears |
 | `.exit(fade)` | Motion when it leaves an `If` branch |
 
 Springs: `spring.gentle`, `spring.snappy`, `spring.bounce`, `spring.slow`. Eases: `ease.linear`, `ease.in`, `ease.out`, `ease.inOut`, `ease.emphasized`.
+
+When a box's size animates, the text inside keeps the lines it has at the end, and the box reveals it as it grows. A label that gets longer moves straight to its new line; it does not wrap at each width on the way.
 
 ## Entering and leaving
 
@@ -165,7 +203,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 16, padding: all(24))
+        .config(
+          gap: 16
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: shown ? 'Dismiss' : 'Save')
@@ -175,16 +216,22 @@ Page(
           .cnd(shown)
           .obj(
             Animate(
-              .config(duration: 220ms, ease: ease.out)
+              .config(
+                duration: 220ms
+                ease: ease.out
+              )
               .enter(fade, slide(y: 12))
               .exit(fade)
               .obj(
                 Container(
                   .config(
-                    .border(color: line, width: 1)
                     color: panel
                     cornerRadius: 12
                     padding: sym(x: 16, y: 12)
+                    .border(
+                      color: line
+                      width: 1
+                    )
                   )
                   .obj(Text('Saved. Your changes are live.'))
                 )
@@ -214,13 +261,21 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 16, padding: all(24))
+        .config(
+          gap: 16
+          padding: all(24)
+        )
         Animate(
           .config(ease: spring.snappy)
           .obj(
             Container(
               .id(box)
-              .config(w: 80, h: 80, color: accent, cornerRadius: 16)
+              .config(
+                w: 80
+                h: 80
+                color: accent
+                cornerRadius: 16
+              )
             )
           )
         )

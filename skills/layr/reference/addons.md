@@ -23,7 +23,15 @@ import { GoogleFonts } from '@dynshift/layr-google-fonts'
 Page(
   .name(Home)
   Scaffold(
-    .body(Text(.config(size: 40, font: GoogleFonts.Fraunces) .obj('Hello')))
+    .body(
+      Text(
+        .config(
+          size: 40
+          font: GoogleFonts.Fraunces
+        )
+        .obj('Hello')
+      )
+    )
   )
 )
 ```

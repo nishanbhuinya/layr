@@ -18,9 +18,27 @@ Page(
     .config(color: canvas)
     .body(
       Row(
-        .config(gap: 16, padding: all(24), yAlign: mid)
-        Icon(.config(size: 28, color: gold, label: 'Starred', name: 'star'))
-        Icon(.config(size: 28, color: ember, label: 'Liked', name: 'heart'))
+        .config(
+          gap: 16
+          padding: all(24)
+          yAlign: mid
+        )
+        Icon(
+          .config(
+            size: 28
+            color: gold
+            label: 'Starred'
+            name: 'star'
+          )
+        )
+        Icon(
+          .config(
+            size: 28
+            color: ember
+            label: 'Liked'
+            name: 'heart'
+          )
+        )
         Text('Starred and liked')
       )
     )

@@ -3,13 +3,14 @@
  * Shared by the compiler (static configs become CSS rules at build time) and the runtime
  * (dynamic configs become inline styles), so both paths produce identical results.
  */
-import { Color } from "./color.ts";
+import { Color, inkOn } from "./color.ts";
 import { interpolate, num, UNIT } from "./ds.ts";
 import type { LayoutKind } from "./schema.ts";
 import { runtimeWidget } from "./table.ts";
 import {
   alignPoint,
   type FontValue,
+  type Gradient,
   type Insets,
   insetsCss,
   isFontValue,
@@ -52,13 +53,14 @@ const BASE_RULES = `
 .l-wrap{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start}
 .l-stack{display:grid;grid-template:minmax(0,1fr)/minmax(0,1fr);align-items:start;justify-items:start;position:relative}
 .l-pass{display:contents}
+:where(:is(.l-box,.l-stack,.l-scroll,.l-grid):has(.l-pin)){position:relative}
 .l-fade{mask-image:linear-gradient(to bottom,transparent,#000 var(--l-fa),#000 calc(100% - var(--l-fb)),transparent);animation:l-fade linear both;animation-timeline:scroll(self block)}
 .l-fade-x{mask-image:linear-gradient(to right,transparent,#000 var(--l-fa),#000 calc(100% - var(--l-fb)),transparent);animation:l-fade linear both;animation-timeline:scroll(self inline)}
 @keyframes l-fade{0%{--l-fa:0px;--l-fb:var(--l-fade)}8%{--l-fa:var(--l-fade)}92%{--l-fb:var(--l-fade)}100%{--l-fa:var(--l-fade);--l-fb:0px}}
 .l-stack>*{grid-area:1/1}
 .l-grid{display:grid}
 .l-scroll{overflow:auto}
-.l-text{display:block;overflow-wrap:break-word}
+.l-text{display:block;overflow-wrap:break-word;white-space:pre-line}
 .l-inline{display:inline}
 .l-leaf{display:block;flex-shrink:0}
 .l-row>.l-wfill,.l-wrap>.l-wfill{flex:var(--l-flex,1) 1 0;min-width:0}
@@ -309,7 +311,13 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
     const p = paintCss(cfg.color);
     if (p.color) d["background-color"] = p.color;
     if (p.image) d["background-image"] = p.image;
+    // Text inside reads on this paint unless it (or `textColor`) chooses its own colour.
+    if (!has("textColor")) {
+      const ink = inkOn(paintTone(cfg.color));
+      if (ink) d.color = ink;
+    }
   }
+  if (has("textColor") && layout !== "text" && layout !== "inline") d.color = (toColor(cfg.textColor) ?? new Color(0, 0, 0)).toCss();
   if (has("padding")) d.padding = insetsCss(cfg.padding as Insets);
   if (has("cornerRadius")) d["border-radius"] = radiusCss(cfg.cornerRadius);
   if (has("borderWidth") || has("borderColor")) {
@@ -388,7 +396,12 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
       if (name === "Scaffold") {
         d["min-height"] = "100dvh";
         d.width = "100%";
+        // The bar, body and footer span the page; the body lays out its objects like a Column
+        // (they hug unless they fill), aligned by the Scaffold's own xAlign/yAlign.
+        d["--l-body-x"] = d["align-items"] ?? "flex-start";
+        d["--l-body-y"] = d["justify-content"] ?? "flex-start";
         d["align-items"] = "stretch";
+        delete d["justify-content"];
         if (cfg.scroll === "none") {
           d.height = "100dvh";
           d.overflow = "hidden";
@@ -398,7 +411,6 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
           if (p.color) d["background-color"] = p.color;
           if (p.image) d["background-image"] = p.image;
         }
-        if (has("textColor")) d.color = (toColor(cfg.textColor) ?? new Color(0, 0, 0)).toCss();
       }
       const overflow = (cfg.overflow as string | undefined) ?? "auto";
       if (layout === "row") {
@@ -545,7 +557,9 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
           d.position = "absolute";
           for (const e of edges) d[e] = lengthCss(cfg[e] as Length);
           // Pinned to opposite edges it has a size of its own: its object fills it with `w`/`h: fill`.
-          out.classes.push("l-box");
+          // `l-pin`: it pins to its box, the nearest Container, Stack, Scroll or Grid around it; Rows
+          // and Columns only arrange (see BASE_RULES).
+          out.classes.push("l-box", "l-pin");
         } else d.position = "relative";
         if (has("x") || has("y")) d.translate = `${lengthCss((cfg.x as Length) ?? 0)} ${lengthCss((cfg.y as Length) ?? 0)}`;
       }
@@ -609,6 +623,17 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
       out.attrs.rel = "noopener noreferrer";
     }
   }
+}
+
+/** The colour a paint reads as for the text on it: the colour itself, or a gradient's mean (opaque when any stop is). */
+function paintTone(v: unknown): Color {
+  if (typeof v === "object" && v !== null && (v as { $?: string }).$ === "gradient") {
+    const cs = (v as Gradient).colors;
+    if (!cs.length) return new Color(0, 0, 0, 0);
+    const mean = (f: (c: Color) => number) => cs.reduce((s, c) => s + f(c), 0) / cs.length;
+    return new Color(mean((c) => c.r), mean((c) => c.g), mean((c) => c.b), Math.max(...cs.map((c) => c.a)));
+  }
+  return toColor(v) ?? new Color(0, 0, 0, 0);
 }
 
 function fontFamily(f: string | FontValue): string {

@@ -6,18 +6,27 @@ import { Prose } from '../react/Prose.tsx'
 Widget(
   .name(MdPage)
   .param(any page = null)
-  .obj(
+  .wgt(
     DocsShell(
       If(
         .cnd(param.page != null)
-        .obj(Article(
-          .config(toc: param.page.toc, edit: param.page.edit ?? '', ads: param.page.legal != true)
-          Column(
-            .config(w: fill, gap: 20)
-            Crumbs(.config(section: param.page.section))
-            Prose(.props(html: param.page.html))
+        .obj(
+          Article(
+            .config(
+              toc: param.page.toc
+              edit: param.page.edit ?? ''
+              ads: param.page.legal != true
+            )
+            Column(
+              .config(
+                w: fill
+                gap: 20
+              )
+              Crumbs(.config(section: param.page.section))
+              Prose(.props(html: param.page.html))
+            )
           )
-        ))
+        )
       )
     )
   )

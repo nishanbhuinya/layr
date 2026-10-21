@@ -10,7 +10,12 @@ A `.layr` file is a list of **items**. An object is a name followed by its items
 
 ```layr
 Container(
-  .config(w: 220, color: panel, cornerRadius: 12, padding: all(16))
+  .config(
+    w: 220
+    color: panel
+    cornerRadius: 12
+    padding: all(16)
+  )
   .obj(Text('Hello'))
 )
 ```
@@ -28,8 +33,16 @@ Page(
     .config(color: canvas)
     .body(
       Row(
-        .config(gap: 12, padding: all(24), yAlign: mid)
-        Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
+        .config(
+          gap: 12
+          padding: all(24)
+          yAlign: mid
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Add one')
+          .fnc { count++ }
+        )
         Text('Clicked $count times')
       )
     )
@@ -57,9 +70,23 @@ Items are separated by line breaks or commas. Two items on one line need a comma
 The expanded form puts config in `.config(...)` and children in `.obj(...)`. The shorthand puts props and children straight into the call. These two are the same object:
 
 ```layr noexec
-Container(.config(padding: all(12)) .obj(Column(Text('One'), Text('Two'))))
+Container(
+  .config(padding: all(12))
+  .obj(
+    Column(
+      Text('One')
+      Text('Two')
+    )
+  )
+)
 
-Container(padding: all(12), Column(Text('One'), Text('Two')))
+Container(
+  .config(padding: all(12))
+  Column(
+    Text('One')
+    Text('Two')
+  )
+)
 ```
 
 `layr format` keeps the shorthand when it fits on one line and expands it otherwise, so a file only ever has one spelling.
@@ -71,12 +98,30 @@ A plain number is a **design pixel**: a pixel of your design at its design frame
 ```layr
 Column(
   Container(
-    .config(w: 240, h: 36, color: accent)
-    .obj(Text(.config(color: onAccent) .obj('w: 240 (design px)')))
+    .config(
+      w: 240
+      h: 36
+      color: accent
+    )
+    .obj(
+      Text(
+        .config(color: onAccent)
+        .obj('w: 240 (design px)')
+      )
+    )
   )
   Container(
-    .config(w: 240px, h: 36, color: teal)
-    .obj(Text(.config(color: onAccent) .obj('w: 240px (screen px)')))
+    .config(
+      w: 240px
+      h: 36
+      color: teal
+    )
+    .obj(
+      Text(
+        .config(color: onAccent)
+        .obj('w: 240px (screen px)')
+      )
+    )
   )
 )
 ```
@@ -103,11 +148,41 @@ Colour methods work on theme colours too, so a whole palette can come from one a
 ```layr
 Row(
   .config(gap: 8)
-  Container(.config(size: 48, color: accent, cornerRadius: 10))
-  Container(.config(size: 48, color: accent.alpha(60%), cornerRadius: 10))
-  Container(.config(size: 48, color: accent.alpha(30%), cornerRadius: 10))
-  Container(.config(size: 48, color: accent.mix(teal, 50%), cornerRadius: 10))
-  Container(.config(size: 48, color: teal, cornerRadius: 10))
+  Container(
+    .config(
+      size: 48
+      color: accent
+      cornerRadius: 10
+    )
+  )
+  Container(
+    .config(
+      size: 48
+      color: accent.alpha(60%)
+      cornerRadius: 10
+    )
+  )
+  Container(
+    .config(
+      size: 48
+      color: accent.alpha(30%)
+      cornerRadius: 10
+    )
+  )
+  Container(
+    .config(
+      size: 48
+      color: accent.mix(teal, 50%)
+      cornerRadius: 10
+    )
+  )
+  Container(
+    .config(
+      size: 48
+      color: teal
+      cornerRadius: 10
+    )
+  )
 )
 ```
 
@@ -138,8 +213,15 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 8, padding: all(24))
-        Each(.of(tasks.filter((t) => t != 'Format')) .as(t) .obj(Text('• $t')))
+        .config(
+          gap: 8
+          padding: all(24)
+        )
+        Each(
+          .of(tasks.filter((t) => t != 'Format'))
+          .as(t)
+          .obj(Text('• $t'))
+        )
         Text(
           .config(color: muted)
           .obj('${tasks.map((t) => t.toUpperCase()).join(", ")}')

@@ -40,3 +40,14 @@ if (missing.length) {
   process.exit(1);
 }
 console.log(`site assets: ${refs.size} head references present`);
+
+// The VS Code download buttons point at /download/layr-vscode.vsix. CI packages it before the
+// build; a deploy without it would ship buttons that 404.
+if (!existsSync(join(dist, "download", "layr-vscode.vsix"))) {
+  const message = "site assets: download/layr-vscode.vsix is missing; run `pnpm --filter ./vscode run package` before building the site";
+  if (process.env.CI) {
+    console.error(message);
+    process.exit(1);
+  }
+  console.warn(`${message} (a warning outside CI)`);
+}

@@ -3,50 +3,90 @@ Page(
   .route('/effects')
   Scaffold(
     .config(padding: all(24))
-    .body(Column(
-      .config(gap: 24)
-      Text(.config(type: h2) .obj('Effects'))
-      Container(
-        .config(
-          size: (240, 80)
-          color: LinearGradient(.colors(brand, ink) .direction(lM, rB))
-          cornerRadius: 16
+    .body(
+      Column(
+        .config(gap: 24)
+        Text(
+          .config(type: h2)
+          .obj('Effects')
         )
-      )
-      Mask(
-        .id(masked)
-        .config(size: 200)
-        Order(
-          .posOrder(0)
-          .obj(Container(
-            .config(
-              size: 200
-              color: LinearGradient(.colors(black.alpha(0), black) .direction(topMid, bottomMid))
+        Container(
+          .config(
+            size: (240, 80)
+            color: LinearGradient(.colors(brand, ink) .direction(lM, rB))
+            cornerRadius: 16
+          )
+        )
+        Mask(
+          .id(masked)
+          .config(size: 200)
+          Order(
+            .posOrder(0)
+            .obj(
+              Container(
+                .config(
+                  size: 200
+                  color: LinearGradient(.colors(black.alpha(0), black) .direction(topMid, bottomMid))
+                )
+              )
             )
-          ))
+          )
+          Order(
+            .posOrder(1)
+            .obj(
+              Container(
+                .config(
+                  size: 200
+                  color: red
+                )
+              )
+            )
+          )
         )
-        Order(.posOrder(1) .obj(Container(.config(size: 200, color: red))))
-      )
-      Subtract(
-        .id(cut)
-        .config(size: 200)
-        Order(.posOrder(0) .obj(Container(.config(size: 200, color: ink))))
-        Order(
-          .posOrder(1)
-          .obj(Position(
-            .config(bottom: 20, right: 20)
-            .obj(Container(.config(size: 80, color: white, cornerRadius: 40)))
-          ))
+        Subtract(
+          .id(cut)
+          .config(size: 200)
+          Order(
+            .posOrder(0)
+            .obj(
+              Container(
+                .config(
+                  size: 200
+                  color: ink
+                )
+              )
+            )
+          )
+          Order(
+            .posOrder(1)
+            .obj(
+              Position(
+                .config(
+                  bottom: 20
+                  right: 20
+                )
+                .obj(
+                  Container(
+                    .config(
+                      size: 80
+                      color: white
+                      cornerRadius: 40
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+        Text(
+          .config(
+            size: 40
+            color: LinearGradient(.colors(brand, red) .direction(midLeft, midRight))
+            weight: black
+          )
+          .obj('Gradient text')
         )
       )
-      Text(
-        .config(
-          size: 40
-          color: LinearGradient(.colors(brand, red) .direction(midLeft, midRight))
-          weight: black
-        )
-        .obj('Gradient text')
-      )
-    ))
+    )
   )
 )

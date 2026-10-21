@@ -6,18 +6,38 @@ A Column lays its objects out top to bottom with a `gap`. `xAlign` aligns them a
 Column(
   .config(
     w: 300
-    .border(color: line, width: 1)
     color: panel
     cornerRadius: 12
     gap: 2
     padding: all(6)
+    .border(
+      color: line
+      width: 1
+    )
   )
   Container(
-    .config(w: fill, color: sunken, cornerRadius: 8, padding: all(12))
+    .config(
+      w: fill
+      color: sunken
+      cornerRadius: 8
+      padding: all(12)
+    )
     .obj(Text('Account'))
   )
-  Container(.config(w: fill, padding: all(12)) .obj(Text('Notifications')))
-  Container(.config(w: fill, padding: all(12)) .obj(Text('Privacy')))
+  Container(
+    .config(
+      w: fill
+      padding: all(12)
+    )
+    .obj(Text('Notifications'))
+  )
+  Container(
+    .config(
+      w: fill
+      padding: all(12)
+    )
+    .obj(Text('Privacy'))
+  )
 )
 ```
 
@@ -38,9 +58,30 @@ Column(
     gap: 8
     padding: all(8)
   )
-  Container(.config(w: fill, h: 40, color: panel, cornerRadius: 8))
-  Container(.config(w: fill, h: fill, color: accent, cornerRadius: 8))
-  Container(.config(w: fill, h: 40, color: panel, cornerRadius: 8))
+  Container(
+    .config(
+      w: fill
+      h: 40
+      color: panel
+      cornerRadius: 8
+    )
+  )
+  Container(
+    .config(
+      w: fill
+      h: fill
+      color: accent
+      cornerRadius: 8
+    )
+  )
+  Container(
+    .config(
+      w: fill
+      h: 40
+      color: panel
+      cornerRadius: 8
+    )
+  )
 )
 ```
 

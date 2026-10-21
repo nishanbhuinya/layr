@@ -188,6 +188,9 @@ function zipLen(a: Length, b: Length, f: (x: Num, y: Num) => Num, op: Calc["op"]
 export function arith(op: "+" | "-" | "*" | "/", a: unknown, b: unknown): unknown {
   const f = (x: Num, y: Num) => (op === "+" ? x + y : op === "-" ? x - y : op === "*" ? x * y : x / y);
   if (typeof a === "number" && typeof b === "number") return f(a, b);
+  // A layout size (`hug`, `fill`) or a value never set has no number to compute with: it stays as it is.
+  if (a === "hug" || a === "fill" || (a == null && typeof b !== "string")) return a;
+  if (b === "hug" || b === "fill" || (b == null && typeof a !== "string")) return b;
   if (typeof a === "string" || typeof b === "string") return op === "+" ? `${a}${b}` : Number.NaN;
   const scale = op === "*" || op === "/";
   if (isInsets(a)) {

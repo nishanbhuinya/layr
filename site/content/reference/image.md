@@ -4,7 +4,10 @@ Image shows a picture. Give it `alt` text (or `decorative: true` when it adds no
 
 ```layr
 Column(
-  .config(w: 320, gap: 10)
+  .config(
+    w: 320
+    gap: 10
+  )
   Image(
     .config(
       w: fill
@@ -16,7 +19,10 @@ Column(
     )
   )
   Text(
-    .config(size: 13, color: muted)
+    .config(
+      size: 13
+      color: muted
+    )
     .obj('fit: cover crops the picture to fill the box.')
   )
 )
@@ -30,11 +36,30 @@ Column(
 
 ```layr
 Row(
-  .config(gap: 12, yAlign: mid)
-  Image(.config(size: 48, alt: 'LAYR', cornerRadius: 999, src: '/icon-512.png'))
+  .config(
+    gap: 12
+    yAlign: mid
+  )
+  Image(
+    .config(
+      size: 48
+      alt: 'LAYR'
+      cornerRadius: 999
+      src: '/icon-512.png'
+    )
+  )
   Column(
-    Text(.config(weight: semibold) .obj('LAYR'))
-    Text(.config(size: 13, color: muted) .obj('@dynshift'))
+    Text(
+      .config(weight: semibold)
+      .obj('LAYR')
+    )
+    Text(
+      .config(
+        size: 13
+        color: muted
+      )
+      .obj('@dynshift')
+    )
   )
 )
 ```

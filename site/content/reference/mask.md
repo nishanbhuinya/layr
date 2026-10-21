@@ -4,7 +4,10 @@ Mask shows its layers only where the mask layer is opaque. The mask is the layer
 
 ```layr
 Mask(
-  .config(w: 320, h: 200)
+  .config(
+    w: 320
+    h: 200
+  )
   Order(
     .posOrder(0)
     .obj(
@@ -21,11 +24,42 @@ Mask(
     .posOrder(1)
     .obj(
       Column(
-        .config(w: 320, gap: 8)
-        Container(.config(w: fill, h: 44, color: violet, cornerRadius: 10))
-        Container(.config(w: fill, h: 44, color: teal, cornerRadius: 10))
-        Container(.config(w: fill, h: 44, color: gold, cornerRadius: 10))
-        Container(.config(w: fill, h: 44, color: ember, cornerRadius: 10))
+        .config(
+          w: 320
+          gap: 8
+        )
+        Container(
+          .config(
+            w: fill
+            h: 44
+            color: violet
+            cornerRadius: 10
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 44
+            color: teal
+            cornerRadius: 10
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 44
+            color: gold
+            cornerRadius: 10
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 44
+            color: ember
+            cornerRadius: 10
+          )
+        )
       )
     )
   )
@@ -39,10 +73,22 @@ Mask(
 
 ```layr
 Mask(
-  .config(w: 320, h: 90)
+  .config(
+    w: 320
+    h: 90
+  )
   Order(
     .posOrder(0)
-    .obj(Container(.config(w: 320, h: 90, color: black, cornerRadius: 999)))
+    .obj(
+      Container(
+        .config(
+          w: 320
+          h: 90
+          color: black
+          cornerRadius: 999
+        )
+      )
+    )
   )
   Order(
     .posOrder(1)

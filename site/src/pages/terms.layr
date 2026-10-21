@@ -5,7 +5,14 @@ import { loadPage } from '../lib/content.ts'
 Page(
   .name(TermsPage)
   .route('/terms')
-  .meta(title: '${data.title} · LAYR', description: data.description)
+  .meta(
+    title: '${data.title} · LAYR'
+    description: data.description
+  )
   .load { return loadPage('terms') }
-  Scaffold(.config(color: canvas) .bar(TopBar()) .body(MdPage(.config(page: data))))
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(MdPage(.config(page: data)))
+  )
 )

@@ -2,18 +2,21 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import type { Diagnostic as LayrDiagnostic } from "@layr-internal/compiler";
+import { applyEdits, type Diagnostic as LayrDiagnostic, upgrades } from "@layr-internal/compiler";
 import { DIAGNOSTIC_BY_CODE } from "@layr-internal/model";
 import { loadConfig, readProjectFiles } from "@layr-internal/node";
 import {
+  type CodeAction,
   CodeActionKind,
   type CompletionItem,
   CompletionItemKind,
   createConnection,
   type Diagnostic,
   DiagnosticSeverity,
+  DiagnosticTag,
   DocumentSymbol,
   type InitializeParams,
+  InsertTextFormat,
   ProposedFeatures,
   SymbolKind,
   TextDocumentSyncKind,
@@ -21,6 +24,7 @@ import {
   TextEdit,
 } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { refactors } from "./refactor.ts";
 import { type Completion, LayrService } from "./service.ts";
 
 const KIND: Record<Completion["kind"], CompletionItemKind> = {
@@ -34,6 +38,9 @@ const KIND: Record<Completion["kind"], CompletionItemKind> = {
   id: CompletionItemKind.Reference,
   color: CompletionItemKind.Color,
 };
+
+/** The command the editor runs to apply every deprecated form's fix (after the developer agrees). */
+export const UPGRADE_COMMAND = "layr.upgradeAll";
 
 function findRoot(start: string): string {
   let dir = start;
@@ -54,11 +61,12 @@ export function start() {
   const toPath = (uri: string) => relative(root, fileURLToPath(uri)).replace(/\\/g, "/");
   const toUri = (path: string) => pathToFileURL(resolve(root, path)).href;
 
-  const loadWorkspace = () => {
+  /** Reads layr.yaml and app.layr; with `files`, also every project file not open in the editor. */
+  const loadWorkspace = (files = true) => {
     try {
       const cfg = loadConfig(root);
       service.setConfig(cfg.project);
-      for (const f of readProjectFiles(root, cfg)) if (!documents.get(toUri(f.path))) service.setFile(f.path, f.text);
+      if (files) for (const f of readProjectFiles(root, cfg)) if (!documents.get(toUri(f.path))) service.setFile(f.path, f.text);
     } catch (e) {
       connection.console.error(`LAYR: could not load the project: ${(e as Error).message}`);
     }
@@ -74,6 +82,7 @@ export function start() {
       codeDescription: { href: `https://layr.dynshift.com/errors/${d.code}` },
       source: "layr",
       message: d.message,
+      ...(d.deprecation ? { tags: [DiagnosticTag.Deprecated] } : {}),
       data: { fixes: d.fixes ?? [] },
       relatedInformation: d.related?.map((r) => {
         const rp = r.file ?? path;
@@ -83,12 +92,33 @@ export function start() {
     };
   };
 
+  // Diagnostics are sent for the files whose list changed (one compile serves the whole project).
+  const sent = new Map<string, string>();
+  let deprecations = -1;
   const publishAll = () => {
+    if (configDirty) {
+      configDirty = false;
+      loadWorkspace(false);
+    }
     const r = service.compile();
-    for (const path of r.modules.keys()) connection.sendDiagnostics({ uri: toUri(path), diagnostics: service.diagnostics(path).map((d) => toLsp(path, d)) });
+    for (const path of r.modules.keys()) {
+      const list = service.diagnostics(path).map((d) => toLsp(path, d));
+      const key = JSON.stringify(list);
+      if (sent.get(path) === key) continue;
+      sent.set(path, key);
+      connection.sendDiagnostics({ uri: toUri(path), diagnostics: list });
+    }
+    // The editor offers to update deprecated forms (inform → consent → do); it decides when to ask.
+    const ups = upgrades(r.diagnostics);
+    if (ups.length !== deprecations) {
+      deprecations = ups.length;
+      const titles = [...new Set(ups.map((u) => u.deprecation.title))];
+      connection.sendNotification("layr/deprecations", { count: ups.length, files: new Set(ups.map((u) => u.file)).size, titles, since: ups[0]?.deprecation.since ?? null });
+    }
   };
 
   let pending: ReturnType<typeof setTimeout> | null = null;
+  let configDirty = false;
   const schedule = () => {
     if (pending) clearTimeout(pending);
     pending = setTimeout(publishAll, 150);
@@ -97,28 +127,42 @@ export function start() {
   connection.onInitialize((params: InitializeParams) => {
     const folder = params.workspaceFolders?.[0]?.uri ?? params.rootUri;
     if (folder) root = findRoot(fileURLToPath(folder));
-    loadWorkspace();
+    // The editor gets its answer at once; the project loads and compiles right after (onInitialized).
     return {
       capabilities: {
         textDocumentSync: TextDocumentSyncKind.Incremental,
-        completionProvider: { triggerCharacters: [".", "(", ":", " "] },
+        completionProvider: { triggerCharacters: [".", "(", ":"] },
         hoverProvider: true,
         definitionProvider: true,
         referencesProvider: true,
         documentFormattingProvider: true,
         documentSymbolProvider: true,
-        codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix] },
+        codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix, CodeActionKind.RefactorRewrite, CodeActionKind.RefactorExtract] },
+        executeCommandProvider: { commands: [UPGRADE_COMMAND] },
       },
       serverInfo: { name: "layr", version: "3" },
     };
   });
 
-  connection.onInitialized(() => publishAll());
+  connection.onInitialized(() => {
+    loadWorkspace();
+    publishAll();
+  });
 
   documents.onDidChangeContent((e) => {
     const path = toPath(e.document.uri);
-    if (path.endsWith("layr.yaml") || path.endsWith("app.layr")) loadWorkspace();
+    // The app's design frames and theme are re-read with the next compile, not on every keystroke.
+    if (path.endsWith("layr.yaml") || path.endsWith("app.layr")) configDirty = true;
     service.setFile(path, e.document.getText());
+    schedule();
+  });
+
+  // A closed file is whatever is on disk again (unsaved edits are gone).
+  documents.onDidClose((e) => {
+    const path = toPath(e.document.uri);
+    const abs = resolve(root, path);
+    if (existsSync(abs)) service.setFile(path, readFileSync(abs, "utf8"));
+    else service.removeFile(path);
     schedule();
   });
 
@@ -141,6 +185,7 @@ export function start() {
       detail: c.detail,
       documentation: c.doc ? { kind: "markdown", value: c.doc } : undefined,
       insertText: c.insert,
+      insertTextFormat: c.snippet ? InsertTextFormat.Snippet : InsertTextFormat.PlainText,
     })),
   );
 
@@ -159,12 +204,17 @@ export function start() {
     service.references(toPath(p.textDocument.uri), offsetOf(p.textDocument.uri, p.position)).map((l) => ({ uri: toUri(l.path), range: rangeOf(l.path, l.span) })),
   );
 
+  const replaceAll = (uri: string, text: string): TextEdit[] => {
+    const doc = documents.get(uri);
+    const old = doc?.getText() ?? service.text(toPath(uri)) ?? "";
+    if (old === text) return [];
+    const end = doc ? doc.positionAt(old.length) : (() => { const p = service.position(toPath(uri), old.length); return { line: p.line - 1, character: p.column - 1 }; })();
+    return [TextEdit.replace({ start: { line: 0, character: 0 }, end }, text)];
+  };
+
   connection.onDocumentFormatting((p) => {
-    const path = toPath(p.textDocument.uri);
-    const doc = documents.get(p.textDocument.uri);
-    const out = service.format(path);
-    if (!doc || out === null || out === doc.getText()) return [];
-    return [TextEdit.replace({ start: { line: 0, character: 0 }, end: doc.positionAt(doc.getText().length) }, out)];
+    const out = service.format(toPath(p.textDocument.uri));
+    return out === null ? [] : replaceAll(p.textDocument.uri, out);
   });
 
   connection.onDocumentSymbol((p) => {
@@ -176,16 +226,38 @@ export function start() {
   });
 
   connection.onCodeAction((p) => {
-    const actions = [];
+    const actions: CodeAction[] = [];
+    const path = toPath(p.textDocument.uri);
     for (const d of p.context.diagnostics) {
       const fixes = ((d.data as { fixes?: Array<{ title: string; edits: Array<{ span: { start: number; end: number }; text: string }> }> } | undefined)?.fixes ?? []);
-      const path = toPath(p.textDocument.uri);
       for (const f of fixes)
-        actions.push({ title: f.title, kind: CodeActionKind.QuickFix, diagnostics: [d], edit: { changes: { [p.textDocument.uri]: f.edits.map((e) => TextEdit.replace(rangeOf(path, e.span), e.text)) } } });
+        actions.push({ title: f.title, kind: CodeActionKind.QuickFix, diagnostics: [d], isPreferred: true, edit: { changes: { [p.textDocument.uri]: f.edits.map((e) => TextEdit.replace(rangeOf(path, e.span), e.text)) } } });
       const def = DIAGNOSTIC_BY_CODE.get(String(d.code));
       if (def && !fixes.length) actions.push({ title: `Explain ${def.code}: ${def.title}`, kind: CodeActionKind.Empty, command: { title: "Open", command: "vscode.open", arguments: [`https://layr.dynshift.com/errors/${def.code}`] } });
+      if (d.tags?.includes(DiagnosticTag.Deprecated)) actions.push({ title: "Update every deprecated form in the project", kind: CodeActionKind.QuickFix, diagnostics: [d], command: { title: "Update all", command: UPGRADE_COMMAND } });
+    }
+    // Wrap, remove, move and extract the object under the cursor.
+    const only = p.context.only;
+    if (!only || only.some((k) => k.startsWith("refactor"))) {
+      const text = service.text(path);
+      if (text !== undefined) {
+        for (const r of refactors(text, offsetOf(p.textDocument.uri, p.range.start), offsetOf(p.textDocument.uri, p.range.end)))
+          actions.push({ title: r.title, kind: r.kind === "refactor.extract" ? CodeActionKind.RefactorExtract : CodeActionKind.RefactorRewrite, edit: { changes: { [p.textDocument.uri]: replaceAll(p.textDocument.uri, r.text) } } });
+      }
     }
     return actions;
+  });
+
+  // Update all: the fix of every deprecated form, in every file, as one edit the editor applies (and can undo).
+  connection.onExecuteCommand(async (p) => {
+    if (p.command !== UPGRADE_COMMAND) return;
+    const ups = upgrades(service.compile().diagnostics);
+    const changes: Record<string, TextEdit[]> = {};
+    for (const file of new Set(ups.map((u) => u.file))) {
+      const text = service.text(file) ?? "";
+      changes[toUri(file)] = replaceAll(toUri(file), applyEdits(text, ups.filter((u) => u.file === file).flatMap((u) => u.edits)));
+    }
+    if (Object.keys(changes).length) await connection.workspace.applyEdit({ label: "LAYR: update deprecated forms", edit: { changes } });
   });
 
   documents.listen(connection);

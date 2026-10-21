@@ -8,29 +8,94 @@ Page(
 
   Scaffold(
     .config(color: canvas)
-    .body(Column(
-      .config(w: fill, padding: all(32), gap: 28)
+    .body(
       Column(
-        .config(gap: 6)
-        Text(.config(size: 13, color: faint, font: GoogleFonts.JetBrainsMono) .obj('Fraunces · 600'))
-        Text(
-          .config(size: 56, weight: 600, letterSpacing: -1.5, lineHeight: 1, color: ink, font: GoogleFonts.Fraunces)
-          .obj('Layout, authored.')
-        )
-      )
-      Row(
-        .config(w: fill, gap: 24, yAlign: stretch)
-        Column(
-          .config(w: fill, gap: 8, padding: all(20), cornerRadius: 12, color: sunken)
-          Text(.config(size: 13, color: muted, font: GoogleFonts.JetBrainsMono) .obj('Space Grotesk'))
-          Text(.config(size: 26, weight: 500, color: ink, font: GoogleFonts.SpaceGrotesk) .obj('Numbers flow, structure steps.'))
+        .config(
+          w: fill
+          gap: 28
+          padding: all(32)
         )
         Column(
-          .config(w: fill, gap: 8, padding: all(20), cornerRadius: 12, color: panel)
-          Text(.config(size: 13, color: muted, font: GoogleFonts.JetBrainsMono) .obj('Instrument Serif'))
-          Text(.config(size: 30, color: accent, font: GoogleFonts.InstrumentSerif) .obj('One meaning per line.'))
+          .config(gap: 6)
+          Text(
+            .config(
+              size: 13
+              color: faint
+              font: GoogleFonts.JetBrainsMono
+            )
+            .obj('Fraunces · 600')
+          )
+          Text(
+            .config(
+              size: 56
+              color: ink
+              font: GoogleFonts.Fraunces
+              letterSpacing: -1.5
+              lineHeight: 1
+              weight: 600
+            )
+            .obj('Layout, authored.')
+          )
+        )
+        Row(
+          .config(
+            w: fill
+            gap: 24
+            yAlign: stretch
+          )
+          Column(
+            .config(
+              w: fill
+              color: sunken
+              cornerRadius: 12
+              gap: 8
+              padding: all(20)
+            )
+            Text(
+              .config(
+                size: 13
+                color: muted
+                font: GoogleFonts.JetBrainsMono
+              )
+              .obj('Space Grotesk')
+            )
+            Text(
+              .config(
+                size: 26
+                color: ink
+                font: GoogleFonts.SpaceGrotesk
+                weight: 500
+              )
+              .obj('Numbers flow, structure steps.')
+            )
+          )
+          Column(
+            .config(
+              w: fill
+              color: panel
+              cornerRadius: 12
+              gap: 8
+              padding: all(20)
+            )
+            Text(
+              .config(
+                size: 13
+                color: muted
+                font: GoogleFonts.JetBrainsMono
+              )
+              .obj('Instrument Serif')
+            )
+            Text(
+              .config(
+                size: 30
+                color: accent
+                font: GoogleFonts.InstrumentSerif
+              )
+              .obj('One meaning per line.')
+            )
+          )
         )
       )
-    ))
+    )
   )
 )

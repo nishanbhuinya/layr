@@ -6,16 +6,30 @@ Adapt shows the first of its candidates that fits the space it is given. Write t
 Adapt(
   .config(w: fill)
   Row(
-    .config(gap: 20, yAlign: mid)
+    .config(
+      gap: 20
+      yAlign: mid
+    )
     Text('Docs')
     Text('Reference')
     Text('Playground')
     Text('Library')
     Text('Changelog')
   )
-  Row(.config(gap: 16, yAlign: mid) Text('Docs'), Text('Playground'))
+  Row(
+    .config(
+      gap: 16
+      yAlign: mid
+    )
+    Text('Docs')
+    Text('Playground')
+  )
   Container(
-    .config(color: sunken, cornerRadius: 8, padding: sym(x: 12, y: 6))
+    .config(
+      color: sunken
+      cornerRadius: 8
+      padding: sym(x: 12, y: 6)
+    )
     .obj(Text('Menu'))
   )
 )

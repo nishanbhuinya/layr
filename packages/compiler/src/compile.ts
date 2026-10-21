@@ -1,5 +1,5 @@
 import { BASE_CSS, REGISTER_PROPERTIES, scaleCss } from "@layr-internal/model";
-import { type Graph, ModuleEmitter, newGraph, themeCss } from "./emit.ts";
+import { type Graph, type GraphEntry, ModuleEmitter, newGraph, themeCss } from "./emit.ts";
 import { analyzeProject, DEFAULT_CONFIG, type Project, type ProjectConfig } from "./project.ts";
 import type { Diagnostic } from "./source.ts";
 
@@ -64,51 +64,62 @@ export function globalCss(cfg: ProjectConfig = DEFAULT_CONFIG): string {
   return [REGISTER_PROPERTIES, scaleCss(cfg.designScale, { selector: ".l-root" }), scaleCss(cfg.designScale, { selector: ".l-fit-contain", fit: "contain" }), `@layer layr.base {\n${BASE_CSS}\n}`].join("\n");
 }
 
-/** Injection ordering checks: equal explicit orders conflict; unordered duplicates warn. */
+/**
+ * The exeOrder chain of each object: every Export, Extract, Inject and Duplicate on an object takes its
+ * own order (L3102), and at most one Inject on it has none (L3103). One op can touch several of an
+ * object's features at its one order; ops on different objects may share numbers.
+ */
 function checkGraph(project: Project, graph: Graph) {
-  const byTarget = new Map<string, typeof graph.entries>();
+  const byTarget = new Map<string, Map<string, GraphEntry>>();
   for (const e of graph.entries) {
-    if (e.kind !== "inject" && e.kind !== "force") continue;
-    const k = `${e.address}#${e.key}`;
-    const list = byTarget.get(k) ?? [];
-    list.push(e);
-    byTarget.set(k, list);
+    if (!e.op) continue;
+    const ops = byTarget.get(e.address) ?? new Map<string, GraphEntry>();
+    if (!ops.has(e.op)) ops.set(e.op, e);
+    byTarget.set(e.address, ops);
   }
-  for (const [target, list] of byTarget) {
-    const byOrder = new Map<string, typeof list>();
-    for (const e of list) {
-      const k = e.order === null ? "auto" : String(e.order);
-      const l = byOrder.get(k) ?? [];
-      l.push(e);
-      byOrder.set(k, l);
+  for (const [address, ops] of byTarget) {
+    const name = `\`${address.replace("::", ".").replace(/>/g, ".")}\``;
+    const used = new Set([...ops.values()].flatMap((e) => (e.order === null ? [] : [e.order])));
+    const byOrder = new Map<string, GraphEntry[]>();
+    for (const e of ops.values()) {
+      if (e.order !== null) byOrder.set(String(e.order), [...(byOrder.get(String(e.order)) ?? []), e]);
     }
+    // Unordered Injects have no number to share; two of them changing the same feature conflict.
+    const unordered = new Map<string, GraphEntry>();
+    for (const e of graph.entries) {
+      if (e.address !== address || e.order !== null || (e.kind !== "inject" && e.kind !== "force") || !e.op) continue;
+      unordered.set(`${e.key}|${e.op}`, e);
+    }
+    const byKey = new Map<string, GraphEntry[]>();
+    for (const e of unordered.values()) byKey.set(e.key, [...(byKey.get(e.key) ?? []), e]);
+    for (const list of byKey.values()) if (list.length > 1) byOrder.set(`auto:${list[0]?.key}`, list);
     for (const [order, same] of byOrder) {
-      if (same.length < 2) continue;
-      const [first, ...rest] = same;
+      const [first, ...rest] = same.sort((a, b) => a.file.localeCompare(b.file) || a.span.start - b.span.start);
       for (const e of rest) {
         const mod = project.modules.get(e.file);
         if (!mod || !first) continue;
-        const [raw, key] = target.split("#");
-        const addr = raw?.replace("::", ".");
-        if (order === "auto") {
-          mod.diagnostics.push({
-            code: "L3103",
-            severity: "warning",
-            message: `Two Injects without \`.exeOrder\` change \`${key}\` of \`${addr}\`; they apply in file/line order.`,
-            span: e.span,
-            file: e.file,
-            related: [{ message: "Other Inject here.", span: first.span, file: first.file }],
-          });
-        } else {
-          mod.diagnostics.push({
-            code: "L3102",
-            severity: "error",
-            message: `Two Injects change \`${key}\` of \`${addr}\` with the same \`.exeOrder(${order})\`.`,
-            span: e.span,
-            file: e.file,
-            related: [{ message: "Other Inject with the same order.", span: first.span, file: first.file }],
-          });
+        const auto = order.startsWith("auto:");
+        const related = [{ message: `${first.opKind ?? "Operation"} on the same object${auto ? " without an order" : ` at .exeOrder(${order})`}.`, span: first.span, file: first.file }];
+        if (auto) {
+          mod.diagnostics.push({ code: "L3103", severity: "error", message: `Two Injects without \`.exeOrder\` change \`${e.key}\` of ${name}; give one of them an order so the chain says which comes first.`, span: e.span, file: e.file, related });
+          continue;
         }
+        let free = Number(order) + 1;
+        while (used.has(free)) free++;
+        used.add(free);
+        const written = e.orderSpan ? mod.source.text.slice(e.orderSpan.start, e.orderSpan.end) : "";
+        const sign = free > 0 && written.trim().startsWith("+") ? "+" : "";
+        const a = (k?: string) => (k === "Duplicate" ? "a Duplicate" : `an ${k ?? "operation"}`);
+        const who = e.opKind === first.opKind ? `Two ${e.opKind ?? "operation"}s` : `This ${e.opKind ?? "operation"} and ${a(first.opKind)}`;
+        mod.diagnostics.push({
+          code: "L3102",
+          severity: "error",
+          message: `${who} on ${name} share \`.exeOrder(${written.trim() || order})\`. On one object every operation takes its own order; ${sign}${free} is free.`,
+          span: e.orderSpan ?? e.span,
+          file: e.file,
+          related,
+          ...(e.orderSpan ? { fixes: [{ title: `Use .exeOrder(${sign}${free})`, edits: [{ span: e.orderSpan, text: `${sign}${free}` }] }] } : {}),
+        });
       }
     }
   }

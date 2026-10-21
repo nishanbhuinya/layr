@@ -51,6 +51,11 @@ jobs:
         run: |
           mkdir -p out
           cd packages/layr && pnpm pack --pack-destination ../../out
+      - name: Package the VS Code extension
+        run: |
+          pnpm --filter ./vscode run package
+          ext="$(node -p "require('./vscode/package.json').version")"
+          if [ "$ext" != "${{ steps.v.outputs.version }}" ]; then echo "vscode/package.json is $ext but the release is ${{ steps.v.outputs.version }}"; exit 1; fi
       - name: Publish with provenance
         run: |
           if npm view "@dynshift/layr@${{ steps.v.outputs.version }}" version >/dev/null 2>&1; then echo "@dynshift/layr@${{ steps.v.outputs.version }} is already on npm"; exit 0; fi
@@ -64,4 +69,4 @@ jobs:
           [ -s notes.md ] || echo "See CHANGELOG.md." > notes.md
           flags=""
           if [ "${{ steps.v.outputs.dist }}" = "next" ]; then flags="--prerelease"; fi
-          gh release create "v$version" out/*.tgz --title "LAYR v$version" --notes-file notes.md $flags
+          gh release create "v$version" out/*.tgz "vscode/layr-$version.vsix" --title "LAYR v$version" --notes-file notes.md $flags

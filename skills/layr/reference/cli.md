@@ -18,6 +18,8 @@ order: 42
 | `layr format` | Canonical form (`--check` for CI) |
 | `layr analyze` | All diagnostics (`--json`, `--info`, `--explain Page.id.feature`) |
 | `layr explain <code>` | Explain a diagnostic, e.g. `layr explain L3102` |
+| `layr chain [object]` | What Export, Inject, Extract and Duplicate (EIED) change and read; one object's chain in exeOrder (`--all`, `--json`). Alias `layr eied` |
+| `layr upgrade` | List deprecated forms, then rewrite them once you agree (`--check` for CI, `--yes` to agree in advance) |
 | `layr test` | Screenshot every route at every design frame and compare (`--update`, `--frames m,w`) |
 | `layr add <addon>` | Install addons |
 | `layr remove <addon>` | Uninstall addons |
@@ -33,6 +35,22 @@ order: 42
 | `layr doctor` | Check the environment and project |
 | `layr lsp` | Language server (stdio), used by editors |
 | `layr mcp` | MCP server (stdio), used by AI agents |
+
+## Upgrading your code
+
+When LAYR renames something, the old form keeps compiling until the next major version, and the compiler marks each use (L1017). `layr upgrade` lists them with the new form and asks before it changes anything:
+
+```text
+$ layr upgrade
+A Widget renders `.wgt(...)` (since 3.2.0; the old form goes in 4.0.0)
+  Widget(.name(Card) .obj(Container()))
+  Widget(.name(Card) .wgt(Container()))
+  src/widgets/card.layr:3
+
+Apply 1 change(s) in 1 file(s)? [y/N]
+```
+
+It rewrites and formats only the files it lists. `layr dev` mentions deprecated forms when it starts, and the VS Code extension offers **Update all**. `layr format` never applies them on its own.
 
 ## layr.yaml
 

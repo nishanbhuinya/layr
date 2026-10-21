@@ -7,18 +7,33 @@ Container(
   .config(
     w: 280
     h: 140
-    .border(color: line, width: 1)
     color: panel
     cornerRadius: 14
     padding: all(14)
+    .border(
+      color: line
+      width: 1
+    )
   )
   .obj(
     Align(
       .config(to: bottomRight)
       .obj(
         Container(
-          .config(color: accent, cornerRadius: 8, padding: sym(x: 12, y: 6))
-          .obj(Text(.config(size: 13, color: onAccent) .obj('Continue')))
+          .config(
+            color: accent
+            cornerRadius: 8
+            padding: sym(x: 12, y: 6)
+          )
+          .obj(
+            Text(
+              .config(
+                size: 13
+                color: onAccent
+              )
+              .obj('Continue')
+            )
+          )
         )
       )
     )

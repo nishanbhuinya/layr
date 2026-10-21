@@ -11,7 +11,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 14, padding: all(24))
+        .config(
+          gap: 14
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: wide ? 'Narrow' : 'Widen')
@@ -50,7 +53,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 14, padding: all(24))
+        .config(
+          gap: 14
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: shown ? 'Dismiss' : 'Show toast')
@@ -65,10 +71,13 @@ Page(
               .obj(
                 Container(
                   .config(
-                    .border(color: line, width: 1)
                     color: panel
                     cornerRadius: 12
                     padding: sym(x: 16, y: 12)
+                    .border(
+                      color: line
+                      width: 1
+                    )
                   )
                   .obj(Text('Booking saved'))
                 )

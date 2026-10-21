@@ -16,6 +16,8 @@ const useIsoLayoutEffect = typeof window === "undefined" ? useEffect : useLayout
 export interface NodeProps {
   /** Widget name. */
   w: string;
+  /** A Duplicate's copy: the original's address, the Duplicate's order and its config for this object. */
+  mi?: { a: string; o: number | null; v?: Record<string, unknown> };
   /** Static classes (compiled CSS). */
   c?: string;
   /** Full config when anything is dynamic. */
@@ -80,6 +82,11 @@ function observeResize(targets: Element[], cb: () => void): () => void {
 
 const presets = new Map<string, Map<string, Record<string, unknown>>>();
 
+/** Forgets registered presets and icons (a runner starting a new program). */
+export function resetRegistered(): void {
+  presets.clear();
+  iconSets.clear();
+}
 
 /** Registers a preset: `Preset(.name(primary) .for(Button) .config(...))`. */
 export function preset(widgetName: string, name: string, cfg: Record<string, unknown>) {
@@ -142,6 +149,7 @@ export function N(props: NodeProps): ReactNode {
     if (o && Object.keys(o).length) cfg = { ...(s ?? {}), ...(cfg ?? {}), ...o };
     const slotNames = SLOTS[def?.name ?? w] ?? [];
     const slotValue = (k: string) => (k === slotNames[0] ? props.children : props[k]);
+    if (a && props.mi) registry.mirror(a, props.mi.a, props.mi.o, props.mi.v);
     const allOverridden = a ? [...registry.overriddenKeys(a), ...(instanceAddr ? registry.overriddenKeys(instanceAddr) : [])] : [];
     const overridden = allOverridden.filter((k) => !slotNames.includes(k));
     // Slots changed through E/E/I (`title.obj = 'Shipped'`): what renders in place of the written objects.
@@ -243,7 +251,7 @@ export function N(props: NodeProps): ReactNode {
       measure();
       return observeResize(ad && node.parentElement ? [node, node.parentElement] : [node], measure);
     }, [a, ad]);
-    motionRef.current = { ...(m ?? {}), duration: (beh.duration as number | undefined) ?? m?.duration, ease: (beh.ease as MotionSpec["ease"]) ?? m?.ease, always: beh.motion === "always" };
+    motionRef.current = { ...(m ?? {}), duration: (beh.duration as number | undefined) ?? m?.duration, ease: (beh.ease as MotionSpec["ease"]) ?? m?.ease, delay: (beh.delay as number | undefined) ?? m?.delay, resize: (beh.resize as MotionSpec["resize"]) ?? m?.resize, always: beh.motion === "always" };
     useIsoLayoutEffect(() => {
       if (w === "Animate" && el.current) {
         const wrapper = el.current;
@@ -302,7 +310,9 @@ export function N(props: NodeProps): ReactNode {
       case "Link": {
         const raw = beh.href as string | undefined;
         // A root-relative href is an in-app path: it gets the base and navigates without a reload.
-        const internal = !beh.external && typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//");
+        // A download is a file the browser saves, never a page of the app.
+        if (beh.download) attrs.download = typeof beh.download === "string" ? beh.download : "";
+        const internal = !beh.external && !beh.download && typeof raw === "string" && raw.startsWith("/") && !raw.startsWith("//");
         const to = (beh.to as string | undefined) ?? (internal ? raw : undefined);
         const href = to ? router.hrefFor(to) : (raw ?? "#");
         attrs.href = href;
@@ -388,7 +398,7 @@ export function N(props: NodeProps): ReactNode {
         if (beh.scroll === "none" || beh.fit === "contain") className += " l-fit-contain";
         children = [
           bar ? createElement("header", { key: "bar", className: "l l-col l-bar", style: { position: "sticky", top: 0, zIndex: 10 } }, bar) : null,
-          createElement("main", { key: "body", className: "l l-col", style: { flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "stretch" } }, children),
+          createElement("main", { key: "body", className: "l l-col", style: { flex: "1 1 auto", display: "flex", flexDirection: "column", alignItems: "var(--l-body-x, flex-start)", justifyContent: "var(--l-body-y, flex-start)" } }, children),
           footer ? createElement("footer", { key: "footer", className: "l l-col" }, footer) : null,
         ];
         break;

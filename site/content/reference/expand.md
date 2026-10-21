@@ -4,18 +4,52 @@ Expand makes its object fill the rest of the parent's direction: the width of a 
 
 ```layr
 Column(
-  .config(w: 300, color: panel, cornerRadius: 12, gap: 8, padding: all(16))
-  Row(
-    .config(w: fill, gap: 8, yAlign: mid)
-    Text('Studio, 2 hours')
-    Expand(Container(.config(h: 1, color: line)))
-    Text(.config(weight: semibold) .obj('€48'))
+  .config(
+    w: 300
+    color: panel
+    cornerRadius: 12
+    gap: 8
+    padding: all(16)
   )
   Row(
-    .config(w: fill, gap: 8, yAlign: mid)
+    .config(
+      w: fill
+      gap: 8
+      yAlign: mid
+    )
+    Text('Studio, 2 hours')
+    Expand(
+      Container(
+        .config(
+          h: 1
+          color: line
+        )
+      )
+    )
+    Text(
+      .config(weight: semibold)
+      .obj('€48')
+    )
+  )
+  Row(
+    .config(
+      w: fill
+      gap: 8
+      yAlign: mid
+    )
     Text('Mixing session')
-    Expand(Container(.config(h: 1, color: line)))
-    Text(.config(weight: semibold) .obj('€30'))
+    Expand(
+      Container(
+        .config(
+          h: 1
+          color: line
+        )
+      )
+    )
+    Text(
+      .config(weight: semibold)
+      .obj('€30')
+    )
   )
 )
 ```

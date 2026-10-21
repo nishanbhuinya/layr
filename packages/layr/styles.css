@@ -22,13 +22,14 @@
 .l-wrap{display:flex;flex-direction:row;flex-wrap:wrap;align-items:flex-start}
 .l-stack{display:grid;grid-template:minmax(0,1fr)/minmax(0,1fr);align-items:start;justify-items:start;position:relative}
 .l-pass{display:contents}
+:where(:is(.l-box,.l-stack,.l-scroll,.l-grid):has(.l-pin)){position:relative}
 .l-fade{mask-image:linear-gradient(to bottom,transparent,#000 var(--l-fa),#000 calc(100% - var(--l-fb)),transparent);animation:l-fade linear both;animation-timeline:scroll(self block)}
 .l-fade-x{mask-image:linear-gradient(to right,transparent,#000 var(--l-fa),#000 calc(100% - var(--l-fb)),transparent);animation:l-fade linear both;animation-timeline:scroll(self inline)}
 @keyframes l-fade{0%{--l-fa:0px;--l-fb:var(--l-fade)}8%{--l-fa:var(--l-fade)}92%{--l-fb:var(--l-fade)}100%{--l-fa:var(--l-fade);--l-fb:0px}}
 :is(.l-stack,:where(.l-stack>.l-pass,.l-stack>.l-pass>.l-pass))>*{grid-area:1/1}
 .l-grid{display:grid}
 .l-scroll{overflow:auto}
-.l-text{display:block;overflow-wrap:break-word}
+.l-text{display:block;overflow-wrap:break-word;white-space:pre-line}
 .l-inline{display:inline}
 .l-leaf{display:block;flex-shrink:0}
 :is(.l-row,:where(.l-row>.l-pass,.l-row>.l-pass>.l-pass))>.l-wfill,:is(.l-wrap,:where(.l-wrap>.l-pass,.l-wrap>.l-pass>.l-pass))>.l-wfill{flex:var(--l-flex,1) 1 0;min-width:0}

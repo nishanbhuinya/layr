@@ -2,7 +2,7 @@
   "name": "layr",
   "displayName": "LAYR",
   "description": "LAYR language support: diagnostics, completion, hover docs, formatting and Export/Extract/Inject navigation.",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "publisher": "dynshift",
   "license": "MIT",
   "private": true,
@@ -69,6 +69,10 @@
       {
         "command": "layr.explain",
         "title": "LAYR: Explain a diagnostic code"
+      },
+      {
+        "command": "layr.upgradeAll",
+        "title": "LAYR: Update deprecated forms in the project"
       }
     ]
   },
@@ -79,6 +83,7 @@
   "devDependencies": {
     "@layr-internal/lsp": "workspace:*",
     "@types/vscode": "^1.95.0",
+    "@vscode/vsce": "^3.9.2",
     "esbuild": "^0.28.2",
     "vscode-languageclient": "^10.1.1",
     "vscode-oniguruma": "^2.0.1",

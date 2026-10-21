@@ -7,4 +7,7 @@ packages:
   - "examples/*"
 
 allowBuilds:
+  # vsce packages the VS Code extension; signing and the Marketplace keychain are not used.
+  '@vscode/vsce-sign': false
   esbuild: true
+  keytar: false

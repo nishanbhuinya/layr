@@ -12,6 +12,7 @@ import { RUNTIME_TABLE } from "@layr-internal/model";
 import type { Action } from "@layr-internal/runtime";
 import { createElement, type ReactNode } from "react";
 import { N } from "./node.tsx";
+import { richText } from "./rich.tsx";
 
 export type LayrProps = Record<string, unknown> & { children?: ReactNode; id?: string };
 
@@ -33,6 +34,11 @@ function toNode(name: string, props: LayrProps): ReactNode {
   if (name === "Gap" && typeof children === "number") {
     d.size = children;
     children = undefined;
+  }
+  // <RichText>{'(red)[Hi] *there*'}</RichText>: string children are markup.
+  if (name === "RichText" && (typeof children === "string" || Array.isArray(children))) {
+    const parts = (Array.isArray(children) ? children : [children]) as unknown[];
+    if (parts.every((p) => typeof p === "string" || typeof p === "number")) children = richText(parts.map(String));
   }
   return createElement(N, { w: name, d, on: Object.keys(on).length ? on : undefined, a: props.id ? `tsx::${props.id}` : undefined, children });
 }
@@ -62,6 +68,7 @@ export const Adapt = component("Adapt");
 export const Scaffold = component("Scaffold");
 export const Text = component("Text");
 export const Span = component("Span");
+export const RichText = component("RichText");
 export const Image = component("Image");
 export const Svg = component("Svg");
 export const Icon = component("Icon");

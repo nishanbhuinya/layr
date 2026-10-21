@@ -35,7 +35,6 @@ export function widgetsMarkdown(): string {
   }
   out.push("## Constructs", "");
   for (const c of CONSTRUCTS) out.push(`### ${c.name}`, "", c.doc, "", `Modifiers: ${c.modifiers.map((m) => `\`.${m}\``).join(", ")}.`, "", "```layr", c.example, "```", "");
-  out.push("### If", "", "Shows `.obj(...)` when `.cnd(test)` is true, otherwise `.fb(...)`.", "", "### Each", "", "Repeats `.obj(...)` for every item of `.of(list)`; `.as(item, index)` names them; `.key(expr)` sets a stable key.", "");
   return out.join("\n");
 }
 

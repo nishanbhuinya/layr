@@ -11,18 +11,43 @@ Page(
     .config(color: canvas)
     .body(
       Row(
-        .config(gap: 12, padding: all(24), yAlign: mid)
+        .config(
+          gap: 12
+          padding: all(24)
+          yAlign: mid
+        )
         Button(
-          .config(color: accent, cornerRadius: 10, padding: sym(x: 18, y: 10))
+          .config(
+            color: accent
+            cornerRadius: 10
+            padding: sym(x: 18, y: 10)
+          )
           .fnc { count++ }
-          .obj(Text(.config(color: onAccent, weight: semibold) .obj('Add one')))
+          .obj(
+            Text(
+              .config(
+                color: onAccent
+                weight: semibold
+              )
+              .obj('Add one')
+            )
+          )
         )
         Button(
           .preset(default)
-          .config(disabled: count == 0, label: 'Reset')
+          .config(
+            disabled: count == 0
+            label: 'Reset'
+          )
           .fnc { count = 0 }
         )
-        Text(.config(size: 18, weight: semibold) .obj('$count'))
+        Text(
+          .config(
+            size: 18
+            weight: semibold
+          )
+          .obj('$count')
+        )
       )
     )
   )

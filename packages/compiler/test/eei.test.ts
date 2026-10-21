@@ -168,3 +168,26 @@ describe("rendered features", () => {
     expect(r.modules.get("src/pages/index.layr")?.js).toContain(`$.read("S::box", "size")?.w`);
   });
 });
+
+describe("the exeOrder chain of an object", () => {
+  const two = (a: string, b: string) => codes(`${a}\n${b}`);
+  it("refuses two operations on one object at one order, whatever features or kinds", () => {
+    expect(two("Inject(.into(Store.card) .exeOrder(10) card.padding = all(2))", "Inject(.into(Store.card) .exeOrder(10) card.color = #ff0000)")).toContain("L3102");
+    expect(two("Inject(.into(Store.card) .exeOrder(+10) card.padding = all(2))", "Extract(.from(Store.card) .eO(+10) insets p = card.padding)")).toContain("L3102");
+  });
+  it("lets one Inject touch several features at its order, and different objects share numbers", () => {
+    expect(codes("Inject(.into(Store.card) .exeOrder(5) card.padding = all(2)  card.color = #ff0000)")).not.toContain("L3102");
+    const other = `Page(.name(Two) .route('/two') Scaffold(.body(Container(.id(box) .obj(Text('y'))))))`;
+    expect(compileProject([{ path: "src/pages/index.layr", text: `${page}\n${other}\nInject(.into(Store.card) .exeOrder(5) card.color = #ff0000)\nInject(.into(Two.box) .exeOrder(5) box.color = #00ff00)` }]).diagnostics.map((d) => d.code)).not.toContain("L3102");
+  });
+  it("suggests the nearest free order and keeps the + sign", () => {
+    const r = compileProject([{ path: "src/pages/index.layr", text: `${page}\nInject(.into(Store.card) .exeOrder(+1) card.color = #ff0000)\nInject(.into(Store.card) .exeOrder(+2) card.padding = all(1))\nInject(.into(Store.card) .exeOrder(+1) card.opacity = 0.5)` }]);
+    const d = r.diagnostics.find((x) => x.code === "L3102");
+    expect(d?.message).toContain("3 is free");
+    expect(d?.fixes?.[0]?.edits[0]?.text).toBe("+3");
+  });
+  it("refuses two unordered Injects of one feature, not of different features", () => {
+    expect(two("Inject(.into(Store.card) card.color = #ff0000)", "Inject(.into(Store.card) card.color = #00ff00)")).toContain("L3103");
+    expect(two("Inject(.into(Store.card) card.color = #ff0000)", "Inject(.into(Store.card) card.padding = all(1))")).not.toContain("L3103");
+  });
+});

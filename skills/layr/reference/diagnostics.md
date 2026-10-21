@@ -130,6 +130,38 @@ A Widget needs `.name(...)` and one `.obj(...)` root.
 
 The declaration is never read.
 
+## L1018: Not a RichText style (warning)
+
+In RichText, `(…)[text]` styles the text in brackets, and the parentheses hold styles: a colour (`blue`, `#000`, a theme colour, `green.50` for 50% opacity), a size (`24`), `weight.700` or `bold`, `italic`, `underline`, `strike`, `code`, `hL.colour` (a highlight) or `link: /path`. Something else there is shown as written. To show parentheses before brackets on purpose, write `/(`.
+
+Wrong:
+
+```layr
+RichText('(blu)[Blue]')
+```
+
+Right:
+
+```layr
+RichText('(blue)[Blue]')
+```
+
+## L1017: Deprecated form (warning)
+
+This form still compiles but has a newer spelling, and a later major version removes it. The message names the new form. `layr upgrade` lists every deprecated form in the project and rewrites them once you agree; in VS Code the quick fix or **Update all** does the same.
+
+Wrong:
+
+```layr
+Widget(.name(Card) .obj(Container()))
+```
+
+Right:
+
+```layr
+Widget(.name(Card) .wgt(Container()))
+```
+
 ## L2001: fill on an unbounded axis (error)
 
 `fill` shares remaining space, but a scrolling axis has no end, so there is nothing to share. Give the object a length or `hug`, or bound the scroll area.
@@ -149,6 +181,22 @@ Scroll(Column(Container(.config(h: 400))))
 ## L2003: Invisible box (warning)
 
 A `hug` Container with no child is 0×0, so its paint is never visible. Give it a size.
+
+## L2004: Arithmetic on a layout size (error)
+
+`w` and `h` written as `hug` or `fill`, or not written at all, are sizes the layout works out; they are not numbers, so `box.w + 10` has nothing to add to. Give the size a length, change what the box hugs (its `padding`, its content), or read the measured size `box.size.w`. Do not feed a measured size back into the same size: it would grow on every measure.
+
+Wrong:
+
+```layr
+Inject(.into(Home.button) button.h = button.h + 10)
+```
+
+Right:
+
+```layr
+Inject(.into(Home.button) button.padding = all(10))
+```
 
 ## L2101: Overflow cannot adapt (warning)
 
@@ -176,13 +224,27 @@ Container(.id(card) .config(color: red))
 Inject(.into(Page.card) card.color = blue)
 ```
 
-## L3102: Conflicting injection order (error)
+## L3102: Two operations share an order on one object (error)
 
-Two Injects target the same feature with the same `.exeOrder`. Give them different orders so the result is unambiguous.
+Every Export, Extract, Inject and Duplicate on an object takes its own place in that object's chain: `.exeOrder` runs from the most negative to the most positive, and two operations on the same object cannot share a number (whichever features they touch), because then nothing says which comes first. Operations on different objects may share numbers. The fix suggests the nearest free order; `layr chain <object>` lists the chain.
 
-## L3103: Unordered injections (warning)
+Wrong:
 
-Two Injects without `.exeOrder` target the same feature. They apply in file/line order; add orders to make intent explicit.
+```layr
+Inject(.into(Home.card) .exeOrder(10) card.w = 200)
+Extract(.from(Home.card) .exeOrder(10) len w = card.w)
+```
+
+Right:
+
+```layr
+Inject(.into(Home.card) .exeOrder(10) card.w = 200)
+Extract(.from(Home.card) .exeOrder(11) len w = card.w)
+```
+
+## L3103: Two unordered Injects on one feature (error)
+
+Two Injects without `.exeOrder` change the same feature of an object, so nothing says which comes first. Give at least one of them an order. (Unordered Injects of different features are fine; they apply after the ordered ones. An unordered Extract reads the final value.)
 
 ## L3104: Rendered features are read-only (error)
 
@@ -233,6 +295,10 @@ Several same-type siblings match this path segment. Pick one with a zero-based i
 ## L3304: Index out of range (error)
 
 The `(n)` index in a lookup path is larger than the number of matching siblings.
+
+## L3305: A Duplicate inside what it copies (error)
+
+A Duplicate shows a copy of its `.from` object in its own place. Inside that object, the copy would contain the Duplicate, which would contain a copy, and so on. Put the Duplicate outside the object it copies.
 
 ## L4001: Invalid DesignScale (error)
 

@@ -48,7 +48,9 @@ export function Playground() {
   const [pane, setPane] = useState<"code" | "preview">("code");
   // `code` is what runs (set by Run, Ctrl+S or picking an example); `pending` is the editor's text,
   // compiled as you type for its diagnostics only.
-  const run = useRunner(code, true);
+  // A shared link runs its own code first: the example must not run (and race it) while it unpacks.
+  const [unpacking, setUnpacking] = useState(() => typeof location !== "undefined" && /code=[\w-]+/.test(location.hash));
+  const run = useRunner(code, !unpacking);
   const [linted, setLinted] = useState<Compiled | null>(null);
   const compiled: Compiled | null = linted ?? run.compiled;
   const lintRef = useRef<Compiled | null>(null);
@@ -66,7 +68,8 @@ export function Playground() {
         setPending(c);
         view.current?.dispatch({ changes: { from: 0, to: view.current.state.doc.length, insert: c } });
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setUnpacking(false));
   }, []);
 
   // The editor (CodeMirror loads with it, not with the page).

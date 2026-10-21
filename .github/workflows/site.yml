@@ -5,7 +5,7 @@ name: Site
 on:
   push:
     branches: [main]
-    paths: [site/**, docs/content/**, packages/**, addons/**, skills/**, vscode/syntaxes/**]
+    paths: [site/**, docs/content/**, packages/**, addons/**, skills/**, vscode/**, CHANGELOG.md]
   schedule:
     - cron: "17 5 * * *"
   repository_dispatch:
@@ -34,6 +34,9 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # The site serves the VS Code extension built from this commit (/download/layr-vscode.vsix).
+      - name: Package the VS Code extension
+        run: pnpm --filter ./vscode run package
       - name: Build and prerender
         run: pnpm site:build
         env:

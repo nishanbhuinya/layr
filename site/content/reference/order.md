@@ -4,17 +4,39 @@ Order sets which layer its object paints on in a Stack, a Mask or a Subtract. `.
 
 ```layr
 Stack(
-  .config(w: 220, h: 150)
+  .config(
+    w: 220
+    h: 150
+  )
   Order(
     .posOrder(0)
-    .obj(Container(.config(size: 100, color: violet, cornerRadius: 16)))
+    .obj(
+      Container(
+        .config(
+          size: 100
+          color: violet
+          cornerRadius: 16
+        )
+      )
+    )
   )
   Order(
     .posOrder(1)
     .obj(
       Position(
-        .config(left: 40, top: 25)
-        .obj(Container(.config(size: 100, color: teal, cornerRadius: 16)))
+        .config(
+          left: 40
+          top: 25
+        )
+        .obj(
+          Container(
+            .config(
+              size: 100
+              color: teal
+              cornerRadius: 16
+            )
+          )
+        )
       )
     )
   )
@@ -22,8 +44,19 @@ Stack(
     .posOrder(2)
     .obj(
       Position(
-        .config(left: 80, top: 50)
-        .obj(Container(.config(size: 100, color: gold, cornerRadius: 16)))
+        .config(
+          left: 80
+          top: 50
+        )
+        .obj(
+          Container(
+            .config(
+              size: 100
+              color: gold
+              cornerRadius: 16
+            )
+          )
+        )
       )
     )
   )
@@ -40,13 +73,31 @@ In a Subtract, the lowest order is the base and the others are cut out of it, wh
 
 ```layr
 Subtract(
-  Order(.posOrder(1) .obj(Container(.config(size: 120, color: ember))))
+  Order(
+    .posOrder(1)
+    .obj(
+      Container(
+        .config(
+          size: 120
+          color: ember
+        )
+      )
+    )
+  )
   Order(
     .posOrder(0)
     .obj(
       Position(
         .config(bottom: -40)
-        .obj(Container(.config(size: 80, color: teal, cornerRadius: 40)))
+        .obj(
+          Container(
+            .config(
+              size: 80
+              color: teal
+              cornerRadius: 40
+            )
+          )
+        )
       )
     )
   )

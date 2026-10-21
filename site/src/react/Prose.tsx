@@ -48,7 +48,7 @@ export function Html({ html, className }: { html: string; className?: string }) 
       return;
     }
     const a = target.closest("a");
-    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target) return;
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || a.target || a.hasAttribute("download")) return;
     if (followLink(a.getAttribute("href") ?? "")) e.preventDefault();
   }, []);
   const ref = useRef<HTMLDivElement>(null);

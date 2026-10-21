@@ -96,10 +96,9 @@ function run(js: string, css: string) {
   style = document.createElement("style");
   style.textContent = css;
   document.head.appendChild(style);
-  const { router, registry } = layrRuntime;
-  // Each run starts from a clean page table and cascade.
-  router.reset();
-  registry.reset();
+  const { router } = layrRuntime;
+  // Each run starts a new program: no page state, routes, cascade or presets from the last one.
+  layrReact.resetSession();
   loaded.clear();
   const app: { $app?: Record<string, unknown> } = {};
   const body = `${link(js)}\n;return typeof $app !== "undefined" ? { $app } : {};`;

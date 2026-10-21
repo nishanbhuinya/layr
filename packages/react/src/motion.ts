@@ -12,6 +12,10 @@ export interface MotionSpec {
   exit?: Array<{ kind: string; [k: string]: unknown }>;
   duration?: number;
   ease?: Spring | Ease;
+  /** Milliseconds before each transition starts. */
+  delay?: number;
+  /** `animate`: size changes from outside (a window resize, a parent's layout) animate too. */
+  resize?: "follow" | "animate";
   /** Animate even when the reader prefers reduced motion. */
   always?: boolean;
 }
@@ -69,10 +73,16 @@ export function springEasing(s: Spring): { easing: string; duration: number } {
   return r;
 }
 
-function timing(e: Spring | Ease | undefined, fallbackDuration: number): { easing: string; duration: number } {
-  if (!e) return springEasing({ $: "spring", stiffness: 120, damping: 20, mass: 1 });
-  if (e.$ === "spring") return springEasing(e);
-  return { easing: e.css, duration: e.duration ?? fallbackDuration };
+/**
+ * Easing and duration for one transition. A spring settles in its own time unless `duration` is
+ * given, which plays the same curve over that time; an ease takes its own, then `duration`, then 300ms.
+ */
+function timing(e: Spring | Ease | undefined, duration: number | undefined, fallback = 300): { easing: string; duration: number } {
+  if (!e || e.$ === "spring") {
+    const s = springEasing(e ?? { $: "spring", stiffness: 120, damping: 20, mass: 1 });
+    return duration === undefined ? s : { easing: s.easing, duration };
+  }
+  return { easing: e.css, duration: e.duration ?? duration ?? fallback };
 }
 
 function reducedMotion(): boolean {
@@ -97,8 +107,45 @@ export function applyMotion(wrapper: HTMLElement, getSpec: () => MotionSpec): ()
   let prev = snapshot(el);
   const running = new Map<string, Animation>();
   const propTiming = (cssProp: string) => {
-    for (const [key, props] of Object.entries(KEY_TO_CSS)) if (props.includes(cssProp) && spec.eases?.[key]) return timing(spec.eases[key], spec.duration ?? 300);
-    return timing(spec.ease, spec.duration ?? 300);
+    for (const [key, props] of Object.entries(KEY_TO_CSS)) if (props.includes(cssProp) && spec.eases?.[key]) return timing(spec.eases[key], spec.duration);
+    return timing(spec.ease, spec.duration);
+  };
+
+  // While the box's size animates, the text inside keeps the width it has at the end, so lines do
+  // not re-wrap at every in-between width (a label that grows would break into lines, then rejoin).
+  // The box clips meanwhile, so text at its final width is revealed as the box grows.
+  let frozen: Array<{ t: HTMLElement; width: string; shrink: string }> = [];
+  let clipped: { box: HTMLElement; overflow: string } | null = null;
+  const thaw = () => {
+    if (!frozen.length && !clipped) return;
+    for (const f of frozen) {
+      f.t.style.width = f.width;
+      f.t.style.flexShrink = f.shrink;
+    }
+    frozen = [];
+    if (clipped) clipped.box.style.overflow = clipped.overflow;
+    clipped = null;
+    mo.takeRecords(); // our own style writes are not changes to animate
+  };
+  const freezeText = (box: HTMLElement) => {
+    for (const t of box.querySelectorAll<HTMLElement>("[data-l=Text],[data-l=Span]")) {
+      if (t.parentElement?.closest("[data-l=Text],[data-l=Span]")) continue; // a span inside a text moves with it
+      frozen.push({ t, width: t.style.width, shrink: t.style.flexShrink });
+    }
+    // Measure every width before changing any (one layout).
+    const widths = frozen.map((f) => f.t.getBoundingClientRect().width);
+    frozen.forEach((f, i) => {
+      f.t.style.width = `${widths[i]}px`;
+      f.t.style.flexShrink = "0";
+    });
+    if (frozen.length && getComputedStyle(box).overflow === "visible") {
+      clipped = { box, overflow: box.style.overflow };
+      box.style.overflow = "clip";
+    }
+    mo.takeRecords();
+  };
+  const settle = () => {
+    if (!running.has("width") && !running.has("height")) thaw();
   };
 
   // Enter
@@ -109,8 +156,8 @@ export function applyMotion(wrapper: HTMLElement, getSpec: () => MotionSpec): ()
       if (m.kind === "scale") from.scale = String(m.from ?? 0.95);
       if (m.kind === "slide") from.translate = `calc(${Number(m.x ?? 0)} * var(--ds) / 1000) calc(${Number(m.y ?? 16)} * var(--ds) / 1000)`;
     }
-    const tm = timing(spec.ease, spec.duration ?? 300);
-    el.animate([from, {}], { duration: tm.duration, easing: tm.easing });
+    const tm = timing(spec.ease, spec.duration);
+    el.animate([from, {}], { duration: tm.duration, easing: tm.easing, delay: spec.delay ?? 0, fill: "backwards" });
   }
 
   let scheduled = false;
@@ -120,6 +167,8 @@ export function applyMotion(wrapper: HTMLElement, getSpec: () => MotionSpec): ()
     if (!cur) return;
     if (cur !== el) {
       el = cur;
+      ro.disconnect();
+      ro.observe(cur);
       prev = snapshot(cur);
       return;
     }
@@ -128,20 +177,27 @@ export function applyMotion(wrapper: HTMLElement, getSpec: () => MotionSpec): ()
     const wasRunning = new Set(running.keys());
     for (const a of running.values()) a.cancel();
     running.clear();
+    thaw();
     const next = snapshot(cur);
     if (reducedMotion() && !spec.always) {
       prev = next;
       return;
     }
+    const sized = ["width", "height"].some((p) => (next[p] !== prev[p] || wasRunning.has(p)) && (wasRunning.has(p) ? live[p] : prev[p]) !== next[p]);
+    if (sized) freezeText(cur);
     for (const p of TRACKED) {
       if (next[p] === prev[p] && !wasRunning.has(p)) continue;
       const fromValue = wasRunning.has(p) ? live[p] : prev[p];
       if (!fromValue || fromValue === next[p]) continue;
       const tm = propTiming(p);
-      const anim = cur.animate([{ [camel(p)]: fromValue }, { [camel(p)]: next[p] }], { duration: tm.duration, easing: tm.easing });
+      const anim = cur.animate([{ [camel(p)]: fromValue }, { [camel(p)]: next[p] }], { duration: tm.duration, easing: tm.easing, delay: spec.delay ?? 0, fill: "backwards" });
       running.set(p, anim);
-      anim.onfinish = () => running.delete(p);
+      anim.onfinish = () => {
+        running.delete(p);
+        settle();
+      };
     }
+    settle();
     prev = next;
   };
   const schedule = () => {
@@ -151,9 +207,22 @@ export function applyMotion(wrapper: HTMLElement, getSpec: () => MotionSpec): ()
   };
   const mo = new MutationObserver(schedule);
   mo.observe(wrapper, { attributes: true, subtree: true, attributeFilter: ["style", "class"], childList: true, characterData: true });
+  // A size change from outside (window, parent layout) while nothing animates: `follow` takes it as
+  // the new starting point, `animate` animates to it.
+  const ro = new ResizeObserver(() => {
+    const cur = target();
+    if (!cur || running.size || scheduled) return;
+    const now = snapshot(cur);
+    if (now.width === prev.width && now.height === prev.height) return;
+    if (spec.resize === "animate") check();
+    else prev = now;
+  });
+  ro.observe(el);
   return () => {
     mo.disconnect();
+    ro.disconnect();
     for (const a of running.values()) a.cancel();
+    thaw();
   };
 }
 
@@ -170,6 +239,6 @@ export function exitAnimation(el: HTMLElement | null, spec: MotionSpec): Animati
     if (m.kind === "scale") to.scale = String(m.from ?? 0.95);
     if (m.kind === "slide") to.translate = `calc(${Number(m.x ?? 0)} * var(--ds) / 1000) calc(${Number(m.y ?? 16)} * var(--ds) / 1000)`;
   }
-  const tm = timing(spec.ease, spec.duration ?? 200);
+  const tm = timing(spec.ease, spec.duration, 200);
   return el.animate([{}, to], { duration: tm.duration, easing: tm.easing, fill: "forwards" });
 }

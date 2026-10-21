@@ -28,6 +28,13 @@ let seeded = false;
 /** The last data each page rendered with: shown while the next route's data loads (no blank flash). */
 const lastByPage = new Map<string, unknown>();
 
+/** Forgets loaded page data (a runner starting a new program). */
+export function resetLoaded(): void {
+  loaded.clear();
+  lastByPage.clear();
+  seeded = false;
+}
+
 function Outlet({ notFound, initialData }: { notFound?: ComponentType; initialData?: unknown }): ReactNode {
   const t = useTrack();
   try {

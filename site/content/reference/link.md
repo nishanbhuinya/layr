@@ -10,8 +10,16 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 14, padding: all(24))
-        Link(.config(label: 'Read about the studio', to: About))
+        .config(
+          gap: 14
+          padding: all(24)
+        )
+        Link(
+          .config(
+            label: 'Read about the studio'
+            to: About
+          )
+        )
         Link(
           .config(
             external: true
@@ -20,22 +28,34 @@ Page(
           )
         )
         Link(
-          .config(to: About, underline: false)
+          .config(
+            to: About
+            underline: false
+          )
           .obj(
             Container(
               .config(
                 w: 280
-                .border(color: line, width: 1)
                 color: panel
                 cornerRadius: 12
                 padding: all(16)
+                .border(
+                  color: line
+                  width: 1
+                )
               )
               .obj(
                 Column(
                   .config(gap: 4)
-                  Text(.config(weight: semibold) .obj('Room B'))
                   Text(
-                    .config(size: 13, color: muted)
+                    .config(weight: semibold)
+                    .obj('Room B')
+                  )
+                  Text(
+                    .config(
+                      size: 13
+                      color: muted
+                    )
                     .obj('The whole card is the link.')
                   )
                 )
@@ -55,9 +75,17 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 12, padding: all(24))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
         Text('About the studio')
-        Link(.config(label: '← Back', to: Home))
+        Link(
+          .config(
+            label: '← Back'
+            to: Home
+          )
+        )
       )
     )
   )

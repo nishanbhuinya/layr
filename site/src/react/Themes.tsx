@@ -94,7 +94,16 @@ const STORE = "layr-palette";
 
 /** The CSS a palette becomes: tokens on the app root (beating its own theme rule), and the page ground. */
 export function paletteCss(colors: Colors, scheme: "light" | "dark"): string {
-  const vars = TOKENS.map((t) => `--layr-color-${t}:${colors[t]}`).join(";");
+  // Text on painted objects (LAYR's `--layr-on-<token>`): the palette's darker of ink and canvas on
+  // light paint, the lighter on dark paint; chosen as LAYR does, by the higher WCAG contrast.
+  const [onLight, onDark] = lum(colors.ink) < lum(colors.canvas) ? [colors.ink, colors.canvas] : [colors.canvas, colors.ink];
+  const darkInk = (hex: string) => (lum(hex) + 0.05) / 0.057 > 1.05 / (lum(hex) + 0.05);
+  const vars = [
+    ...TOKENS.map((t) => `--layr-color-${t}:${colors[t]}`),
+    `--layr-color-onLight:${onLight}`,
+    `--layr-color-onDark:${onDark}`,
+    ...TOKENS.map((t) => `--layr-on-${t}:var(--layr-color-${darkInk(colors[t]) ? "onLight" : "onDark"})`),
+  ].join(";");
   // Outranks the app's own theme rules, including its dark ones (`:root[data-theme=dark] .l-root`).
   return `:root:root:root .l-root.l-root{${vars};color-scheme:${scheme}}:root:root:root{background:${colors.canvas};color-scheme:${scheme}}`;
 }

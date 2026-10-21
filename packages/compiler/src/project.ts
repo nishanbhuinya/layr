@@ -43,6 +43,8 @@ export interface ParamDef {
   immutable: boolean;
   ref: boolean;
   init: Expr | null;
+  /** The allowed values (`align a = in | mid | out`); the param's type is then `enum`. */
+  options: string[] | null;
   decl: Decl;
 }
 
@@ -128,6 +130,8 @@ export interface ObjNode {
   modifiers: Map<string, Modifier[]>;
   address: string;
   comp: CompDef;
+  /** A Duplicate's copy of `of`: it renders `of`'s config and takes `of`'s writes and layers below `order`; `over` is the Duplicate's config for it. */
+  mirror?: { of: ObjNode; order: number | null; over: ConfigEntry[] };
 }
 
 export type Child = { kind: "node"; node: ObjNode } | { kind: "expr"; expr: Expr; item: Item } | { kind: "forward"; span: Span };
@@ -270,9 +274,129 @@ export function analyzeProject(files: Array<{ path: string; text: string }>, con
   for (const mod of project.modules.values()) {
     for (const c of mod.comps) {
       if (c.rootCall) c.root = buildTree(project, mod, c, c.rootCall, null, "obj", 0);
+      copyDuplicates(mod, c);
     }
   }
   return project;
+}
+
+// ------------------------------------------------------------------ Duplicate
+
+/**
+ * `Duplicate(.id(CardDup) .from(Card) .exeOrder(+1) .config(color: red, Card.text.color: blue))`: the
+ * object tree of `Card` again, in the Duplicate's place. The copy is part of this Page's or Widget's tree
+ * (so `CardDup` and `CardDup.text` are targets like any other); each copied object renders its
+ * original's config and takes the original's writes and layers below the Duplicate's order (all of
+ * them without one), then the Duplicate's config, then its own layers.
+ */
+function copyDuplicates(mod: Module, comp: CompDef) {
+  const dittos: ObjNode[] = [];
+  walk(comp.root, (n) => {
+    if (n.kind === "construct" && n.name === "Duplicate") dittos.push(n);
+  });
+  for (const d of dittos) {
+    const from = d.modifiers.get("from")?.[0] ?? d.modifiers.get("tar")?.[0] ?? d.modifiers.get("target")?.[0];
+    if (!from) {
+      report(mod, "L1008", "`Duplicate` needs `.from(object)`: the id or path of the object it copies.", d.call.span);
+      continue;
+    }
+    if (d.call.callee.type === "Ident" && d.call.callee.name === "Ditto")
+      report(mod, "L1011", "`Ditto` is written `Duplicate` in canonical form.", d.call.callee.span, "info", { fixes: [{ title: "Use Duplicate", edits: [{ span: d.call.callee.span, text: "Duplicate" }] }] });
+    if (from.name !== "from") report(mod, "L1011", `\`.${from.name}\` is written \`.from\` in canonical form.`, from.nameSpan, "info", { fixes: [{ title: "Use .from", edits: [{ span: from.nameSpan, text: "from" }] }] });
+    const target = exprItems(from.items)[0];
+    const segs = target ? pathNames(target) : null;
+    const orig = segs ? findInComp(comp, segs) : null;
+    if (!orig) {
+      report(mod, "L3301", `Duplicate copies an object of ${comp.name} by its id or path; \`${target ? mod.source.slice(target.span) : ""}\` is not one.`, target?.span ?? from.span);
+      continue;
+    }
+    if ([...walkList(orig)].includes(d)) {
+      report(mod, "L3305", "A Duplicate cannot copy an object it is inside: the copy would contain itself.", from.span);
+      continue;
+    }
+    const orderExpr = exprItems(d.modifiers.get("exeOrder")?.[0]?.items ?? null)[0];
+    const order = orderExpr ? constNumber(orderExpr) : null;
+    if (orderExpr && order === null) report(mod, "L1003", "`.exeOrder` takes a constant number.", orderExpr.span);
+    const written = segs?.[segs.length - 1] ?? "";
+    const copy = cloneTree(orig, d, "obj", 0, order, d.id ?? `${d.address}.${orig.seg}(0)`);
+    if (d.id) {
+      copy.id = d.id;
+      copy.idSpan = d.idSpan;
+      comp.ids.set(d.id, copy);
+    }
+    d.children.set("obj", [{ kind: "node", node: copy }]);
+    // `.config(color: red)` / `Card.color: red` set the copy; `Card.text.color: blue` reaches inside it.
+    for (const e of d.config) {
+      const parts = e.key.split(".");
+      if (parts.length > 1 && (parts[0] === written || parts[0] === orig.id || parts[0] === orig.seg || parts[0] === d.id)) parts.shift();
+      const key = parts.pop() as string;
+      const at = parts.length ? findBelow(copy, parts) : copy;
+      if (!at) {
+        report(mod, "L3301", `The copy of \`${written}\` has no \`${parts.join(".")}\`.`, e.keySpan);
+        continue;
+      }
+      at.mirror?.over.push({ ...e, key, written: key });
+    }
+  }
+}
+
+function* walkList(n: ObjNode): Generator<ObjNode> {
+  yield n;
+  for (const list of n.children.values()) for (const c of list) if (c.kind === "node") yield* walkList(c.node);
+}
+
+function cloneTree(orig: ObjNode, parent: ObjNode, slot: string, index: number, order: number | null, address?: string): ObjNode {
+  const node: ObjNode = { ...orig, id: null, idSpan: null, parent, slot, index, children: new Map(), address: "", mirror: { of: orig, order, over: [] } };
+  const parentDefault = parent.def?.slots.find((s) => s.default)?.name ?? "obj";
+  node.address = address ?? `${parent.address}.${slot !== parentDefault ? `${slot}.` : ""}${orig.seg}(${index})`;
+  for (const [s, list] of orig.children) node.children.set(s, list.map((c) => (c.kind === "node" ? { kind: "node" as const, node: cloneTree(c.node, node, s, c.node.index, order) } : c)));
+  return node;
+}
+
+/** `Card`, `Page.card`, `card.column.text(1)` as names with indices. */
+function pathNames(e: Expr): Array<{ name: string; index?: number }> | null {
+  if (e.type === "Ident") return [{ name: e.name }];
+  if (e.type === "Member") {
+    const head = pathNames(e.object);
+    return head ? [...head, { name: e.name }] : null;
+  }
+  if (e.type === "Call" && e.items.length === 1) {
+    const head = pathNames(e.callee);
+    const arg = exprItems(e.items)[0];
+    if (head && arg?.type === "Number") (head[head.length - 1] as { index?: number }).index = Number(arg.raw);
+    return head;
+  }
+  return null;
+}
+
+function findInComp(comp: CompDef, segs: Array<{ name: string; index?: number }>): ObjNode | null {
+  const rest = segs[0]?.name === comp.name ? segs.slice(1) : segs;
+  const first = rest[0];
+  if (!first || !comp.root) return null;
+  const start = comp.ids.get(first.name) ?? (comp.root.seg === first.name ? comp.root : null);
+  return start ? findBelow(start, rest.slice(1)) : null;
+}
+
+/** Descends by id or widget name (`text`, `text(1)` among same-type siblings) through every slot. */
+function findBelow(node: ObjNode, segs: Array<string | { name: string; index?: number }>): ObjNode | null {
+  let cur: ObjNode | null = node;
+  for (const s of segs) {
+    const name = typeof s === "string" ? (s.match(/^(\w+)/)?.[1] ?? s) : s.name;
+    const index = typeof s === "string" ? Number(s.match(/\((\d+)\)$/)?.[1] ?? 0) : (s.index ?? 0);
+    const kids: ObjNode[] = cur ? [...cur.children.values()].flat().flatMap((c) => (c.kind === "node" ? [c.node] : [])) : [];
+    cur = kids.find((k) => k.id === name || k.mirror?.of.id === name) ?? kids.filter((k) => k.seg === name)[index] ?? null;
+    if (!cur) return null;
+  }
+  return cur;
+}
+
+function constNumber(e: Expr): number | null {
+  if (e.type === "Number") return Number(e.raw);
+  if (e.type === "Unary" && (e.op === "-" || e.op === "+")) {
+    const v = constNumber(e.argument);
+    return v === null ? null : e.op === "-" ? -v : v;
+  }
+  return null;
 }
 
 export function report(mod: Module, code: string, message: string, span: Span, severity: Diagnostic["severity"] = "error", extra: Partial<Diagnostic> = {}) {
@@ -285,9 +409,11 @@ function stateFrom(d: Decl): StateDef | null {
 }
 
 function paramFrom(d: Decl): ParamDef {
+  const options = d.options?.map((o) => identName(o) ?? stringValue(o) ?? (o.type === "Number" ? o.raw : null)).filter((o): o is string => o !== null) ?? null;
   return {
     name: d.name,
-    type: typeName(d),
+    type: options ? "enum" : typeName(d),
+    options,
     optional: d.typeRef?.optional ?? false,
     required: d.required,
     immutable: d.immutable,
@@ -457,12 +583,18 @@ function collectComp(mod: Module, call: Call, kind: CompKind): CompDef {
             else report(mod, "L0011", "Params are written `type name` or `req type name = default`.", p.span);
           }
           break;
+        case "wgt":
         case "obj":
         case "body":
           if (kind === "widget") {
             const root = exprItems(item.items)[0];
             if (root?.type === "Call") comp.rootCall = root;
-            else report(mod, "L1014", "`.obj(...)` of a Widget must be one object.", item.span);
+            else report(mod, "L1014", "`.wgt(...)` of a Widget is the one object it renders.", item.span);
+            if (item.name !== "wgt")
+              report(mod, "L1017", `A Widget renders \`.wgt(...)\` since LAYR 3.2; \`.${item.name}(...)\` still works until 4.0. \`layr upgrade\` rewrites it.`, item.nameSpan, "warning", {
+                deprecation: "widget-wgt",
+                fixes: [{ title: "Use .wgt(...)", edits: [{ span: item.nameSpan, text: "wgt" }] }],
+              });
           } else report(mod, "L1006", "A Page's root object is written directly inside the Page.", item.span);
           break;
         case "var":
@@ -494,7 +626,7 @@ function collectComp(mod: Module, call: Call, kind: CompKind): CompDef {
       else if (kind === "page") {
         if (comp.rootCall) report(mod, "L1013", "A Page has exactly one root object (usually a Scaffold).", inner.span);
         else comp.rootCall = inner;
-      } else report(mod, "L1014", "A Widget's object goes in `.obj(...)`.", inner.span);
+      } else report(mod, "L1014", "What a Widget renders goes in `.wgt(...)`.", inner.span);
       continue;
     }
     if (item.type === "ExprItem" && item.expr.type === "Missing") continue;
@@ -533,7 +665,8 @@ export function classify(project: Project, mod: Module, name: string): { kind: N
   if (mod.foreign.has(name)) return { kind: "foreign", name, def: null, user: null };
   const core = widget(name);
   if (core) return { kind: "core", name: core.name, def: core, user: null };
-  if (name === "If" || name === "Each" || name === "DesignScale") return { kind: "construct", name, def: null, user: null };
+  if (name === "If" || name === "Each" || name === "Repeat" || name === "DesignScale") return { kind: "construct", name, def: null, user: null };
+  if (name === "Duplicate" || name === "Ditto") return { kind: "construct", name: "Duplicate", def: null, user: null };
   const pw = project.widgets.get(name);
   if (pw) return { kind: "user", name, def: null, user: pw };
   return null;
@@ -734,8 +867,8 @@ function buildTree(project: Project, mod: Module, comp: CompDef, call: Call, par
       continue;
     }
     if (item.type === "ExprItem") {
-      if (node.kind === "construct") continue;
-      addExprChild(defaultSlot, item);
+      // A construct's objects written in place are its `.obj` (`Each(.of(xs) Text(item))`).
+      addExprChild(node.kind === "construct" ? "obj" : defaultSlot, item);
       continue;
     }
     report(mod, "L0011", "Unexpected item in an object.", item.span);
@@ -771,9 +904,9 @@ function buildTree(project: Project, mod: Module, comp: CompDef, call: Call, par
     comp.exportGroups.set(group, members);
   }
 
-  // Constructs (If/Each/DesignScale) keep their child objects in their modifiers.
+  // Constructs (If/Each/Repeat/DesignScale) keep their child objects in their modifiers.
   if (node.kind === "construct") {
-    for (const m of ["obj", "fb", "then"]) {
+    for (const m of ["obj", "fb", "then", "sep"]) {
       for (const mm of node.modifiers.get(m) ?? []) for (const sub of mm.items ?? []) if (sub.type === "ExprItem") addExprChild(m, sub);
     }
   }

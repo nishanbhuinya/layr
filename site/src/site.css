@@ -99,6 +99,12 @@ body { margin: 0; }
 .prose p, .prose li { text-wrap: pretty; }
 .prose a { color: var(--layr-color-accent); text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--layr-color-accent) 35%, transparent); }
 .prose a:hover { text-decoration-color: currentColor; }
+/* A file to download, written in Markdown as a link to /download/…: the site's primary button. */
+.prose a.download { display: inline-flex; align-items: center; gap: 8px; margin: 4px 0; padding: 11px 18px; border-radius: 10px; background: var(--layr-color-action); color: var(--layr-color-onAccent); font-weight: 600; text-decoration: none; box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 8px 24px -10px color-mix(in srgb, var(--layr-color-action) 70%, transparent); transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.prose a.download::before { content: ""; width: 16px; height: 16px; background: currentColor; mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath d='M224 144v64a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8v-64a8 8 0 0 1 16 0v56h160v-56a8 8 0 0 1 16 0Zm-101.66 5.66a8 8 0 0 0 11.32 0l40-40a8 8 0 0 0-11.32-11.32L136 124.69V40a8 8 0 0 0-16 0v84.69L93.66 98.34a8 8 0 0 0-11.32 11.32Z'/%3E%3C/svg%3E") center / contain no-repeat; }
+.prose a.download:hover { background: color-mix(in srgb, var(--layr-color-action) 88%, #000); }
+.prose a.download:active { transform: scale(0.97); }
+@media (prefers-reduced-motion: reduce) { .prose a.download { transition: none; } .prose a.download:active { transform: none; } }
 .prose strong { font-weight: 620; }
 .prose ul, .prose ol { padding-left: 22px; margin-bottom: 0; }
 .prose li + li { margin-top: 6px; }

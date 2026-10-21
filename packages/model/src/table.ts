@@ -23,7 +23,8 @@ export const RUNTIME_TABLE: Record<string, [tag: string, layout: LayoutKind, ali
   Adapt: ["div", "box", ["ViewThatFits"]],
   Scaffold: ["div", "col", ["Frame"]],
   Text: ["p", "text", ["Txt"]],
-  Span: ["span", "inline", ["RichText"]],
+  RichText: ["p", "text"],
+  Span: ["span", "inline"],
   Image: ["img", "leaf", ["Img"]],
   Svg: ["img", "leaf"],
   Icon: ["span", "leaf"],
@@ -61,7 +62,7 @@ export function runtimeWidget(name: string): { name: string; tag: string; layout
 export const SLOTS: Record<string, readonly string[]> = {
   Container: ["obj"], Row: ["objs"], Column: ["objs"], Stack: ["objs"], Position: ["obj"], Order: ["obj"], Mid: ["obj"], Align: ["obj"],
   Expand: ["obj"], Wrap: ["objs"], Grid: ["objs"], Scroll: ["obj"], Aspect: ["obj"], SafeArea: ["obj"], Adapt: ["objs"],
-  Scaffold: ["body", "bar", "footer"], Text: ["obj"], Span: ["objs"], Blur: ["obj"], Mask: ["objs"], Subtract: ["objs"], Clip: ["obj"],
+  Scaffold: ["body", "bar", "footer"], Text: ["obj"], RichText: ["obj"], Span: ["objs"], Blur: ["obj"], Mask: ["objs"], Subtract: ["objs"], Clip: ["obj"],
   Filter: ["obj"], Button: ["obj"], Link: ["obj"], Form: ["objs"], Overlay: ["obj"], Focus: ["obj"], Animate: ["obj"],
 };
 

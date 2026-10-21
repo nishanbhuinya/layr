@@ -21,6 +21,8 @@ export const COMMANDS: Record<string, Command> = {
   format: { run: fmt, summary: "Rewrite .layr files in canonical form", usage: "layr format [--check] [paths...]" },
   analyze: { run: analyze, summary: "Check the project; explain a feature's cascade", usage: "layr analyze [--json] [--info] [--explain Page.id.feature]" },
   explain: { run: explain, summary: "Explain a diagnostic code", usage: "layr explain [L3102]" },
+  chain: { run: lazy(() => import("./commands/chain.ts"), "chain"), summary: "Show what Export, Inject, Extract and Duplicate (EIED) change and read, in exeOrder", usage: "layr chain [object] [--all] [--json]" },
+  upgrade: { run: lazy(() => import("./commands/upgrade.ts"), "upgrade"), summary: "List deprecated forms and update them once you agree", usage: "layr upgrade [--check] [--yes]" },
   test: { run: lazy(() => import("./commands/test.ts"), "test"), summary: "Screenshot every page at every design frame", usage: "layr test [--frames m,t,w,uw] [--update]" },
   add: { run: add, summary: "Install addons", usage: "layr add <addon>[@range] ..." },
   remove: { run: remove, summary: "Uninstall addons", usage: "layr remove <addon> ..." },
@@ -38,7 +40,7 @@ export const COMMANDS: Record<string, Command> = {
   mcp: { run: lazy(() => import("./commands/mcp.ts"), "mcp"), summary: "Start the MCP server for AI agents (stdio)" },
 };
 
-const ALIASES: Record<string, string> = { fmt: "format", i: "add", install: "add", rm: "remove", uninstall: "remove", upgrade: "update", check: "analyze" };
+const ALIASES: Record<string, string> = { fmt: "format", i: "add", install: "add", rm: "remove", uninstall: "remove", check: "analyze", eied: "chain" };
 
 function help() {
   console.log(`${c.bold("LAYR")} ${c.gray(layrVersion())}  Layout Authoritative Yet Responsive\n`);

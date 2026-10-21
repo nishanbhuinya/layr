@@ -10,9 +10,26 @@ export { F, inject, injectGlobal, useExtract, useInject } from "./interop.tsx";
 export { springEasing } from "./motion.ts";
 export { icons, N, preset } from "./node.tsx";
 export { Presence } from "./presence.tsx";
+export { richText } from "./rich.tsx";
 export { pageStore, params, useInstance, useParams, useTrack } from "./track.ts";
 
 import { registry, router } from "@layr-internal/runtime";
+import { resetLoaded } from "./app.tsx";
+import { resetRegistered } from "./node.tsx";
+import { resetStores } from "./track.ts";
+
+/**
+ * Starts a fresh program in the same page: kept page state, loaded data, presets, icons, routes and
+ * the E/E/I cascade are forgotten. For runners that execute one program after another (the site's
+ * playground and previews, tests); an app never needs it.
+ */
+export function resetSession(): void {
+  resetStores();
+  resetLoaded();
+  resetRegistered();
+  router.reset();
+  registry.reset();
+}
 
 export const read = registry.read;
 export const write = registry.write;

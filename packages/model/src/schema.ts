@@ -116,7 +116,8 @@ export const COMMON_KEYS: readonly KeyDef[] = [
 const BORDER_ALIGN = ["in", "mid", "out"] as const;
 
 export const DECOR_KEYS: readonly KeyDef[] = [
-  k("color", "paint", "Background paint: a colour or gradient.", { animatable: true, aliases: ["bg", "background", "colorBG"] }),
+  k("color", "paint", "Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour.", { animatable: true, aliases: ["bg", "background", "colorBG"] }),
+  k("textColor", "color", "The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`.", { animatable: true, aliases: ["fg", "foreground"] }),
   k("padding", "insets", "Space inside the object.", { animatable: true, aliases: ["pad"] }),
   k("cornerRadius", "radius", "Corner radius: one length or `only(topLeft: 8, …)`.", { animatable: true, aliases: ["radius", "borderRadius", "corner"] }),
   k("borderWidth", "len", "Border width.", { animatable: true }),
@@ -425,10 +426,20 @@ export const WIDGETS: readonly WidgetDef[] = [
     example: "Text(.config(type: h1, size: 48, weight: bold) 'Hello')",
   },
   {
+    name: "RichText",
+    module: "content",
+    doc: "Text with styled runs written inside the string: `(blue)[Blue]`, `(24, bold)[Big]`, `*bold*`, `_italic_`, `` `code` ``, `~strike~`, `\\n` for a line break and a blank line for a paragraph. A slash prints markup as written: `/(blue)[Blue]`. Values from `$name` are always plain text. Its config styles the whole text, like Text's.",
+    keys: [...TEXT_KEYS.filter((x) => x.name !== "type"), ...COMMON_KEYS],
+    slots: [{ name: "obj", kind: "text", doc: "The marked-up text (and any Spans).", default: true, required: true }],
+    tag: "p",
+    layout: "text",
+    events: EVENTS,
+    example: "RichText('Plain, (accent)[accent], *bold*, (24)[_big_] and `code`.')",
+  },
+  {
     name: "Span",
     module: "content",
-    aliases: ["RichText"],
-    doc: "Inline text runs inside Text: `Text(Span(.config(weight: bold) 'Bold'), ' and plain')`.",
+    doc: "Inline text runs inside Text: `Text(Span(.config(weight: bold) 'Bold'), ' and plain')`. RichText writes the same runs inside one string.",
     keys: [...TEXT_KEYS.filter((x) => x.name !== "type" && x.name !== "maxLines"), ...COMMON_KEYS],
     slots: [{ name: "objs", kind: "many", doc: "Text and nested spans.", default: true }],
     tag: "span",
@@ -596,7 +607,7 @@ export const WIDGETS: readonly WidgetDef[] = [
     name: "Link",
     module: "interact",
     doc: "Navigates to a page or URL.",
-    keys: box(k("to", "page", "Page to open, e.g. `DemoPage`."), k("href", "txt", "External URL."), k("label", "txt", "Link text (when there is no object)."), k("external", "bool", "Open in a new tab."), k("underline", "bool", "Underline the link (browsers underline links by default)."), OBJ_ALIGN),
+    keys: box(k("to", "page", "Page to open, e.g. `DemoPage`."), k("href", "txt", "External URL."), k("label", "txt", "Link text (when there is no object)."), k("external", "bool", "Open in a new tab."), k("download", "bool", "The link is a file to save (`href: '/download/app.zip'`), not a page to open."), k("underline", "bool", "Underline the link (browsers underline links by default)."), OBJ_ALIGN),
     groups: [BORDER_GROUP],
     slots: [ONE],
     tag: "a",
@@ -715,11 +726,11 @@ export const WIDGETS: readonly WidgetDef[] = [
     aliases: ["Anim"],
     doc: "Interpolates every change to its object. `.eases(w: spring.gentle)` per property; `.enter(...)`/`.exit(...)` for mount and unmount.",
     keys: [
-      k("duration", "time", "Duration for eased (non-spring) transitions.", { default: "300ms" }),
+      k("duration", "time", "How long each transition takes. An ease takes 300ms unless it says otherwise; a spring settles in its own time unless you give one."),
       k("ease", "motion", "Default motion for all properties: an ease or a spring.", { default: "spring.gentle" }),
-      k("delay", "time", "Delay before transitions start."),
+      k("delay", "time", "Wait before each transition starts."),
       k("motion", "enum", "Respect reduced-motion preferences (default) or always animate.", { values: ["respect", "always"], default: "respect" }),
-      k("resize", "enum", "Continuous window resizes follow instantly (default) or animate.", { values: ["follow", "animate"], default: "follow" }),
+      k("resize", "enum", "Size changes from outside the object (a window resize, a parent's layout): `follow` them instantly (default) or `animate` them.", { values: ["follow", "animate"], default: "follow" }),
       ...COMMON_KEYS,
     ],
     slots: [ONE],
@@ -754,7 +765,7 @@ export interface ConstructDef {
 export const CONSTRUCTS: readonly ConstructDef[] = [
   { name: "App", doc: "The application root: Design Scale, theme, providers and global state.", modifiers: ["scale", "theme", "providers", "meta", "react"], example: "App(.scale(DesignScale(.m(w: 390, h: 844) .w(w: 1440, h: 900))))" },
   { name: "Page", doc: "A routable page: route, metadata, data loading, state and one Scaffold.", modifiers: ["name", "route", "meta", "load", "paths", "state", "scale", "react", "on"], example: "Page(.name(Home) .route('/') Scaffold(.body(Mid(Text('Hello')))))" },
-  { name: "Widget", doc: "A reusable widget. Params become config keys; `.obj(.obj)` forwards the caller's object.", modifiers: ["name", "param", "react", "obj"], example: "Widget(.name(Card) .param(req txt title) .obj(Container(.config(padding: all(16)) .obj(Text(param.title)))))" },
+  { name: "Widget", doc: "A reusable widget: `.wgt(...)` is what it renders. Params become config keys; a param `obj obj` (or `.obj(.obj)`) is the object the caller puts in `.obj`.", modifiers: ["name", "param", "react", "wgt"], example: "Widget(.name(Card) .param(req txt title) .wgt(Container(.config(padding: all(16)) .obj(Text(param.title)))))" },
   { name: "Function", doc: "A named, typed action. Body as SAPI steps `.def(...)` or TypeScript `.def { }`.", modifiers: ["name", "param", "def"], example: "Function(.name(inc) .param(ref int n) .def { n++ })" },
   { name: "Preset", doc: "A named config bundle for a widget type.", modifiers: ["name", "for", "config"], example: "Preset(.name(primary) .for(Button) .config(color: blue, padding: sym(x: 16, y: 10)))" },
   { name: "DesignScale", doc: "Design frames and scale limits for the app, a page or a subtree.", modifiers: ["m", "t", "w", "uw", "frame", "config", "obj"], example: "DesignScale(.m(w: 390, h: 844) .w(w: 1440, h: 900))" },
@@ -762,6 +773,20 @@ export const CONSTRUCTS: readonly ConstructDef[] = [
   { name: "Extract", doc: "Reads features of any object, optionally at a point in its injection cascade.", modifiers: ["from", "lookUp", "exeOrder"], example: "Extract(.from(SomePage.card) insets pad = card.padding)" },
   { name: "Inject", doc: "Changes a feature of any object from anywhere as a reversible layer ordered by `.exeOrder`.", modifiers: ["into", "lookUp", "exeOrder", "force"], example: "Inject(.into(SomePage.card) .exeOrder(0) card.padding = pad * 2)" },
   { name: "Export", doc: "Names and groups features of an object under an export id (optional; everything is reachable by path or id).", modifiers: ["from", "lookUp"], example: "Export(.from(SomePage.card) size cardSize = card.size)" },
+  { name: "If", doc: "Shows `.obj(...)` while `.cnd(test)` is true, otherwise `.fb(...)` (or nothing).", modifiers: ["cnd", "obj", "fb"], example: "If(.cnd(open) .obj(Text('Open')) .fb(Text('Closed')))" },
+  { name: "Each", doc: "Shows its object once for every item of `.of(list)`; `.as(item, index)` names them; `.key(expr)` keeps each item's object when the list changes.", modifiers: ["of", "as", "key", "obj"], example: "Each(.of(['a', 'b']) .as(name, i) Text('$i: $name'))" },
+  {
+    name: "Repeat",
+    doc: "Shows its object `.times(n)` times in a row of siblings (n can be state). Inside, `rep.index` counts from 0, `rep.count` is n, `rep.first` and `rep.last` mark the ends; `.as(i)` names the index. `.sep(...)` goes between repeats. `.repOrder` is accepted for `.times`.",
+    modifiers: ["times", "as", "sep", "obj"],
+    example: "Row(.config(gap: 8) Repeat(.times(3) .as(i) Text('Card $i')))",
+  },
+  {
+    name: "Duplicate",
+    doc: "Shows a copy of another object of the same Page or Widget, `.from(id or path)`. The copy renders the original's config and follows its writes and Injects below the Duplicate's `.exeOrder` (all of them without one); `.config(...)` sets the copy (`color: red`, or `Card.text.weight: bold` inside it). With `.id`, the copy is a target like any object (`CardDup`, `CardDup.text`). Its order takes a place in the original's chain. `Ditto` is accepted for `Duplicate`, and `.tar` for `.from`.",
+    modifiers: ["id", "from", "exeOrder", "config"],
+    example: "Column(\n  Container(.id(card) .config(padding: all(12), color: #e4dbcd) Text('Card'))\n  Duplicate(.id(cardCopy) .from(card) .config(color: #d4e4cd))\n)",
+  },
 ];
 
 /** Modifiers every widget accepts. */
@@ -778,7 +803,38 @@ export const MODIFIER_ALIASES: Readonly<Record<string, string>> = {
   eO: "exeOrder",
   children: "objs",
   child: "obj",
+  repOrder: "times",
 };
+
+// ------------------------------------------------------------------ deprecations
+
+/**
+ * Forms that still compile but have a newer spelling (diagnostic L1017). The compiler reports each
+ * use with this id and a fix; `layr upgrade` and the editor list them and apply the fixes only after
+ * the developer agrees (inform → consent → do). `layr format` never applies them on its own.
+ */
+export interface DeprecationDef {
+  id: string;
+  /** The version that deprecated it, and the major version that removes it. */
+  since: string;
+  removeIn: string;
+  title: string;
+  before: string;
+  after: string;
+  explain: string;
+}
+
+export const DEPRECATIONS: readonly DeprecationDef[] = [
+  {
+    id: "widget-wgt",
+    since: "3.2.0",
+    removeIn: "4.0.0",
+    title: "A Widget renders `.wgt(...)`",
+    before: "Widget(.name(Card) .obj(Container()))",
+    after: "Widget(.name(Card) .wgt(Container()))",
+    explain: "A Widget's definition named what it renders `.obj(...)`, the same word as the slot its callers fill. It is `.wgt(...)` now, so `.obj` always means an object slot.",
+  },
+];
 
 /** Canonical modifier order inside a node. Unlisted modifiers keep their relative position after `.on`. */
 export const MODIFIER_ORDER: readonly string[] = ["name", "id", "route", "meta", "preset", "for", "param", "config", "at", "export", "eases", "enter", "exit", "react", "load", "paths", "state", "fnc", "on", "a11y", "props"];

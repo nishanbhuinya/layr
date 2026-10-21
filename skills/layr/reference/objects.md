@@ -16,12 +16,23 @@ Everything on screen is an **object**: a widget, its **config** (how it looks an
 Container(
   .config(
     w: 240
-    .border(color: line, width: 1)
     color: panel
     cornerRadius: 16
     padding: all(20)
+    .border(
+      color: line
+      width: 1
+    )
   )
-  .obj(Text(.config(size: 17, weight: semibold) .obj('A card, 240 wide')))
+  .obj(
+    Text(
+      .config(
+        size: 17
+        weight: semibold
+      )
+      .obj('A card, 240 wide')
+    )
+  )
 )
 ```
 
@@ -46,13 +57,24 @@ Page(
     .config(color: canvas)
     .bar(
       Row(
-        .config(w: fill, color: sunken, padding: all(14))
-        Text(.config(weight: semibold) .obj('.bar'))
+        .config(
+          w: fill
+          color: sunken
+          padding: all(14)
+        )
+        Text(
+          .config(weight: semibold)
+          .obj('.bar')
+        )
       )
     )
     .body(
       Column(
-        .config(w: fill, gap: 8, padding: all(20))
+        .config(
+          w: fill
+          gap: 8
+          padding: all(20)
+        )
         Text('.body: the page content')
         Text(
           .config(color: muted)
@@ -62,8 +84,15 @@ Page(
     )
     .footer(
       Row(
-        .config(w: fill, color: sunken, padding: all(14))
-        Text(.config(color: muted) .obj('.footer'))
+        .config(
+          w: fill
+          color: sunken
+          padding: all(14)
+        )
+        Text(
+          .config(color: muted)
+          .obj('.footer')
+        )
       )
     )
   )
@@ -78,10 +107,17 @@ Page(
 
 ## Identity: `.id`
 
-`.id(name)` names an object. An id is unique inside its Page or Widget, and it is how other code reaches the object: `Slots.card` from any file, to read or change it with [Export, Extract and Inject](/docs/export-extract-inject).
+`.id(name)` names an object. An id is unique inside its Page or Widget, and it is how other code reaches the object: `Slots.card` from any file, to change, read or copy it with [Export, Inject, Extract and Duplicate](/docs/export-extract-inject).
 
 ```layr noexec
-Container(.id(card) .config(w: 200, color: panel, padding: all(16)))
+Container(
+  .id(card)
+  .config(
+    w: 200
+    color: panel
+    padding: all(16)
+  )
+)
 ```
 
 Objects without an id are still reachable by their **lookup path**, one `.` per level (`Slots.scaffold.body.column.text(1)`). Ids survive edits that would change a path.
@@ -98,7 +134,10 @@ Preset(
     padding: sym(x: 16, y: 8)
     cornerRadius: 999
     color: sunken
-    .border(color: lineStrong, width: 1)
+    .border(
+      color: lineStrong
+      width: 1
+    )
   )
 )
 
@@ -109,10 +148,22 @@ Page(
     .config(color: canvas)
     .body(
       Row(
-        .config(gap: 12, padding: all(24))
-        Button(.preset(pill) .config(label: 'Save'))
-        Button(.preset(pill) .config(label: 'Share'))
-        Button(.preset(default) .config(label: 'Cancel'))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
+        Button(
+          .preset(pill)
+          .config(label: 'Save')
+        )
+        Button(
+          .preset(pill)
+          .config(label: 'Share')
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Cancel')
+        )
       )
     )
   )
@@ -130,11 +181,21 @@ Config written on the object wins over its preset: `Button(.preset(pill) .config
 
 ```layr
 Container(
-  .config(w: 160, color: accent, padding: all(16))
-  .at(w, w: 480)
+  .config(
+    w: 160
+    color: accent
+    padding: all(16)
+  )
+  .at(
+    w
+    w: 480
+  )
   .obj(
     Text(
-      .config(color: onAccent, weight: semibold)
+      .config(
+        color: onAccent
+        weight: semibold
+      )
       .obj('160 on phones, 480 on desktop')
     )
   )
@@ -162,7 +223,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 10, padding: all(24))
+        .config(
+          gap: 10
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: showAll ? 'Show fewer' : 'Show everyone')
@@ -170,9 +234,18 @@ Page(
         )
         If(
           .cnd(showAll)
-          .obj(Each(.of(names) .as(name, i) .obj(Text('${i + 1}. $name'))))
+          .obj(
+            Each(
+              .of(names)
+              .as(name, i)
+              .obj(Text('${i + 1}. $name'))
+            )
+          )
           .fb(
-            Text(.config(color: muted) .obj('${names.length} people, hidden'))
+            Text(
+              .config(color: muted)
+              .obj('${names.length} people, hidden')
+            )
           )
         )
       )
@@ -184,6 +257,98 @@ Page(
 > **Try it**
 > - Add `'Barbara'` to the list and run: `Each` shows five without any other change.
 > - Swap the `.obj(...)` and `.fb(...)` contents: the condition now works the other way round.
+
+`Repeat` shows an object a number of times. Inside, `rep.index` counts from 0, `rep.count` is the total, and `rep.first` and `rep.last` mark the ends. `.as(i)` gives the index a short name, and `.sep(...)` goes between repeats. The count can be state:
+
+```layr
+Page(
+  .name(Steps)
+  .route('/')
+  var int steps = 4
+
+  Scaffold(
+    .config(color: canvas)
+    .body(
+      Column(
+        .config(
+          gap: 16
+          padding: all(24)
+        )
+        Row(
+          .config(
+            gap: 6
+            yAlign: mid
+          )
+          Repeat(
+            .times(steps)
+            .as(i)
+            .sep(
+              Text(
+                .config(color: faint)
+                .obj('→')
+              )
+            )
+            Container(
+              .config(
+                color: rep.last ? accent : panel
+                cornerRadius: 8
+                padding: sym(x: 12, y: 6)
+              )
+              Text('Step ${i + 1}')
+            )
+          )
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Add a step')
+          .fnc { steps++ }
+        )
+      )
+    )
+  )
+)
+```
+
+> **Try it**
+> - Press the button: one more step, and the highlight moves to the new last one.
+> - Change `rep.last` to `rep.first`.
+
+## Text on paint
+
+Text reads on whatever it sits on. On an object with a `color`, Text that sets no colour of its own uses light ink on dark paint and dark ink on light paint, for theme colours in light and dark mode too. `textColor` on the object chooses the colour for all its text, and a Text's own `color` always wins. Translucent paint (less than half opaque) leaves the text as it was.
+
+```layr
+Row(
+  .config(gap: 8)
+  Container(
+    .config(
+      color: black
+      cornerRadius: 8
+      padding: all(12)
+    )
+    Text('Light on black')
+  )
+  Container(
+    .config(
+      color: #fde68a
+      cornerRadius: 8
+      padding: all(12)
+    )
+    Text('Dark on yellow')
+  )
+  Container(
+    .config(
+      color: teal
+      cornerRadius: 8
+      padding: all(12)
+      textColor: #fde68a
+    )
+    Text('Chosen with textColor')
+  )
+)
+```
+
+A theme sets the two inks with colours named `onLight` and `onDark`; without them they are near-black and white. In a Text, `\n` starts a new line: `Text('Line one\nLine two')`.
 
 ## Accessibility
 

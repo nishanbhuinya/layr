@@ -11,14 +11,20 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 12, padding: all(24))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: 'Cancel booking')
           .fnc { open = true }
         )
         Overlay(
-          .config(label: 'Cancel booking', open: open)
+          .config(
+            label: 'Cancel booking'
+            open: open
+          )
           .on(close: { open = false })
           .obj(
             Container(
@@ -33,7 +39,10 @@ Page(
                 Column(
                   .config(gap: 12)
                   Text(
-                    .config(size: 18, weight: semibold)
+                    .config(
+                      size: 18
+                      weight: semibold
+                    )
                     .obj('Cancel this booking?')
                   )
                   Text(
@@ -41,7 +50,11 @@ Page(
                     .obj('Room B, Tuesday 10:30. This cannot be undone.')
                   )
                   Row(
-                    .config(w: fill, gap: 8, xAlign: end)
+                    .config(
+                      w: fill
+                      gap: 8
+                      xAlign: end
+                    )
                     Button(
                       .preset(default)
                       .config(label: 'Keep it')
@@ -56,7 +69,10 @@ Page(
                       .fnc { open = false }
                       .obj(
                         Text(
-                          .config(color: onAccent, weight: semibold)
+                          .config(
+                            color: onAccent
+                            weight: semibold
+                          )
                           .obj('Cancel')
                         )
                       )

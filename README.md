@@ -18,11 +18,25 @@ Page(
   var int count = 0
 
   Scaffold(
-    .body(Mid(Column(
-      .config(gap: 16, xAlign: mid)
-      Text(.config(type: h1) .obj('Count: $count'))
-      Button(.preset(default) .config(label: 'Add one') .fnc { count++ })
-    )))
+    .body(
+      Mid(
+        Column(
+          .config(
+            gap: 16
+            xAlign: mid
+          )
+          Text(
+            .config(type: h1)
+            .obj('Count: $count')
+          )
+          Button(
+            .preset(default)
+            .config(label: 'Add one')
+            .fnc { count++ }
+          )
+        )
+      )
+    )
   )
 )
 ```
@@ -43,9 +57,10 @@ Or try it without installing anything in the [playground](https://layr.dynshift.
 - **The language**: objects that nest the way they render, one canonical form (`layr format`), state, functions as SAPI steps or TypeScript.
 - **Design Scale**: numbers are design pixels from your frames; values flow between frames and structure steps at them.
 - **Deterministic layout**: fixed, hug and fill sizing; rows wrap or stack by fixed rules, and every adaptation is explainable.
-- **Export, Extract, Inject**: read and change any object's features from anywhere as ordered, reversible layers the compiler checks; `!mut` protects what must never change.
+- **Export, Inject, Extract, Duplicate (EIED)**: change, read and copy any object's features from anywhere as ordered, reversible layers the compiler checks (`layr chain` shows each object's chain); `!mut` protects what must never change.
+- **Content**: Text, RichText with styled runs written inside the string, Repeat and Each for lists, images, icons and video.
 - **React interop**: React packages work inside LAYR, and LAYR components work inside React apps.
-- **Tooling**: the `layr` CLI, a language server and VS Code extension, the LAYR Skill and an MCP server for AI agents.
+- **Tooling**: the `layr` CLI, guided upgrades (`layr upgrade`), a language server and the [VS Code extension](https://layr.dynshift.com/editor) (completion, refactors, format on save), the LAYR Skill and an MCP server for AI agents.
 
 ## This repository
 

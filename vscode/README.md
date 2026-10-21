@@ -2,11 +2,16 @@
 
 Language support for [LAYR](https://layr.dynshift.com), the compiled UI language with Design Scale, deterministic layout and Export/Extract/Inject.
 
-- Diagnostics with explanations and quick fixes (`L1002 … Did you mean \`w\`?`)
-- Completion for widgets, modifiers, config keys, values and design frames
-- Hover docs for every widget and key
-- Go to definition for widgets, ids, Functions and state; find every Inject and Extract of an object
-- Formatting in canonical form on save
-- Syntax highlighting, with TypeScript inside `{ }` blocks
+- **Completion that writes whole calls**: `Container` becomes `Container()` with the cursor inside; constructs come with their essential modifiers.
+- **Refactors** on the object under the cursor: wrap with Container, Padding, Column, Row, Stack, Scroll, Mid, Expand, Animate, Position, If or Repeat; remove a wrapper and keep its child; move up and down; extract to a Widget.
+- **Format on save** in canonical form, one object, modifier and config entry per line.
+- **Diagnostics** with explanations and quick fixes (`L1002 … Did you mean \`w\`?`).
+- **Guided upgrades**: deprecated forms are struck through, and **Update all** rewrites them, only when you choose it.
+- **Navigation**: go to definition for widgets, ids, Functions and state; find every Export, Extract, Inject and Duplicate of an object.
+- **Hover docs** for every widget, key and construct; syntax highlighting with TypeScript inside `{ }` blocks.
+
+## Install
+
+Download the `.vsix` from [layr.dynshift.com/editor](https://layr.dynshift.com/editor) or from the [GitHub release](https://github.com/nishanbhuinya/layr/releases), then run **Extensions → … → Install from VSIX…** (or `code --install-extension layr-vscode.vsix`).
 
 Open a folder containing `layr.yaml`. Create a project with `npx @dynshift/layr create my-app`.

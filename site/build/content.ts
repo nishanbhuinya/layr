@@ -40,6 +40,8 @@ const SECTIONS = [
 export interface DocEntry {
   slug: string;
   title: string;
+  /** A shorter label for the docs sidebar (`nav:` in the frontmatter), e.g. EIED. */
+  nav: string;
   description: string;
   order: number;
   section: string;
@@ -223,6 +225,8 @@ export function renderMarkdown(h: Highlighter, md: string): { html: string; toc:
       link(this: { parser: { parseInline: (t: Tokens.Generic[]) => string } }, { href, title, tokens }: Tokens.Link) {
         const text = this.parser.parseInline(tokens);
         const external = /^https?:\/\//.test(href) && !href.startsWith(SITE_URL);
+        // Files under /download/ are saved, not opened as pages, and show as a button.
+        if (href.startsWith("/download/")) return `<a class="download" href="${escapeHtml(href)}" download>${text}</a>`;
         return `<a href="${escapeHtml(href)}"${title ? ` title="${escapeHtml(title)}"` : ""}${external ? ' rel="noopener"' : ""}>${text}</a>`;
       },
     },
@@ -261,6 +265,7 @@ export function readDocs(repo: string): DocEntry[] {
     return {
       slug: basename(file, ".md"),
       title: String(data.title ?? basename(file, ".md")),
+      nav: String(data.nav ?? data.title ?? basename(file, ".md")),
       description: String(data.description ?? ""),
       order,
       section,
@@ -274,7 +279,7 @@ export function readDocs(repo: string): DocEntry[] {
 function nav(docs: DocEntry[]) {
   return SECTIONS.map((s) => ({
     title: s.title,
-    items: docs.filter((d) => d.section === s.title).map((d) => ({ slug: d.slug, title: d.title, description: d.description, href: `/docs/${d.slug}` })),
+    items: docs.filter((d) => d.section === s.title).map((d) => ({ slug: d.slug, title: d.nav, description: d.description, href: `/docs/${d.slug}` })),
   })).filter((s) => s.items.length);
 }
 
@@ -603,7 +608,17 @@ export function siteContent(): Plugin {
     },
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        if ((req.url ?? "").split("?")[0] !== "/run.html") return next();
+        const path = (req.url ?? "").split("?")[0];
+        // The extension download, as the build ships it, when vscode/ has been packaged.
+        if (path?.startsWith("/download/") && path.endsWith(".vsix")) {
+          const v = (JSON.parse(readFileSync(join(repo, "vscode", "package.json"), "utf8")) as { version: string }).version;
+          const file = join(repo, "vscode", `layr-${v}.vsix`);
+          if (!existsSync(file)) return next();
+          res.setHeader("content-type", "application/octet-stream");
+          res.setHeader("content-disposition", `attachment; filename="${path.slice(10)}"`);
+          return res.end(readFileSync(file));
+        }
+        if (path !== "/run.html") return next();
         res.setHeader("content-type", "text/html");
         res.end(await server.transformIndexHtml("/run.html", runHtml("/src/run/main.ts")));
       });
@@ -667,13 +682,19 @@ export function siteContent(): Plugin {
         for (const w of ref.widgets) items.push({ t: w.name, s: w.summary, h: `/api/${w.slug}`, k: "widget" });
         for (const d of ref.diagnostics) items.push({ t: `${d.code} ${d.title}`, s: d.severity, h: `/errors#${d.code}`, k: "diagnostic" });
         for (const c of ref.commands) items.push({ t: `layr ${c.name}`, s: c.summary, h: `/cli#${c.name}`, k: "command" });
-        for (const p of [["Playground", "/playground"], ["Library", "/library"], ["AI Skill", "/skills"], ["API reference", "/api"], ["Diagnostics", "/errors"], ["CLI", "/cli"]]) items.push({ t: p[0] as string, s: "", h: p[1] as string, k: "page" });
+        for (const p of [["Playground", "/playground"], ["Library", "/library"], ["AI Skill", "/skills"], ["VS Code extension", "/editor"], ["Changelog", "/changelog"], ["API reference", "/api"], ["Diagnostics", "/errors"], ["CLI", "/cli"]]) items.push({ t: p[0] as string, s: "", h: p[1] as string, k: "page" });
         return `export default ${JSON.stringify(items)};`;
       }
       if (what === "library") return `export default ${JSON.stringify(await getLib())};`;
       if (what === "addons-src") {
         addonCache = null;
         return `export default ${JSON.stringify(addonSources(repo))};`;
+      }
+      if (what === "page/changelog") {
+        // The repository's CHANGELOG.md, as written for npm and GitHub releases.
+        const body = readFileSync(join(repo, "CHANGELOG.md"), "utf8").replace(/\r\n/g, "\n");
+        const { html, toc } = renderMarkdown(await getHighlighter(repo), body);
+        return `export default ${JSON.stringify({ slug: "changelog", title: "Changelog", description: "What changed in each release of LAYR: new language features, fixes, and what to update.", section: "Reference", html, toc, legal: false, edit: `${REPO_URL}/blob/main/CHANGELOG.md` })};`;
       }
       if (what.startsWith("page/")) {
         // Plain Markdown pages under site/content/pages (skills, the legal pages, v1, publishing).
@@ -716,14 +737,23 @@ export function siteContent(): Plugin {
       this.emitFile({ type: "asset", fileName: "addons.json", source: `${JSON.stringify(index, null, 2)}\n` });
 
       const ref = await reference(repo);
-      const pages = ["/", "/docs", ...docs.map((d) => `/docs/${d.slug}`), "/api", ...ref.widgets.map((w) => `/api/${w.slug}`), "/errors", "/cli", "/playground", "/library", ...entries.map((e) => `/library/${e.id}`), "/library/publish", "/skills", "/privacy", "/cookies", "/terms", "/contact"];
+      // The VS Code extension, packaged from vscode/ before the site builds (`pnpm --filter ./vscode run package`):
+      // a versioned file and a stable name the download buttons use.
+      const vsVersion = (JSON.parse(readFileSync(join(repo, "vscode", "package.json"), "utf8")) as { version: string }).version;
+      const vsix = join(repo, "vscode", `layr-${vsVersion}.vsix`);
+      if (existsSync(vsix)) {
+        const source = readFileSync(vsix);
+        this.emitFile({ type: "asset", fileName: `download/layr-${vsVersion}.vsix`, source });
+        this.emitFile({ type: "asset", fileName: "download/layr-vscode.vsix", source });
+      }
+      const pages = ["/", "/docs", ...docs.map((d) => `/docs/${d.slug}`), "/api", ...ref.widgets.map((w) => `/api/${w.slug}`), "/errors", "/cli", "/playground", "/library", ...entries.map((e) => `/library/${e.id}`), "/library/publish", "/skills", "/editor", "/changelog", "/privacy", "/cookies", "/terms", "/contact"];
       this.emitFile({ type: "asset", fileName: "sitemap.xml", source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((p) => `  <url><loc>${SITE_URL}${p}</loc></url>`).join("\n")}\n</urlset>\n` });
       this.emitFile({ type: "asset", fileName: "robots.txt", source: `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n` });
       this.emitFile({ type: "asset", fileName: "CNAME", source: "layr.dynshift.com\n" });
 
       // llms.txt (https://llmstxt.org): an index for agents, and the whole documentation in one file.
       const bySection = nav(docs)
-        .map((s) => `## ${s.title}\n\n${s.items.map((i) => `- [${i.title}](${SITE_URL}/docs/${i.slug}.md): ${docs.find((d) => d.slug === i.slug)?.description ?? ""}`).join("\n")}`)
+        .map((s) => `## ${s.title}\n\n${s.items.map((i) => `- [${docs.find((d) => d.slug === i.slug)?.title ?? i.title}](${SITE_URL}/docs/${i.slug}.md): ${docs.find((d) => d.slug === i.slug)?.description ?? ""}`).join("\n")}`)
         .join("\n\n");
       const llms = `# LAYR\n\n> LAYR (Layout Authoritative Yet Responsive) is a compiled UI language for the web: \`.layr\` files compile to React components and static CSS, with Design Scale units, deterministic layout adaptation and Export/Extract/Inject. Create a project: \`npx @dynshift/layr create my-app\`. npm: @dynshift/layr (CLI: layr).\n\nRead the Skill rules before writing LAYR: ${SITE_URL}/skills. Every widget and config key: ${SITE_URL}/api. Every diagnostic: ${SITE_URL}/errors.\n\n${bySection}\n\n## Optional\n\n- [Full documentation](${SITE_URL}/llms-full.txt): every page in one file\n- [Addon index](${SITE_URL}/addons.json): official and listed addons\n`;
       this.emitFile({ type: "asset", fileName: "llms.txt", source: llms });

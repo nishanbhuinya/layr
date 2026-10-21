@@ -11,7 +11,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 12, padding: all(24))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
         Select(
           .config(
             label: 'Room'
@@ -20,7 +23,10 @@ Page(
           )
           .fnc { room = value }
         )
-        Text(.config(color: muted) .obj('Booking $room'))
+        Text(
+          .config(color: muted)
+          .obj('Booking $room')
+        )
       )
     )
   )

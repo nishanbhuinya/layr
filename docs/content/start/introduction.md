@@ -21,30 +21,56 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: fill, padding: all(32), xAlign: mid)
+        .config(
+          w: fill
+          padding: all(32)
+          xAlign: mid
+        )
         Row(
           .config(
-            .border(color: line, width: 1)
             color: panel
             cornerRadius: 16
             gap: 16
             padding: all(20)
             yAlign: mid
+            .border(
+              color: line
+              width: 1
+            )
           )
-          Container(.config(size: 56, color: accent, cornerRadius: 999))
+          Container(
+            .config(
+              size: 56
+              color: accent
+              cornerRadius: 999
+            )
+          )
           Column(
             .config(gap: 2)
-            Text(.config(size: 18, weight: semibold) .obj('Ada Lovelace'))
+            Text(
+              .config(
+                size: 18
+                weight: semibold
+              )
+              .obj('Ada Lovelace')
+            )
             Text(
               .config(color: muted)
               .obj('Wrote the first published program, in 1843')
             )
             Text(
-              .config(size: 13, color: faint)
+              .config(
+                size: 13
+                color: faint
+              )
               .obj('$likes people like this')
             )
           )
-          Button(.preset(default) .config(label: 'Like') .fnc { likes++ })
+          Button(
+            .preset(default)
+            .config(label: 'Like')
+            .fnc { likes++ }
+          )
         )
       )
     )
@@ -76,7 +102,7 @@ Web layout is usually a negotiation between CSS units, breakpoints, framework co
 - **The code's shape is the UI's shape.** Objects nest the way they appear. Logic stays in `.config`, `.fnc` and `{ }` blocks.
 - **Design units, not CSS units.** Numbers come from your design frame, and [Design Scale](/docs/design-scale) fits them to every screen without media queries.
 - **Deterministic layout.** Every feature resolves in one documented order, and overflow adapts by fixed rules that `layr analyze` can explain.
-- **Reachable from anywhere.** [Export, Extract and Inject](/docs/export-extract-inject) let any part of an app read and change any object, as ordered layers the compiler checks.
+- **Reachable from anywhere.** [Export, Inject, Extract and Duplicate](/docs/export-extract-inject) (EIED) let any part of an app change, read and copy any object, as ordered layers the compiler checks.
 - **One canonical form.** `layr format` writes every file the same way, so code reads the same everywhere and AI agents write it correctly.
 
 ## What you get

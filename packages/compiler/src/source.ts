@@ -18,6 +18,8 @@ export interface Diagnostic {
   file?: string;
   fixes?: Fix[];
   related?: Array<{ message: string; span: Span; file?: string }>;
+  /** Set on a deprecated form (L1017): the `DEPRECATIONS` id. `layr upgrade` and the editor apply its first fix, with consent. */
+  deprecation?: string;
 }
 
 export interface Position {

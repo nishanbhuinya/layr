@@ -79,6 +79,21 @@ export class Color {
     return this.toCss();
   }
 
+  /** WCAG relative luminance, 0 (black) to 1 (white); alpha is ignored. */
+  get luminance(): number {
+    const ch = (v: number) => {
+      const s = v / 255;
+      return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * ch(this.r) + 0.7152 * ch(this.g) + 0.0722 * ch(this.b);
+  }
+
+  /** The ink that reads best on this colour (higher WCAG contrast): `light` on dark colours, `dark` on light ones. */
+  get ink(): "light" | "dark" {
+    const l = this.luminance;
+    return 1.05 / (l + 0.05) >= (l + 0.05) / (DARK_INK_LUMINANCE + 0.05) ? "light" : "dark";
+  }
+
   equals(o: Color): boolean {
     return this.r === o.r && this.g === o.g && this.b === o.b && this.a === o.a && this.css === o.css;
   }
@@ -103,6 +118,33 @@ function clamp255(n: number): number {
 
 const BLACK = new Color(0, 0, 0);
 const WHITE = new Color(255, 255, 255);
+
+/** The default inks text gets on painted objects; a theme sets its own with `onLight` and `onDark` colours. */
+export const INK = { dark: "var(--layr-color-onLight,#141414)", light: "var(--layr-color-onDark,#ffffff)" } as const;
+const DARK_INK_LUMINANCE = 0.007;
+
+/**
+ * The text colour for objects painted `c`, or null when it is too translucent to decide (the text
+ * then keeps what it inherits). A theme colour follows the theme, light or dark mode alike, through
+ * `--layr-on-<name>`, which every theme defines beside its colours.
+ */
+export function inkOn(c: Color): string | null {
+  if (c.a < 0.5) return null;
+  const fallback = INK[c.ink];
+  const token = c.css?.match(/^var\(--layr-color-([\w-]+)\)$/)?.[1];
+  return token && token !== "onLight" && token !== "onDark" ? `var(--layr-on-${token},${fallback})` : fallback;
+}
+
+/** The `--layr-on-<name>` variables for a set of theme colours (name → CSS colour). */
+export function inkVars(colors: Record<string, string>): string[] {
+  const out: string[] = [];
+  for (const [k, v] of Object.entries(colors)) {
+    if (k === "onLight" || k === "onDark") continue;
+    const c = /^#[0-9a-f]{3,8}$/i.test(v) ? Color.hex(v) : namedColor(v);
+    if (c && c.a >= 0.5) out.push(`--layr-on-${k}:${INK[c.ink]}`);
+  }
+  return out;
+}
 
 /** CSS named colours LAYR recognises as bare identifiers. */
 export const NAMED_COLORS: Record<string, string> = {

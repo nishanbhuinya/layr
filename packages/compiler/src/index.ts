@@ -8,3 +8,4 @@ export * from "./source.ts";
 export { preprocess, rewriteBody } from "./tsbody.ts";
 export { designScaleFrom, readAppConfig, type ThemeConfig } from "./app.ts";
 export { format, type FormatOptions } from "./format.ts";
+export { applyEdits, type Upgrade, upgrades } from "./upgrade.ts";

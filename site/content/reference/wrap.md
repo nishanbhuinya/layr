@@ -4,26 +4,75 @@ Wrap lays its objects out in rows and starts a new line when a row is full. `gap
 
 ```layr
 Wrap(
-  .config(w: 300, gap: 8, runGap: 8)
-  Container(
-    .config(color: sunken, cornerRadius: 999, padding: sym(x: 12, y: 5))
-    .obj(Text(.config(size: 13) .obj('Design Scale')))
+  .config(
+    w: 300
+    gap: 8
+    runGap: 8
   )
   Container(
-    .config(color: sunken, cornerRadius: 999, padding: sym(x: 12, y: 5))
-    .obj(Text(.config(size: 13) .obj('Layout')))
+    .config(
+      color: sunken
+      cornerRadius: 999
+      padding: sym(x: 12, y: 5)
+    )
+    .obj(
+      Text(
+        .config(size: 13)
+        .obj('Design Scale')
+      )
+    )
   )
   Container(
-    .config(color: sunken, cornerRadius: 999, padding: sym(x: 12, y: 5))
-    .obj(Text(.config(size: 13) .obj('Export, Extract, Inject')))
+    .config(
+      color: sunken
+      cornerRadius: 999
+      padding: sym(x: 12, y: 5)
+    )
+    .obj(
+      Text(
+        .config(size: 13)
+        .obj('Layout')
+      )
+    )
   )
   Container(
-    .config(color: sunken, cornerRadius: 999, padding: sym(x: 12, y: 5))
-    .obj(Text(.config(size: 13) .obj('Animation')))
+    .config(
+      color: sunken
+      cornerRadius: 999
+      padding: sym(x: 12, y: 5)
+    )
+    .obj(
+      Text(
+        .config(size: 13)
+        .obj('Export, Extract, Inject')
+      )
+    )
   )
   Container(
-    .config(color: sunken, cornerRadius: 999, padding: sym(x: 12, y: 5))
-    .obj(Text(.config(size: 13) .obj('Effects')))
+    .config(
+      color: sunken
+      cornerRadius: 999
+      padding: sym(x: 12, y: 5)
+    )
+    .obj(
+      Text(
+        .config(size: 13)
+        .obj('Animation')
+      )
+    )
+  )
+  Container(
+    .config(
+      color: sunken
+      cornerRadius: 999
+      padding: sym(x: 12, y: 5)
+    )
+    .obj(
+      Text(
+        .config(size: 13)
+        .obj('Effects')
+      )
+    )
   )
 )
 ```

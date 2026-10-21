@@ -4,7 +4,10 @@ Aspect keeps its object at a width-to-height `ratio`, whatever width it gets. Th
 
 ```layr
 Column(
-  .config(w: fill, gap: 8)
+  .config(
+    w: fill
+    gap: 8
+  )
   Aspect(
     .config(ratio: 1.78)
     .obj(
@@ -16,12 +19,20 @@ Column(
           cornerRadius: 14
           objAlign: mid
         )
-        .obj(Text(.config(color: white) .obj('16 : 9')))
+        .obj(
+          Text(
+            .config(color: white)
+            .obj('16 : 9')
+          )
+        )
       )
     )
   )
   Text(
-    .config(size: 13, color: muted)
+    .config(
+      size: 13
+      color: muted
+    )
     .obj('Resize the preview: the height follows the width.')
   )
 )

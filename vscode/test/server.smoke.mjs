@@ -17,6 +17,7 @@ const server = spawn(process.execPath, [new URL("../dist/server.js", import.meta
 let buf = Buffer.alloc(0);
 const waiters = new Map();
 const notes = [];
+const applied = [];
 server.stdout.on("data", (d) => {
   buf = Buffer.concat([buf, d]);
   for (;;) {
@@ -26,7 +27,11 @@ server.stdout.on("data", (d) => {
     if (buf.length < head + 4 + len) return;
     const msg = JSON.parse(buf.slice(head + 4, head + 4 + len).toString());
     buf = buf.slice(head + 4 + len);
-    if (msg.id !== undefined && waiters.has(msg.id)) {
+    if (msg.id !== undefined && msg.method === "workspace/applyEdit") {
+      // The server asks the editor to apply an edit: record it and say it was applied.
+      applied.push(msg.params);
+      send({ id: msg.id, result: { applied: true } });
+    } else if (msg.id !== undefined && waiters.has(msg.id)) {
       waiters.get(msg.id)(msg.result);
       waiters.delete(msg.id);
     } else if (msg.method) notes.push(msg);
@@ -68,6 +73,34 @@ const hover = await request("textDocument/hover", { textDocument: { uri }, posit
 if (!hover?.contents?.value?.includes("**Container**")) fail("hover lacks widget docs");
 const edits = await request("textDocument/formatting", { textDocument: { uri }, options: { tabSize: 2, insertSpaces: true } });
 if (!Array.isArray(edits)) fail("formatting failed");
-console.log(`OK: ${diags.length} diagnostic(s), ${completion.length} completions, hover and formatting work`);
+
+// Completion writes whole calls: a widget arrives with its closing bracket as a snippet.
+const objLine = text.split("\n")[line];
+const atBody = { line, character: objLine.indexOf("Container") };
+const objects = await request("textDocument/completion", { textDocument: { uri }, position: atBody });
+const box = objects.find((c) => c.label === "Container");
+if (box?.insertText !== "Container" && !(box?.insertText === "Container($0)" && box.insertTextFormat === 2)) fail(`widget completion is not a whole call: ${JSON.stringify(box)}`);
+
+// Refactors on the object under the cursor.
+const actions = await request("textDocument/codeAction", { textDocument: { uri }, range: { start: atBody, end: atBody }, context: { diagnostics: [] } });
+for (const t of ["Wrap with Column", "Wrap with Padding", "Extract Container to a Widget"]) if (!actions.some((a) => a.title === t)) fail(`no "${t}" action: ${actions.map((a) => a.title).join(", ")}`);
+
+// A deprecated form: struck through, announced, and updated by the command (the editor applies the edit).
+const old = "Widget(\n  .name(Tag)\n  .obj(Text('t'))\n)\n";
+const oldUri = pathToFileURL(join(root, "src", "pages", "tag.layr")).href;
+send({ method: "textDocument/didOpen", params: { textDocument: { uri: oldUri, languageId: "layr", version: 1, text: old } } });
+const t0 = Date.now();
+while (!notes.some((n) => n.method === "layr/deprecations" && n.params.count > 0)) {
+  if (Date.now() - t0 > 10000) fail("no layr/deprecations notification");
+  await new Promise((r) => setTimeout(r, 50));
+}
+const oldDiag = notes.filter((n) => n.method === "textDocument/publishDiagnostics" && n.params.uri === oldUri).at(-1)?.params.diagnostics.find((d) => d.code === "L1017");
+if (!oldDiag?.tags?.includes(2)) fail("deprecated form is not tagged Deprecated");
+await request("workspace/executeCommand", { command: "layr.upgradeAll", arguments: [] });
+const apply = applied.at(-1);
+const newText = apply?.edit?.changes?.[oldUri]?.[0]?.newText ?? "";
+if (!newText.includes(".wgt(")) fail(`Update all did not rewrite .obj: ${JSON.stringify(apply)}`);
+
+console.log(`OK: ${diags.length} diagnostic(s), ${completion.length} completions, hover, formatting, whole-call completion, ${actions.length} code actions and Update all work`);
 server.kill();
 process.exit(0);

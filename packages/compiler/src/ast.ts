@@ -55,6 +55,8 @@ export interface Decl extends Base {
   name: string;
   nameSpan: Span;
   init: Expr | null;
+  /** A param's allowed values, `align a = in | mid | out` (the first is the default). */
+  options?: Expr[];
   exported: boolean;
   immutable: boolean;
   required: boolean;

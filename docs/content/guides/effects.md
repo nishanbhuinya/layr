@@ -20,9 +20,16 @@ Page(
     .config(color: canvas)
     .body(
       Stack(
-        .config(w: fill, h: 340, clip: true)
+        .config(
+          w: fill
+          h: 340
+          clip: true
+        )
         Scroll(
-          .config(w: fill, h: fill)
+          .config(
+            w: fill
+            h: fill
+          )
           Column(
             .config(
               w: fill
@@ -64,7 +71,11 @@ Page(
           )
         )
         Position(
-          .config(left: 0, right: 0, top: 0)
+          .config(
+            left: 0
+            right: 0
+            top: 0
+          )
           .obj(
             Blur(
               .config(
@@ -75,7 +86,11 @@ Page(
               )
               .obj(
                 Text(
-                  .config(size: 17, color: ink, weight: semibold)
+                  .config(
+                    size: 17
+                    color: ink
+                    weight: semibold
+                  )
                   .obj('Frosted header')
                 )
               )
@@ -106,10 +121,24 @@ Page(
     .config(color: canvas)
     .body(
       Stack(
-        .config(w: fill, h: 360, clip: true)
+        .config(
+          w: fill
+          h: 360
+          clip: true
+        )
         Column(
-          .config(w: fill, gap: 10, padding: all(16))
-          Text(.config(size: 13, color: muted) .obj('Today'))
+          .config(
+            w: fill
+            gap: 10
+            padding: all(16)
+          )
+          Text(
+            .config(
+              size: 13
+              color: muted
+            )
+            .obj('Today')
+          )
           Container(
             .config(
               w: fill
@@ -144,7 +173,11 @@ Page(
           )
         )
         Position(
-          .config(bottom: 0, left: 0, right: 0)
+          .config(
+            bottom: 0
+            left: 0
+            right: 0
+          )
           .obj(
             Blur(
               .config(
@@ -191,9 +224,16 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: fill, gap: 16, padding: all(24))
+        .config(
+          w: fill
+          gap: 16
+          padding: all(24)
+        )
         Animate(
-          .config(duration: 450ms, ease: ease.out)
+          .config(
+            duration: 450ms
+            ease: ease.out
+          )
           .obj(
             Blur(
               .config(
@@ -205,7 +245,11 @@ Page(
               )
               .obj(
                 Text(
-                  .config(size: 18, color: ink, lineHeight: 1.5)
+                  .config(
+                    size: 18
+                    color: ink
+                    lineHeight: 1.5
+                  )
                   .obj(
                     'The layout was authoritative all along: every number in the file was the one on the screen.'
                   )

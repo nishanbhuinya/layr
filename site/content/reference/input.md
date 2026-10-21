@@ -11,10 +11,18 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: 320, gap: 12, padding: all(24))
+        .config(
+          w: 320
+          gap: 12
+          padding: all(24)
+        )
         Input(
           .preset(default)
-          .config(label: 'Your name', placeholder: 'Ada', value: name)
+          .config(
+            label: 'Your name'
+            placeholder: 'Ada'
+            value: name
+          )
           .fnc { name = value }
         )
         Text(

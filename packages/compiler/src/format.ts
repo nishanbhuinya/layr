@@ -4,7 +4,8 @@
  * - aliases → canonical names (widgets, keys, alignments, steps, colour methods, builtins)
  * - modifier order: identity → preset → params → config → frames → export → motion → logic → objects
  * - config keys: dimensions first, then alphabetical; groups sort by name
- * - shorthand (one line) when it fits; otherwise one item per line, with props gathered into `.config`
+ * - the tree reads down the page: two or more entries, modifiers or objects break one per line, with
+ *   props gathered into `.config`; a single short item stays inline (see `mustBreak`)
  * - comments are kept; formatting is idempotent; files with syntax errors are left untouched
  */
 import { canonicalAlign, keyOf, MODIFIER_ORDER, SIZE_KEYS, widget, type WidgetDef } from "@layr-internal/model";
@@ -76,6 +77,8 @@ class Formatter {
   private hug(items: Item[], ind: string): string | null {
     if (items.length !== 1) return null;
     const only = items[0] as Item;
+    // Prose over several lines (RichText's string) keeps its quotes against the parentheses: `.obj('` … `')`.
+    if (only.type === "ExprItem" && only.expr.type === "String" && only.expr.raw.includes("\n") && !only.leading?.length && !only.trailing && !only.after?.length) return this.expr(only.expr, ind);
     if (only.type !== "ExprItem" || only.expr.type !== "Call" || only.leading?.length || only.trailing || only.after?.length) return null;
     if (isObjectCall(only.expr)) return null;
     return this.call(only.expr, ind);
@@ -145,7 +148,8 @@ class Formatter {
     if (d.kind === "var" || d.kind === "const" || d.kind === "bind") words.push(d.kind);
     if (d.typeRef) words.push(this.type(d.typeRef));
     words.push(d.name);
-    return `${words.join(" ")}${d.init ? ` = ${this.expr(d.init, ind)}` : ""}`;
+    const init = d.options?.length ? d.options.map((o) => this.expr(o, ind)).join(" | ") : d.init ? this.expr(d.init, ind) : "";
+    return `${words.join(" ")}${init ? ` = ${init}` : ""}`;
   }
 
   private prop(p: Prop, ind: string, owner: WidgetDef | null, group?: string): string {
@@ -169,7 +173,7 @@ class Formatter {
     const inner = items.map((it) => ({ it, one: this.itemOneLine(it, owner, isGroup ? name : undefined) }));
     const oneLine = `.${name}(${this.joinOne(inner.map((x) => ({ it: x.it, text: x.one })))})`;
     const hasComments = items.some((it) => it.leading?.length || it.trailing || it.after?.length);
-    if (!hasComments && inner.every((x) => !x.one.includes("\n")) && ind.length + oneLine.length + block.length <= this.width) return `${oneLine}${block}`;
+    if (!hasComments && !mustBreak(items) && inner.every((x) => !x.one.includes("\n")) && ind.length + oneLine.length + block.length <= this.width) return `${oneLine}${block}`;
     const hugged = this.hug(items, ind);
     if (hugged) return `.${name}(${hugged})${block}`;
     const nested = `${ind}${this.unit}`;
@@ -258,12 +262,14 @@ class Formatter {
     let callee = this.expr(c.callee, ind);
     const def = c.callee.type === "Ident" ? widget(c.callee.name) : undefined;
     if (def) callee = def.name;
+    if (callee === "Ditto") callee = "Duplicate";
     let items = c.items;
     if (def) items = orderItems(items, def);
     const block = c.block ? ` ${this.block(c.block, ind)}` : "";
     const one = `${callee}(${this.joinOne(items.map((it) => ({ it, text: this.itemOneLine(it, def ?? null) })))})${block}`;
     const hasComments = items.some((it) => it.leading?.length || it.trailing || it.after?.length);
-    if (!hasComments && !one.includes("\n") && ind.length + one.length <= this.width) return one;
+    // Only objects break by structure; value calls (`sym(x: 8, y: 4)`, `shadow(…)`, gradients) stay one expression.
+    if (!hasComments && (!isObjectCall(c) || !mustBreak(items)) && !one.includes("\n") && ind.length + one.length <= this.width) return one;
     // Multi-line: gather bare props into .config (canonical expanded form).
     if (def) items = gatherConfig(items, def);
     const hugged = this.hug(items, ind);
@@ -271,6 +277,15 @@ class Formatter {
     const nested = `${ind}${this.unit}`;
     return `${callee}(\n${this.lines(items, nested, def ?? null)}\n${ind})${block}`;
   }
+}
+
+/**
+ * The tree reads down the page: a call or modifier with two or more items, any of them a config
+ * entry, a declaration, a modifier or an object, puts each on its own line however short it is
+ * (`.config(w: 100, h: 50)` breaks; `.name(Card)`, `Text('Hi')` and `.as(item, i)` stay inline).
+ */
+function mustBreak(items: Item[]): boolean {
+  return items.length >= 2 && items.some((it) => it.type !== "ExprItem" || (it.expr.type === "Call" && isObjectCall(it.expr)));
 }
 
 /** Calls that make values, not objects: they may hug their parent. */
@@ -307,6 +322,7 @@ function configKey(it: Item, def: WidgetDef): string {
   return "~";
 }
 
+/** Config order: the dimensions, then keys alphabetically, then nested groups (`.border(...)`) by name. */
 export function sortConfig(items: Item[], def: WidgetDef): Item[] {
   return [...items].sort((a, b) => {
     const ka = configKey(a, def);
@@ -314,7 +330,9 @@ export function sortConfig(items: Item[], def: WidgetDef): Item[] {
     const da = DIMENSIONS.indexOf(ka);
     const db = DIMENSIONS.indexOf(kb);
     if (da >= 0 || db >= 0) return (da < 0 ? 99 : da) - (db < 0 ? 99 : db);
-    return ka.localeCompare(kb);
+    const ga = a.type === "Modifier" ? 1 : 0;
+    const gb = b.type === "Modifier" ? 1 : 0;
+    return ga - gb || ka.localeCompare(kb);
   });
 }
 

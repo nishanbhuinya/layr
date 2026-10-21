@@ -7,15 +7,51 @@ Page(
 
   Scaffold(
     .config(color: white.shade(1))
-    .body(Mid(Column(
-      .config(gap: 16, xAlign: mid, padding: all(24))
-      Text(.config(type: h1, color: ink) .obj('{{name}}'))
-      Text(.config(color: ink.alpha(70%)) .obj('Edit src/pages/index.layr and save.'))
-      Container(
-        .config(w: 200, h: 120, color: brand, cornerRadius: 20, objAlign: mid)
-        .obj(Text(.config(color: white, size: 32, weight: bold) .obj('$count')))
+    .body(
+      Mid(
+        Column(
+          .config(
+            gap: 16
+            padding: all(24)
+            xAlign: mid
+          )
+          Text(
+            .config(
+              color: ink
+              type: h1
+            )
+            .obj('{{name}}')
+          )
+          Text(
+            .config(color: ink.alpha(70%))
+            .obj('Edit src/pages/index.layr and save.')
+          )
+          Container(
+            .config(
+              w: 200
+              h: 120
+              color: brand
+              cornerRadius: 20
+              objAlign: mid
+            )
+            .obj(
+              Text(
+                .config(
+                  size: 32
+                  color: white
+                  weight: bold
+                )
+                .obj('$count')
+              )
+            )
+          )
+          Button(
+            .preset(default)
+            .config(label: 'Count')
+            .fnc { count++ }
+          )
+        )
       )
-      Button(.preset(default) .config(label: 'Count') .fnc { count++ })
-    )))
+    )
   )
 )

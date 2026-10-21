@@ -15,8 +15,14 @@ SafeArea(
         xAlign: between
         yAlign: mid
       )
-      Text(.config(weight: semibold) .obj('Room B'))
-      Text(.config(color: muted) .obj('Available'))
+      Text(
+        .config(weight: semibold)
+        .obj('Room B')
+      )
+      Text(
+        .config(color: muted)
+        .obj('Available')
+      )
     )
   )
 )

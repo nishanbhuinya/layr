@@ -125,6 +125,31 @@ export function setRendered(address: string, key: string, value: unknown) {
   feature(address, key).rendered.set(value);
 }
 
+/**
+ * Duplicate copies: a copy's features resolve as its original's writes and layers below the Duplicate's
+ * order (all of them when it has none), then the Duplicate's own config for it (`over`), then the
+ * copy's own writes and layers.
+ */
+interface Mirror {
+  src: string;
+  below: number | null;
+  over: Record<string, unknown>;
+}
+const mirrors = new Map<string, Mirror>();
+
+/** Declares `copy` a Duplicate copy of `src` (called by the copy as it renders; repeat calls update `over`). */
+export function mirror(copy: string, src: string, below: number | null, over: Record<string, unknown> = {}) {
+  mirrors.set(copy, { src, below, over });
+}
+
+/** The value a copy starts from: the original's cascade below the Duplicate's order, then the Duplicate's config. */
+function mirrored(m: Mirror, key: string, declared: unknown): unknown {
+  const f = feature(m.src, key);
+  const w = f.written.get();
+  const v = applyLayers(f, w ? w.v : declared, m.below);
+  return key in m.over ? m.over[key] : v;
+}
+
 /** Layers are kept sorted (ascending exeOrder, unordered last), so a read below `k` stops at the first layer at or above it. */
 function applyLayers(f: Feature, base: unknown, below: number | null): unknown {
   let v = base;
@@ -156,7 +181,8 @@ export function read(address: string, key: string, order: number | null = null):
   const f = feature(address, key);
   if (RENDERED.has(key)) return f.rendered.get();
   const w = f.written.get();
-  const base = w ? w.v : f.declared.get();
+  const mi = mirrors.get(address);
+  const base = w ? w.v : mi ? mirrored(mi, key, f.declared.get()) : f.declared.get();
   return applyLayers(f, base, order);
 }
 
@@ -164,17 +190,24 @@ export function read(address: string, key: string, order: number | null = null):
 export function resolve(address: string, key: string, declared: unknown): unknown {
   const f = feature(address, key);
   const w = f.written.get();
-  return applyLayers(f, w ? w.v : declared, null);
+  const mi = mirrors.get(address);
+  return applyLayers(f, w ? w.v : mi ? mirrored(mi, key, declared) : declared, null);
 }
 
 /** Keys of an object that currently have writes or layers (read inside the owner's render to track them). */
 export function overriddenKeys(address: string): string[] {
   objectSignal(address).get();
+  const out = new Set<string>();
   const m = features.get(address);
-  if (!m) return [];
-  const out: string[] = [];
-  for (const [k, f] of m) if (f.written.peek() || f.layers.peek().length) out.push(k);
-  return out;
+  for (const [k, f] of m ?? []) if (f.written.peek() || f.layers.peek().length) out.add(k);
+  // A Duplicate copy also follows what changes its original, and what the Duplicate sets.
+  const mi = mirrors.get(address);
+  if (mi) {
+    objectSignal(mi.src).get();
+    for (const [k, f] of features.get(mi.src) ?? []) if (f.written.peek() || f.layers.peek().some((l) => mi.below === null || (l.o !== null && l.o < mi.below))) out.add(k);
+    for (const k of Object.keys(mi.over)) out.add(k);
+  }
+  return [...out];
 }
 
 /** Imperative write from a Function / TS body (`box.w = 200`). */
@@ -244,15 +277,14 @@ export function explain(address: string, key: string): CascadeStep[] {
 
 /** Test helper: clears all registry state. */
 export function resetRegistry() {
-  features.clear();
-  objectVersion.clear();
-  immutableTable.clear();
+  reset();
   seq = 0;
 }
 
-/** Forgets every feature, layer and `!mut` entry (a playground starting a fresh run). */
+/** Forgets every feature, layer, copy and `!mut` entry (a playground starting a fresh run). */
 export function reset() {
   features.clear();
   objectVersion.clear();
   immutableTable.clear();
+  mirrors.clear();
 }

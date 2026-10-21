@@ -21,17 +21,24 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: fill, gap: 16, padding: all(24))
+        .config(
+          w: fill
+          gap: 16
+          padding: all(24)
+        )
         <section className="note" style={{ borderLeft: '3px solid var(--layr-color-accent)', paddingLeft: 12 }}>
         Text(.config(size: 18, weight: semibold, color: ink) .obj('A LAYR Text inside a section'))
         <p style={{ margin: 0, color: 'var(--layr-color-muted)' }}>Plain HTML, {likes} likes.</p>
       </section>
         Container(
           .config(
-            .border(color: line, width: 1)
             color: panel
             cornerRadius: 12
             padding: all(16)
+            .border(
+              color: line
+              width: 1
+            )
           )
           .obj(<button onClick={() => likes++}>Like it</button>)
         )
@@ -58,10 +65,16 @@ Page(
   Scaffold(
     .body(
       Column(
-        .config(gap: 12, padding: all(24))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
         Counter(
           .config(padding: all(8))
-          .props(start: 5, label: 'React counter')
+          .props(
+            start: 5
+            label: 'React counter'
+          )
           .on(change: { changes++ })
         )
         Text('changes seen by LAYR: $changes')
@@ -94,7 +107,16 @@ Calling a hook anywhere else is an error (L9002).
 ```layr noexec
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
-App(.providers(QueryClientProvider(.props(client: new, QueryClient()))))
+App(
+  .providers(
+    QueryClientProvider(
+      .props(
+        client: new
+        QueryClient()
+      )
+    )
+  )
+)
 ```
 
 ## Styling React components

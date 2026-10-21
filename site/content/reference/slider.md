@@ -11,17 +11,35 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: 320, gap: 12, padding: all(24))
+        .config(
+          w: 320
+          gap: 12
+          padding: all(24)
+        )
         Slider(
-          .config(label: 'Hours', max: 8, min: 1, step: 1, value: hours)
+          .config(
+            label: 'Hours'
+            max: 8
+            min: 1
+            step: 1
+            value: hours
+          )
           .fnc { hours = value }
         )
         Text(
-          .config(size: 18, weight: semibold)
+          .config(
+            size: 18
+            weight: semibold
+          )
           .obj('$hours hours · €${hours * 24}')
         )
         Container(
-          .config(w: hours * 40, h: 10, color: accent, cornerRadius: 999)
+          .config(
+            w: hours * 40
+            h: 10
+            color: accent
+            cornerRadius: 999
+          )
         )
       )
     )

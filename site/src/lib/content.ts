@@ -74,6 +74,8 @@ const PAGES: Record<string, () => Promise<{ default: unknown }>> = {
   contact: () => import("virtual:site/page/contact"),
   v1: () => import("virtual:site/page/v1"),
   publish: () => import("virtual:site/page/publish"),
+  editor: () => import("virtual:site/page/editor"),
+  changelog: () => import("virtual:site/page/changelog"),
 };
 
 export async function loadPage(name: string) {

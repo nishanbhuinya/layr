@@ -19,14 +19,74 @@ function layrFiles(dir: string, out: string[] = []): string[] {
 describe("format", () => {
   it("canonicalises aliases and ordering", () => {
     const src = `Col(.objs(Text('a')), .config(xAlign: mid, gap: 8, h: 100, w: 200, pad: all(4)), .id(list))`;
-    expect(format(src).text).toBe("Column(.id(list) .config(w: 200, h: 100, gap: 8, padding: all(4), xAlign: mid) .objs(Text('a')))\n");
+    expect(format(src).text).toBe(`Column(
+  .id(list)
+  .config(
+    w: 200
+    h: 100
+    gap: 8
+    padding: all(4)
+    xAlign: mid
+  )
+  .objs(Text('a'))
+)
+`);
   });
 
-  it("expands long nodes and gathers props into .config", () => {
-    const src = `Container(color: #FFF, w: 200, cornerRadius: 16, padding: all(24), shadow: shadow(y: 4, blur: 12), Text('A long enough text to force expansion'))`;
+  it("puts every entry, modifier and object on its own line, however short, and gathers props into .config", () => {
+    const src = `Container(color: #FFF, w: 200, cornerRadius: 16, Text('A'))`;
     expect(format(src).text).toBe(`Container(
-  .config(w: 200, color: #fff, cornerRadius: 16, padding: all(24), shadow: shadow(y: 4, blur: 12))
-  Text('A long enough text to force expansion')
+  .config(
+    w: 200
+    color: #fff
+    cornerRadius: 16
+  )
+  Text('A')
+)
+`);
+  });
+
+  it("keeps a single short item inline: names, one config entry, a text, a forwarded object", () => {
+    expect(format("Widget(.name(Card) .wgt(Container(.config(color: red) .obj(param.obj))))").text).toBe(`Widget(
+  .name(Card)
+  .wgt(
+    Container(
+      .config(color: red)
+      .obj(param.obj)
+    )
+  )
+)
+`);
+    expect(format("Mid(Text('Hi'))").text).toBe("Mid(Text('Hi'))\n");
+    // Value calls are expressions: they never break by structure.
+    expect(format("Container(.config(padding: sym(x: 32, y: 8)))").text).toBe("Container(.config(padding: sym(x: 32, y: 8)))\n");
+  });
+
+  it("formats the Report 5 ColorSquare like Flutter: groups after keys, expressions inline", () => {
+    const src = "Widget(.name(ColorSquare) .param(req color color, req object obj, double x = 200, double y, double bW) .wgt(Container(.config(.border(align: in, color: param.color.invert, width: param.bW!), size: (param.x, param.y ?? 200), color: param.color) .obj(param.obj))))";
+    expect(format(src).text).toBe(`Widget(
+  .name(ColorSquare)
+  .param(
+    req color color
+    req obj obj
+    num x = 200
+    num y
+    num bW
+  )
+  .wgt(
+    Container(
+      .config(
+        size: (param.x, param.y ?? 200)
+        color: param.color
+        .border(
+          align: in
+          color: param.color.invert
+          width: param.bW!
+        )
+      )
+      .obj(param.obj)
+    )
+  )
 )
 `);
   });
@@ -86,9 +146,9 @@ Container(.config(color: #fff.opacity(.5)))`;
 });
 
 describe("commas before modifiers", () => {
-  it("keeps the comma between a value and a group modifier on one line", () => {
+  it("puts a value and a group modifier on lines of their own", () => {
     const r = format("Container(.config(size: 120, .border(width: 2)))");
-    expect(r.text.trim()).toBe("Container(.config(size: 120, .border(width: 2)))");
+    expect(r.text.trim()).toBe("Container(\n  .config(\n    size: 120\n    .border(width: 2)\n  )\n)");
   });
   it("reads a spaced `.name(` after a value as the next modifier, not a method call on the value", () => {
     const c = compileProject([{ path: "src/pages/index.layr", text: "Page(.name(P) .route('/') Scaffold(.body(Container(.config(size: 120 .border(width: 2))))))" }]);
@@ -112,6 +172,6 @@ describe("commas are optional", () => {
     expect(errors("Column(Container(.config(size: 40, color: red.alpha(50%))))")).toEqual([]);
   });
   it("the formatter still writes the canonical comma on one line", () => {
-    expect(format("Column(Text('a') Text('b'))").text.trim()).toBe("Column(Text('a'), Text('b'))");
+    expect(format("Animate(.enter(slide(y: 20) fade) Text('a'))").text.trim()).toBe("Animate(\n  .enter(slide(y: 20), fade)\n  Text('a')\n)");
   });
 });

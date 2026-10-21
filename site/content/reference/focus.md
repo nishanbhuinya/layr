@@ -11,7 +11,11 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: 320, gap: 12, padding: all(24))
+        .config(
+          w: 320
+          gap: 12
+          padding: all(24)
+        )
         Button(
           .preset(default)
           .config(label: open ? 'Close search' : 'Search')
@@ -25,7 +29,10 @@ Page(
               .obj(
                 Input(
                   .preset(default)
-                  .config(label: 'Search rooms', placeholder: 'Room B')
+                  .config(
+                    label: 'Search rooms'
+                    placeholder: 'Room B'
+                  )
                 )
               )
             )

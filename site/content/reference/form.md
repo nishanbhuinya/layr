@@ -12,16 +12,31 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(w: 320, gap: 12, padding: all(24))
+        .config(
+          w: 320
+          gap: 12
+          padding: all(24)
+        )
         Form(
           .config(gap: 12)
           .fnc { sent = email }
           Input(
             .preset(default)
-            .config(kind: email, label: 'Email', required: true, value: email)
+            .config(
+              kind: email
+              label: 'Email'
+              required: true
+              value: email
+            )
             .fnc { email = value }
           )
-          Button(.preset(default) .config(label: 'Notify me', submit: true))
+          Button(
+            .preset(default)
+            .config(
+              label: 'Notify me'
+              submit: true
+            )
+          )
         )
         Text(
           .config(color: muted)

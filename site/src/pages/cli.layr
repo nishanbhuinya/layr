@@ -5,7 +5,14 @@ import { loadCli } from '../lib/content.ts'
 Page(
   .name(CliPage)
   .route('/cli')
-  .meta(title: 'CLI · LAYR', description: 'Every layr command: create, dev, build, format, analyze, explain, addons, skills, lsp and mcp.')
+  .meta(
+    title: 'CLI · LAYR'
+    description: 'Every layr command: create, dev, build, format, analyze, explain, addons, skills, lsp and mcp.'
+  )
   .load { return loadCli() }
-  Scaffold(.config(color: canvas) .bar(TopBar()) .body(MdPage(.config(page: data))))
+  Scaffold(
+    .config(color: canvas)
+    .bar(TopBar())
+    .body(MdPage(.config(page: data)))
+  )
 )

@@ -4,9 +4,24 @@ Svg shows an SVG file at the size you give it. Without `color` it keeps the file
 
 ```layr
 Row(
-  .config(gap: 12, yAlign: mid)
-  Svg(.config(size: 40, alt: 'LAYR', src: '/icon.svg'))
-  Text(.config(size: 20, weight: semibold) .obj('LAYR'))
+  .config(
+    gap: 12
+    yAlign: mid
+  )
+  Svg(
+    .config(
+      size: 40
+      alt: 'LAYR'
+      src: '/icon.svg'
+    )
+  )
+  Text(
+    .config(
+      size: 20
+      weight: semibold
+    )
+    .obj('LAYR')
+  )
 )
 ```
 
@@ -16,10 +31,34 @@ With `color`, the SVG's shape is filled with that colour, so a one-colour icon o
 
 ```layr
 Row(
-  .config(gap: 16, yAlign: mid)
-  Svg(.config(size: 40, alt: 'LAYR', color: accent, src: '/icon.svg'))
-  Svg(.config(size: 40, alt: 'LAYR', color: teal, src: '/icon.svg'))
-  Svg(.config(size: 40, alt: 'LAYR', color: ink, src: '/icon.svg'))
+  .config(
+    gap: 16
+    yAlign: mid
+  )
+  Svg(
+    .config(
+      size: 40
+      alt: 'LAYR'
+      color: accent
+      src: '/icon.svg'
+    )
+  )
+  Svg(
+    .config(
+      size: 40
+      alt: 'LAYR'
+      color: teal
+      src: '/icon.svg'
+    )
+  )
+  Svg(
+    .config(
+      size: 40
+      alt: 'LAYR'
+      color: ink
+      src: '/icon.svg'
+    )
+  )
 )
 ```
 

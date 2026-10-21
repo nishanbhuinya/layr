@@ -18,20 +18,48 @@ Page(
   Function(
     .name(step)
     .param(ref int n)
-    .def(.if(.cnd(n >= 9) .exe(n = 0)) .fb(.exe(n++)))
+    .def(
+      .if(
+        .cnd(n >= 9)
+        .exe(n = 0)
+      )
+      .fb(.exe(n++))
+    )
   )
 
   // The same idea in TypeScript
-  Function(.name(reset) .param(ref int n) .def { n = 0 })
+  Function(
+    .name(reset)
+    .param(ref int n)
+    .def { n = 0 }
+  )
 
   Scaffold(
     .config(color: canvas)
     .body(
       Row(
-        .config(gap: 12, padding: all(24), yAlign: mid)
-        Text(.config(size: 32, weight: bold) .obj('$count'))
-        Button(.preset(default) .config(label: 'Step') .fnc(step(count)))
-        Button(.preset(default) .config(label: 'Reset') .fnc(reset(count)))
+        .config(
+          gap: 12
+          padding: all(24)
+          yAlign: mid
+        )
+        Text(
+          .config(
+            size: 32
+            weight: bold
+          )
+          .obj('$count')
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Step')
+          .fnc(step(count))
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Reset')
+          .fnc(reset(count))
+        )
       )
     )
   )
@@ -81,11 +109,23 @@ Page(
     .config(color: canvas)
     .body(
       Row(
-        .config(gap: 16, padding: all(24), yAlign: mid)
-        Container(
-          .config(size: 40, color: on ? accent : sunken, cornerRadius: 999)
+        .config(
+          gap: 16
+          padding: all(24)
+          yAlign: mid
         )
-        Button(.preset(default) .config(label: 'Blink three times') .fnc(blink))
+        Container(
+          .config(
+            size: 40
+            color: on ? accent : sunken
+            cornerRadius: 999
+          )
+        )
+        Button(
+          .preset(default)
+          .config(label: 'Blink three times')
+          .fnc(blink)
+        )
       )
     )
   )
@@ -112,14 +152,20 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 12, padding: all(24))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
         Container(
           .config(
             w: 220
-            .border(color: line, width: 1)
             color: over ? accent : panel
             cornerRadius: 14
             padding: all(20)
+            .border(
+              color: line
+              width: 1
+            )
           )
           .on(
             hover: { over = true }
@@ -133,7 +179,10 @@ Page(
             )
           )
         )
-        Text(.config(color: muted) .obj('Tapped $taps times'))
+        Text(
+          .config(color: muted)
+          .obj('Tapped $taps times')
+        )
       )
     )
   )

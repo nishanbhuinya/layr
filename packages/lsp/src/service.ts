@@ -26,7 +26,26 @@ export interface Completion {
   detail?: string;
   doc?: string;
   insert?: string;
+  /** `insert` is an LSP snippet (`Container($0)`: the closing bracket comes with it, the cursor goes inside). */
+  snippet?: boolean;
 }
+
+/** What a construct's completion writes: its essential modifiers with tab stops. */
+const CONSTRUCT_SNIPPETS: Record<string, string> = {
+  Page: "Page(\n\t.name(${1:Home})\n\t.route('/${2}')\n\t$0\n)",
+  Widget: "Widget(\n\t.name(${1:Card})\n\t.wgt($0)\n)",
+  Function: "Function(.name(${1:run}) .def($0))",
+  Extract: "Extract(.from(${1:Page.id}) $0)",
+  Inject: "Inject(.into(${1:Page.id}) $0)",
+  Export: "Export(.from(${1:Page.id}) $0)",
+  If: "If(.cnd(${1:test}) $0)",
+  Each: "Each(.of(${1:list}) .as(${2:item}) $0)",
+  Repeat: "Repeat(.times(${1:3}) $0)",
+  Duplicate: "Duplicate(.id(${1:copy}) .from(${2:id}))",
+  Preset: "Preset(.name(${1:primary}) .for(${2:Button}) .config($0))",
+};
+/** Widgets whose object is text: the cursor lands inside the quotes. */
+const TEXT_SNIPPETS = new Set(["Text", "RichText", "Icon"]);
 
 export interface Hover {
   markdown: string;
@@ -50,7 +69,11 @@ const SAPI_STEPS = ["if", "cnd", "exe", "fb", "wait", "loop", "times", "while", 
 
 export class LayrService {
   private readonly files = new Map<string, string>();
+  /** The compile of the current texts, or null after an edit until something needs it again. */
   private result: CompileResult | null = null;
+  /** The last compile, kept across edits: completion and hover read the project's shape from it without recompiling. */
+  private last: CompileResult | null = null;
+  private readonly lines = new Map<string, { text: string; source: SourceFile }>();
   private config: Partial<ProjectConfig>;
 
   constructor(config: Partial<ProjectConfig> = {}) {
@@ -63,12 +86,14 @@ export class LayrService {
   }
 
   setFile(path: string, text: string) {
+    if (this.files.get(path) === text) return;
     this.files.set(path, text);
     this.result = null;
   }
 
   removeFile(path: string) {
     this.files.delete(path);
+    this.lines.delete(path);
     this.result = null;
   }
 
@@ -76,9 +101,25 @@ export class LayrService {
     return this.files.get(path);
   }
 
+  paths(): string[] {
+    return [...this.files.keys()];
+  }
+
+  /** Compiles the current texts (diagnostics, formatting, upgrades need this). */
   compile(): CompileResult {
-    if (!this.result) this.result = compileProject([...this.files].map(([path, text]) => ({ path, text })), this.config);
+    if (!this.result) {
+      this.result = compileProject([...this.files].map(([path, text]) => ({ path, text })), this.config);
+      this.last = this.result;
+    }
     return this.result;
+  }
+
+  /**
+   * The project as last compiled, for questions about its shape (widgets, ids, params, theme) that
+   * an edit in progress rarely changes; compiles only when nothing has been compiled yet.
+   */
+  analysis(): CompileResult {
+    return this.result ?? this.last ?? this.compile();
   }
 
   diagnostics(path: string): Diagnostic[] {
@@ -147,8 +188,17 @@ export class LayrService {
 
   // ---------------------------------------------------------------- completion
 
+  /** True while completing a name that a `(` already follows: complete the name alone. */
+  private parenFollows = false;
+
+  /** `name(…)` as a snippet with the cursor inside, or just the name when a `(` is already there. */
+  private call(name: string, inside = "$0", prefix = ""): Pick<Completion, "insert" | "snippet"> {
+    return this.parenFollows ? { insert: `${prefix}${name}` } : { insert: `${prefix}${name}(${inside})`, snippet: true };
+  }
+
   complete(path: string, offset: number): Completion[] {
     const text = this.files.get(path) ?? "";
+    this.parenFollows = /^[A-Za-z0-9_$]*\(/.test(text.slice(offset));
     const before = text.slice(0, offset);
     const word = (before.match(/[A-Za-z0-9_$]*$/) as RegExpMatchArray)[0];
     const lead = before.slice(0, before.length - word.length);
@@ -156,7 +206,7 @@ export class LayrService {
     if (chain[0] === "{") return [];
     const inner = chain[0];
     const owner = this.ownerWidget(chain);
-    const project = this.compile().project;
+    const project = this.analysis().project;
 
     // After a dot: modifiers, or members of a value.
     if (lead.endsWith(".") && !/[A-Za-z0-9_)\]'"]\.$/.test(lead.slice(-2))) {
@@ -182,7 +232,7 @@ export class LayrService {
 
     // `.at(` first argument: frames.
     if (inner === ".at" && !/,/.test(text.slice(text.lastIndexOf("(", offset) + 1, offset))) {
-      return this.compile().project.config.designScale.frames.map((f) => ({ label: f.name, kind: "frame" as const, detail: `${f.w}×${f.h} from ${f.from}px` }));
+      return this.analysis().project.config.designScale.frames.map((f) => ({ label: f.name, kind: "frame" as const, detail: `${f.w}×${f.h} from ${f.from}px` }));
     }
 
     // Keys inside .config(...) (or shorthand props in a widget call).
@@ -190,7 +240,7 @@ export class LayrService {
       const group = owner.groups?.find((g) => `.${g.name}` === inner);
       if (group) return Object.keys(group.keys).map((k) => ({ label: k, kind: "key", insert: `${k}: ` }));
       const keys = owner.keys.map((k) => this.keyCompletion(k));
-      const groups = (owner.groups ?? []).map((g) => ({ label: g.name, kind: "modifier" as const, detail: "group", doc: g.doc, insert: `.${g.name}(` }));
+      const groups = (owner.groups ?? []).map((g) => ({ label: g.name, kind: "modifier" as const, detail: "group", doc: g.doc, ...this.call(g.name, "$0", ".") }));
       return inner === owner.name ? [...keys, ...this.widgetCompletions(path)] : [...keys, ...groups];
     }
 
@@ -207,32 +257,35 @@ export class LayrService {
     if (k.type === "axis") return AXIS_VALUES.map((v) => ({ label: v, kind: "value" }));
     if (k.type === "align") return ["topLeft", "topMid", "topRight", "midLeft", "mid", "midRight", "bottomLeft", "bottomMid", "bottomRight"].map((v) => ({ label: v, kind: "value" }));
     if (k.type === "color" || k.type === "paint") {
-      const theme = Object.keys(this.compile().project.config.theme.colors).map((c) => ({ label: c, kind: "color" as const, detail: "theme" }));
-      return [...theme, ...Object.keys(NAMED_COLORS).map((c) => ({ label: c, kind: "color" as const })), { label: "LinearGradient", kind: "value", insert: "LinearGradient(.colors(" }];
+      const theme = Object.keys(this.analysis().project.config.theme.colors).map((c) => ({ label: c, kind: "color" as const, detail: "theme" }));
+      return [...theme, ...Object.keys(NAMED_COLORS).map((c) => ({ label: c, kind: "color" as const })), { label: "LinearGradient", kind: "value", ...this.call("LinearGradient", ".colors(${1:red}, ${2:blue})$0") }];
     }
-    if (k.type === "insets") return ["all", "sym", "only"].map((f) => ({ label: f, kind: "value", insert: `${f}(` }));
+    if (k.type === "insets") return ["all", "sym", "only"].map((f) => ({ label: f, kind: "value", ...this.call(f) }));
     if (k.type === "motion") return ["spring.gentle", "spring.snappy", "spring.bounce", "ease.inOut", "ease.out"].map((v) => ({ label: v, kind: "value" }));
-    if (k.type === "shadow") return [{ label: "shadow", kind: "value", insert: "shadow(y: 4, blur: 12)" }];
+    if (k.type === "shadow") return [{ label: "shadow", kind: "value", ...this.call("shadow", "y: ${1:4}, blur: ${2:12}") }];
     if (k.type === "bool") return ["true", "false"].map((v) => ({ label: v, kind: "value" }));
     return [];
   }
 
   private modifierCompletions(owner: WidgetDef | null, inner: string | undefined): Completion[] {
-    if (inner === ".def" || inner === ".fnc" || inner === ".if" || inner === ".fb" || inner === ".loop" || inner === ".exe") return SAPI_STEPS.map((s) => ({ label: s, kind: "modifier", insert: `${s}(` }));
+    if (inner === ".def" || inner === ".fnc" || inner === ".if" || inner === ".fb" || inner === ".loop" || inner === ".exe") return SAPI_STEPS.map((s) => ({ label: s, kind: "modifier", ...this.call(s) }));
     const construct = CONSTRUCTS.find((c) => c.name === inner);
-    if (construct) return construct.modifiers.map((m) => ({ label: m, kind: "modifier", insert: `${m}(` }));
+    if (construct) return construct.modifiers.map((m) => ({ label: m, kind: "modifier", ...this.call(m) }));
     const mods = new Set<string>(COMMON_MODIFIERS);
     for (const s of owner?.slots ?? []) mods.add(s.name);
     for (const k of owner?.keys ?? []) if (k.modifier) mods.add(k.name);
     if (owner?.name === "Animate") for (const m of ["eases", "enter", "exit"]) mods.add(m);
-    return [...mods].sort((a, b) => rank(a) - rank(b)).map((m) => ({ label: m, kind: "modifier" as const, insert: `${m}(` }));
+    return [...mods].sort((a, b) => rank(a) - rank(b)).map((m) => ({ label: m, kind: "modifier" as const, ...this.call(m) }));
   }
 
   private widgetCompletions(path: string): Completion[] {
-    const project = this.compile().project;
-    const own = [...project.widgets.values()].map((w) => ({ label: w.name, kind: "widget" as const, detail: `widget · ${w.module.path}` }));
-    const core = WIDGETS.map((w) => ({ label: w.name, kind: "widget" as const, detail: w.module, doc: w.doc, insert: `${w.name}(` }));
-    const constructs = [...CONSTRUCTS.map((c) => ({ label: c.name, kind: "construct" as const, doc: c.doc, insert: `${c.name}(` })), { label: "If", kind: "construct" as const, insert: "If(.cnd(" }, { label: "Each", kind: "construct" as const, insert: "Each(.of(" }];
+    const project = this.analysis().project;
+    const own = [...project.widgets.values()].map((w) => ({ label: w.name, kind: "widget" as const, detail: `widget · ${w.module.path}`, ...this.call(w.name) }));
+    const core = WIDGETS.map((w) => ({ label: w.name, kind: "widget" as const, detail: w.module, doc: w.doc, ...this.call(w.name, TEXT_SNIPPETS.has(w.name) ? "'$0'" : "$0") }));
+    const constructs = CONSTRUCTS.map((c) => {
+      const s = CONSTRUCT_SNIPPETS[c.name];
+      return { label: c.name, kind: "construct" as const, doc: c.doc, ...(s && !this.parenFollows ? { insert: s, snippet: true } : this.call(c.name)) };
+    });
     void path;
     return [...core, ...own, ...constructs];
   }
@@ -243,7 +296,8 @@ export class LayrService {
     const text = this.files.get(path) ?? "";
     const w = wordAt(text, offset);
     if (!w) return null;
-    const diag = this.diagnostics(path).find((d) => d.span.start <= offset && offset <= d.span.end);
+    // Only a compile of the current text has spans that match it.
+    const diag = this.result?.modules.get(path)?.diagnostics.find((d) => d.span.start <= offset && offset <= d.span.end);
     const lines: string[] = [];
     if (diag) {
       const def = DIAGNOSTIC_BY_CODE.get(diag.code);
@@ -274,7 +328,7 @@ export class LayrService {
         return { markdown: lines.join("\n"), span: w.span };
       }
     }
-    const project = this.compile().project;
+    const project = this.analysis().project;
     const comp = project.widgets.get(w.text) ?? project.pages.get(w.text);
     if (comp) {
       lines.push(`**${comp.name}** · ${comp.kind} · ${comp.module.path}`);
@@ -336,12 +390,22 @@ export class LayrService {
     return out;
   }
 
+  /** Line table of a file's current text, rebuilt only when the text changed. */
+  private source(path: string): SourceFile {
+    const text = this.files.get(path) ?? "";
+    const hit = this.lines.get(path);
+    if (hit && hit.text === text) return hit.source;
+    const source = new SourceFile(path, text);
+    this.lines.set(path, { text, source });
+    return source;
+  }
+
   position(path: string, offset: number) {
-    return new SourceFile(path, this.files.get(path) ?? "").position(offset);
+    return this.source(path).position(offset);
   }
 
   offset(path: string, line: number, column: number) {
-    return new SourceFile(path, this.files.get(path) ?? "").offset({ line, column });
+    return this.source(path).offset({ line, column });
   }
 }
 

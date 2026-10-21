@@ -27,6 +27,8 @@ export async function dev(args: Args) {
   await server.listen();
   console.log(banner("dev"));
   server.printUrls();
+  const deprecated = loadProject(root).result.diagnostics.filter((d) => d.deprecation).length;
+  if (deprecated) console.log(c.yellow(`\n  ${deprecated} deprecated form(s) in this project: ${c.bold("layr upgrade")} lists them and updates them when you agree.`));
 }
 
 export async function preview(args: Args) {

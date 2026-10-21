@@ -35,7 +35,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -80,7 +81,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -130,7 +132,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -183,7 +186,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -358,7 +362,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -406,7 +411,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -453,7 +459,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -632,9 +639,48 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
 | `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
 
-### Span (aliases: RichText)
+### RichText
 
-Inline text runs inside Text: `Text(Span(.config(weight: bold) 'Bold'), ' and plain')`.
+Text with styled runs written inside the string: `(blue)[Blue]`, `(24, bold)[Big]`, `*bold*`, `_italic_`, `` `code` ``, `~strike~`, `\n` for a line break and a blank line for a paragraph. A slash prints markup as written: `/(blue)[Blue]`. Values from `$name` are always plain text. Its config styles the whole text, like Text's.
+
+```layr
+RichText('Plain, (accent)[accent], *bold*, (24)[_big_] and `code`.')
+```
+
+Slots: `.obj` (text, default, required).
+
+Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `swipe`, `mount`, `unmount`, `visible`.
+
+| Key | Type | Default | Aliases | Meaning |
+|---|---|---|---|---|
+| `size` | len |  | fontSize | Font size in design px. |
+| `font` | txt |  | fontFamily | Font family, e.g. `'Geist'`. |
+| `weight` | thin \| light \| regular \| medium \| semibold \| bold \| black |  | fontWeight, wight | Font weight: `thin`…`black` or 100–900. |
+| `italic` | bool |  | italics | Italic style. |
+| `color` | paint |  |  | Text colour (a gradient paints the glyphs). |
+| `align` | left \| mid \| right \| start \| end \| justify |  | textAlign, textAlight, alignment | Text alignment. |
+| `lineHeight` | num |  |  | Line height as a multiple of the font size. |
+| `letterSpacing` | len |  |  | Space between letters. |
+| `underline` | bool |  |  | Underline. |
+| `underlinePos` | auto \| under \| baseline |  |  | Underline position. |
+| `underlineSkipInk` | bool | true |  | Skip descenders when underlining. |
+| `strike` | bool |  |  | Strike-through. |
+| `transform` | none \| upper \| lower \| capitalize |  |  | Case transform. |
+| `overflow` | wrap \| ellipsis \| fade \| scale \| clip | wrap |  | Long text: wrap (default), ellipsis, fade, scale or clip. |
+| `maxLines` | int |  |  | Maximum lines before `overflow` applies. |
+| `selectable` | bool | true |  | Allow selection. |
+| `baseline` | top \| mid \| bottom \| baseline |  | textBaseline | Vertical alignment inside a line. |
+| `margin` | insets |  |  | Space outside the object: `all(8)`, `sym(x: 8, y: 4)`, `only(top: 8)`. |
+| `opacity` | num |  |  | Opacity from 0 to 1. |
+| `hide` | bool |  | hidden | Removes the object from layout and the accessibility tree. |
+| `shrink` | num | 1 |  | Shrink priority when space runs out. Lower shrinks first; 0 never shrinks. |
+| `flex` | num | 1 |  | Share of remaining space for `fill` sizes. |
+| `cursor` | auto \| pointer \| text \| grab \| grabbing \| move \| notAllowed \| crosshair \| none |  |  | Pointer cursor. |
+| `className` | txt |  | class | Extra CSS class names: styling hooks for your own stylesheet (hover rules, third-party CSS). |
+
+### Span
+
+Inline text runs inside Text: `Text(Span(.config(weight: bold) 'Bold'), ' and plain')`. RichText writes the same runs inside one string.
 
 ```layr
 Text('Read the ', Span(.config(underline: true) 'docs'))
@@ -827,7 +873,8 @@ Slots: `.obj` (one, default).
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -997,7 +1044,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -1046,7 +1094,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -1068,6 +1117,7 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `href` | txt |  |  | External URL. |
 | `label` | txt |  |  | Link text (when there is no object). |
 | `external` | bool |  |  | Open in a new tab. |
+| `download` | bool |  |  | The link is a file to save (`href: '/download/app.zip'`), not a page to open. |
 | `underline` | bool |  |  | Underline the link (browsers underline links by default). |
 | `objAlign` | align | topLeft | align, alignment, contentAlign | Where the object's content sits inside it. |
 
@@ -1095,7 +1145,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -1244,7 +1295,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -1286,7 +1338,8 @@ Events: `tap`, `press`, `hover`, `hoverEnd`, `focus`, `blur`, `key`, `drag`, `sw
 | `minH` | len |  | minHeight | Minimum height. |
 | `maxH` | len |  | maxHeight | Maximum height. |
 | `aspect` | num |  | aspectRatio | Aspect ratio (width / height), e.g. `16/9`. |
-| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. |
+| `color` | paint |  | bg, background, colorBG | Background paint: a colour or gradient. Text inside reads on it: dark ink on light paint, light ink on dark, unless the text or `textColor` sets a colour. |
+| `textColor` | color |  | fg, foreground | The colour of text inside, where a Text sets none of its own. Without it, text picks the readable ink for this object's `color`. |
 | `padding` | insets |  | pad | Space inside the object. |
 | `cornerRadius` | radius |  | radius, borderRadius, corner | Corner radius: one length or `only(topLeft: 8, …)`. |
 | `borderWidth` | len |  |  | Border width. |
@@ -1353,11 +1406,11 @@ Slots: `.obj` (one, default).
 
 | Key | Type | Default | Aliases | Meaning |
 |---|---|---|---|---|
-| `duration` | time | 300ms |  | Duration for eased (non-spring) transitions. |
+| `duration` | time |  |  | How long each transition takes. An ease takes 300ms unless it says otherwise; a spring settles in its own time unless you give one. |
 | `ease` | motion | spring.gentle |  | Default motion for all properties: an ease or a spring. |
-| `delay` | time |  |  | Delay before transitions start. |
+| `delay` | time |  |  | Wait before each transition starts. |
 | `motion` | respect \| always | respect |  | Respect reduced-motion preferences (default) or always animate. |
-| `resize` | follow \| animate | follow |  | Continuous window resizes follow instantly (default) or animate. |
+| `resize` | follow \| animate | follow |  | Size changes from outside the object (a window resize, a parent's layout): `follow` them instantly (default) or `animate` them. |
 | `margin` | insets |  |  | Space outside the object: `all(8)`, `sym(x: 8, y: 4)`, `only(top: 8)`. |
 | `opacity` | num |  |  | Opacity from 0 to 1. |
 | `hide` | bool |  | hidden | Removes the object from layout and the accessibility tree. |
@@ -1390,12 +1443,12 @@ Page(.name(Home) .route('/') Scaffold(.body(Mid(Text('Hello')))))
 
 ### Widget
 
-A reusable widget. Params become config keys; `.obj(.obj)` forwards the caller's object.
+A reusable widget: `.wgt(...)` is what it renders. Params become config keys; a param `obj obj` (or `.obj(.obj)`) is the object the caller puts in `.obj`.
 
-Modifiers: `.name`, `.param`, `.react`, `.obj`.
+Modifiers: `.name`, `.param`, `.react`, `.wgt`.
 
 ```layr
-Widget(.name(Card) .param(req txt title) .obj(Container(.config(padding: all(16)) .obj(Text(param.title)))))
+Widget(.name(Card) .param(req txt title) .wgt(Container(.config(padding: all(16)) .obj(Text(param.title)))))
 ```
 
 ### Function
@@ -1470,8 +1523,43 @@ Export(.from(SomePage.card) size cardSize = card.size)
 
 ### If
 
-Shows `.obj(...)` when `.cnd(test)` is true, otherwise `.fb(...)`.
+Shows `.obj(...)` while `.cnd(test)` is true, otherwise `.fb(...)` (or nothing).
+
+Modifiers: `.cnd`, `.obj`, `.fb`.
+
+```layr
+If(.cnd(open) .obj(Text('Open')) .fb(Text('Closed')))
+```
 
 ### Each
 
-Repeats `.obj(...)` for every item of `.of(list)`; `.as(item, index)` names them; `.key(expr)` sets a stable key.
+Shows its object once for every item of `.of(list)`; `.as(item, index)` names them; `.key(expr)` keeps each item's object when the list changes.
+
+Modifiers: `.of`, `.as`, `.key`, `.obj`.
+
+```layr
+Each(.of(['a', 'b']) .as(name, i) Text('$i: $name'))
+```
+
+### Repeat
+
+Shows its object `.times(n)` times in a row of siblings (n can be state). Inside, `rep.index` counts from 0, `rep.count` is n, `rep.first` and `rep.last` mark the ends; `.as(i)` names the index. `.sep(...)` goes between repeats. `.repOrder` is accepted for `.times`.
+
+Modifiers: `.times`, `.as`, `.sep`, `.obj`.
+
+```layr
+Row(.config(gap: 8) Repeat(.times(3) .as(i) Text('Card $i')))
+```
+
+### Duplicate
+
+Shows a copy of another object of the same Page or Widget, `.from(id or path)`. The copy renders the original's config and follows its writes and Injects below the Duplicate's `.exeOrder` (all of them without one); `.config(...)` sets the copy (`color: red`, or `Card.text.weight: bold` inside it). With `.id`, the copy is a target like any object (`CardDup`, `CardDup.text`). Its order takes a place in the original's chain. `Ditto` is accepted for `Duplicate`, and `.tar` for `.from`.
+
+Modifiers: `.id`, `.from`, `.exeOrder`, `.config`.
+
+```layr
+Column(
+  Container(.id(card) .config(padding: all(12), color: #e4dbcd) Text('Card'))
+  Duplicate(.id(cardCopy) .from(card) .config(color: #d4e4cd))
+)
+```

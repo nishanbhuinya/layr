@@ -53,14 +53,37 @@ Row(
 
 ```layr
 Stack(
-  .config(w: 260, h: 160, color: white, cornerRadius: 14, padding: all(20))
-  Container(.config(size: 120, color: teal, cornerRadius: 999))
+  .config(
+    w: 260
+    h: 160
+    color: white
+    cornerRadius: 14
+    padding: all(20)
+  )
+  Container(
+    .config(
+      size: 120
+      color: teal
+      cornerRadius: 999
+    )
+  )
   Position(
-    .config(left: 100, top: 20)
+    .config(
+      left: 100
+      top: 20
+    )
     .obj(
       Filter(
         .config(blend: multiply)
-        .obj(Container(.config(size: 120, color: ember, cornerRadius: 999)))
+        .obj(
+          Container(
+            .config(
+              size: 120
+              color: ember
+              cornerRadius: 999
+            )
+          )
+        )
       )
     )
   )

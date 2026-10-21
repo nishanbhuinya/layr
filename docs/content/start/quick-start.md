@@ -43,7 +43,7 @@ npx layr preview   # serve dist/
 
 ## Editor
 
-Install the **LAYR** extension for VS Code (publisher `dynshift`) for diagnostics, completion, hover docs and format on save.
+[Download the LAYR extension for VS Code](/editor) and install the `.vsix` file with **Extensions → … → Install from VSIX…**. It brings completion that writes whole calls, refactors (wrap, remove, move, extract to a Widget), diagnostics with fixes, hover docs and format on save.
 
 ## AI agents
 

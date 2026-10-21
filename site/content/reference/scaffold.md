@@ -7,39 +7,88 @@ Page(
   .name(Home)
   .route('/')
   Scaffold(
-    .config(color: canvas, textColor: ink)
+    .config(
+      color: canvas
+      textColor: ink
+    )
     .bar(
       Row(
         .config(
           w: fill
-          .border(color: line, width: 1, sides: bottom)
           color: panel
           padding: sym(x: 20, y: 14)
           xAlign: between
           yAlign: mid
+          .border(
+            color: line
+            width: 1
+            sides: bottom
+          )
         )
-        Text(.config(weight: semibold) .obj('Studio'))
-        Text(.config(color: muted) .obj('Sign in'))
+        Text(
+          .config(weight: semibold)
+          .obj('Studio')
+        )
+        Text(
+          .config(color: muted)
+          .obj('Sign in')
+        )
       )
     )
     .body(
       Column(
-        .config(w: fill, gap: 12, padding: all(20))
-        Text(.config(size: 28, type: h1, weight: semibold) .obj('Book a room'))
+        .config(
+          w: fill
+          gap: 12
+          padding: all(20)
+        )
+        Text(
+          .config(
+            size: 28
+            type: h1
+            weight: semibold
+          )
+          .obj('Book a room')
+        )
         Text(
           .config(color: muted)
           .obj(
             'The bar is sticky: on a long page it stays on top as you scroll.'
           )
         )
-        Container(.config(w: fill, h: 180, color: panel, cornerRadius: 14))
-        Container(.config(w: fill, h: 180, color: panel, cornerRadius: 14))
+        Container(
+          .config(
+            w: fill
+            h: 180
+            color: panel
+            cornerRadius: 14
+          )
+        )
+        Container(
+          .config(
+            w: fill
+            h: 180
+            color: panel
+            cornerRadius: 14
+          )
+        )
       )
     )
     .footer(
       Container(
-        .config(w: fill, padding: all(20))
-        .obj(Text(.config(size: 13, color: faint) .obj('© Studio')))
+        .config(
+          w: fill
+          padding: all(20)
+        )
+        .obj(
+          Text(
+            .config(
+              size: 13
+              color: faint
+            )
+            .obj('© Studio')
+          )
+        )
       )
     )
   )

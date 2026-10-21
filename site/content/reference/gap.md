@@ -4,12 +4,26 @@ Gap is empty space of a fixed size along its parent's direction: across in a Row
 
 ```layr
 Row(
-  .config(color: panel, cornerRadius: 12, padding: all(14), yAlign: mid)
-  Text(.config(weight: semibold) .obj('LAYR'))
+  .config(
+    color: panel
+    cornerRadius: 12
+    padding: all(14)
+    yAlign: mid
+  )
+  Text(
+    .config(weight: semibold)
+    .obj('LAYR')
+  )
   Gap(8)
-  Text(.config(color: muted) .obj('docs'))
+  Text(
+    .config(color: muted)
+    .obj('docs')
+  )
   Gap(32)
-  Text(.config(color: accent) .obj('Playground'))
+  Text(
+    .config(color: accent)
+    .obj('Playground')
+  )
 )
 ```
 

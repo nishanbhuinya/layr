@@ -12,6 +12,7 @@ import {
   declsCss,
   ease,
   gradient,
+  inkVars,
   type KeyDef,
   keyOf,
   type LowerContext,
@@ -19,6 +20,7 @@ import {
   NAMED_COLORS,
   namedColor,
   only,
+  parseRich,
   pct,
   px,
   shadow,
@@ -50,6 +52,7 @@ import {
   lookupPath,
   inlineObject,
   runtimeAddress,
+  walk,
 } from "./project.ts";
 import type { Span } from "./source.ts";
 import { rewriteBody } from "./tsbody.ts";
@@ -64,6 +67,13 @@ export interface GraphEntry {
   file: string;
   span: Span;
   owner: string | null;
+  /** The Export/Extract/Inject/Duplicate it belongs to (`file@offset`); one op can make several entries. */
+  op?: string;
+  opKind?: "Export" | "Extract" | "Inject" | "Duplicate";
+  /** Where the op's `.exeOrder(...)` value is written (for fixes). */
+  orderSpan?: Span;
+  /** The source of what it writes or reads (`press ? 10 : 5`, `card.padding`). */
+  text?: string;
 }
 
 export interface Graph {
@@ -111,6 +121,8 @@ export interface Gen {
   type: string;
   /** Compile-time value when the expression is constant. */
   konst?: unknown;
+  /** The values it can take (a param declared `= in | mid | out`). */
+  options?: string[];
 }
 
 const NOT_CONST = Symbol("not-const");
@@ -347,14 +359,14 @@ export class ModuleEmitter {
     if (comp.state.length) {
       const factory = `() => {\n${comp.state.map((s) => this.emitState(s, sc)).join("\n")}\nreturn { ${stateNames.join(", ")} };\n}`;
       if (comp.kind === "page" && comp.stateMode === "keep") {
-        pre.push(`const $store_${comp.name} = $.pageStore(${JSON.stringify(comp.name)}, ${factory});`);
+        pre.push(`const $store_${comp.name} = $.pageStore(${JSON.stringify(comp.name)}, ${factory}, ${JSON.stringify(stateNames)});`);
         lines.push(`const { ${stateNames.join(", ")} } = $store_${comp.name}();`);
       } else lines.push(`const { ${stateNames.join(", ")} } = $.useInstance(${factory});`);
     }
     if (comp.kind === "widget") {
       const defaults = comp.params
         .filter((p) => p.init)
-        .map((p) => `${JSON.stringify(p.name)}: ${this.expr(p.init as Expr, this.moduleScope, { type: p.type ? normalizeType(p.type) : undefined }).code}`);
+        .map((p) => `${JSON.stringify(p.name)}: ${this.expr(p.init as Expr, this.moduleScope, p.options ? { type: "enum", values: p.options } : { type: p.type ? normalizeType(p.type) : undefined }).code}`);
       // Defaults, then Inject layers and writes on this instance (`b.label = …`, `b.obj = …`).
       lines.push(`$p = $.useParams($p, { ${defaults.join(", ")} });`);
     }
@@ -447,6 +459,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       const xs = def.name === "Gap" || def.name === "Icon" ? [] : this.readSlots(n, comp, def.slots.filter((s) => s.kind !== "text").map((s) => s.name));
       if (xs.length) props.push(`xs: ${JSON.stringify(xs)}`);
     }
+    if (n.mirror) props.push(`mi: ${this.mirrorCode(n, sc, (k) => keyOf(def, k) ?? null)}`);
     if (n === comp.root && comp.kind === "widget") props.push("o: $p.$o", "oe: $p.$on");
     if (this.project.config.inspect) props.push(`p: ${JSON.stringify(lookupPath(comp, n))}`, `ln: ${this.mod.source.position(n.call.span.start).line}`);
     // A widget's root also carries the path of the instance it renders, so inspectors can tell instances apart.
@@ -472,7 +485,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         continue;
       }
       if (slot.kind === "one" && list.length > 1) this.err("L1007", `\`${def.name}\` takes one object in \`.${slot.name}\`; wrap several in a Column, Row or Stack.`, n.call.span);
-      const rendered = list.map((c) => this.child(c, sc, comp, slot.kind === "text"));
+      // RichText reads markup from its strings (Span children render as they do in a Text).
+      const rendered = list.map((c) => (def.name === "RichText" && c.kind === "expr" && c.expr.type === "String" ? this.richText(c.expr, sc) : this.child(c, sc, comp, slot.kind === "text")));
       const many = rendered.length > 1;
       if (many && slot.default) staticList = true;
       const value = !many ? (rendered[0] as string) : slot.default ? `[${rendered.join(", ")}]` : `$js($Fr, { children: [${rendered.join(", ")}] })`;
@@ -487,6 +501,68 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     return `${staticList ? "$js" : "$j"}($.N, { ${props.join(", ")} })`;
   }
 
+  /**
+   * A RichText string: its markup as written (escapes unread, so `\n` stays a hard break apart from
+   * the source's own line breaks), with each `$name`/`${expr}` a value that is shown as text. The
+   * markup is checked here; it is parsed again when the page renders, with the values in place.
+   */
+  private richText(e: StringLit, sc: Scope): string {
+    const raw = e.raw;
+    const exprs = e.parts.filter((p): p is Expr => typeof p !== "string");
+    const segs: Array<{ text: string; at: number } | { expr: Expr }> = [];
+    let buf = "";
+    let bufAt = 0;
+    for (let i = 0; i < raw.length; ) {
+      if (raw[i] === "\\" && i + 1 < raw.length) {
+        buf += raw.slice(i, i + 2);
+        i += 2;
+        continue;
+      }
+      const braced = raw[i] === "$" && raw[i + 1] === "{";
+      const named = raw[i] === "$" && /[A-Za-z_]/.test(raw[i + 1] ?? "");
+      if (braced || named) {
+        let j = i + 1;
+        if (braced) for (let depth = 0; j < raw.length; j++) {
+          if (raw[j] === "{") depth++;
+          else if (raw[j] === "}" && --depth === 0) break;
+        }
+        else while (j < raw.length && /[A-Za-z0-9_]/.test(raw[j] as string)) j++;
+        if (buf) segs.push({ text: buf, at: bufAt });
+        const ex = exprs.shift();
+        if (ex) segs.push({ expr: ex });
+        buf = "";
+        i = braced ? j + 1 : j;
+        bufAt = i;
+        continue;
+      }
+      buf += raw[i];
+      i++;
+    }
+    if (buf || !segs.length) segs.push({ text: buf, at: bufAt });
+    const theme = this.project.config.theme.colors;
+    const isColor = (n: string) => /^#[0-9a-fA-F]{3,8}$/.test(n) || !!NAMED_COLORS[n] || n in theme;
+    const { problems } = parseRich(segs.map((s) => ("text" in s ? s.text : { value: "x" })), isColor);
+    for (const p of problems) {
+      const seg = segs[p.seg];
+      const at = e.span.start + 1 + (seg && "at" in seg ? seg.at : 0) + p.at;
+      this.err("L1018", p.message, { start: at, end: at + 1 }, "warning");
+    }
+    return `$.richText([${segs.map((s) => ("text" in s ? JSON.stringify(s.text) : `{ value: ${this.expr(s.expr, sc).code} }`)).join(", ")}])`;
+  }
+
+  /** A Duplicate copy's link to its original: `{ a: original, o: order, v: { the Duplicate's config for it } }`. */
+  private mirrorCode(n: ObjNode, sc: Scope, keyDef: (k: string) => KeyDef | null): string {
+    const m = n.mirror as NonNullable<ObjNode["mirror"]>;
+    const over = m.over.map((e) => {
+      const k = keyDef(e.key);
+      if (n.def && !k) this.err("L1002", `\`${n.def.name}\` has no key \`${e.key}\`.`, e.keySpan);
+      const g = this.expr(e.value, sc, k ? { type: k.type, values: k.values } : {});
+      if (k) this.checkType(k, g, e.value.span);
+      return `${JSON.stringify(k?.name ?? e.key)}: ${g.code}`;
+    });
+    return `{ a: ${JSON.stringify(runtimeAddress(m.of.comp, m.of))}, o: ${m.order ?? "null"}${over.length ? `, v: { ${over.join(", ")} }` : ""} }`;
+  }
+
   /** Deterministic adaptation: rows of hug children wrap; rows with fill children stack. */
   private rowHasFill(n: ObjNode): boolean {
     const kids = (n.children.get("objs") ?? []).filter((c) => c.kind === "node").map((c) => (c as { node: ObjNode }).node);
@@ -494,7 +570,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   }
 
   private isAddressable(n: ObjNode): boolean {
-    if (n.id) return true;
+    if (n.id || n.mirror) return true;
     if (this.project.config.access.inject === "open") return true;
     const addr = runtimeAddress(n.comp, n);
     return this.graph.entries.some((e) => e.address === addr) || this.preTargets.has(addr);
@@ -534,7 +610,9 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       if (paramNames.has(e.key)) {
         const p = target.params.find((x) => x.name === e.key);
         seen.add(e.key);
-        props.push(`${JSON.stringify(e.key)}: ${this.expr(e.value, sc, { type: p?.type ? normalizeType(p.type) : undefined }).code}`);
+        const g = this.expr(e.value, sc, p?.options ? { type: "enum", values: p.options } : { type: p?.type ? normalizeType(p.type) : undefined });
+        if (p?.options && typeof g.konst === "string" && !p.options.includes(g.konst)) this.err("L1004", `\`${target.name}\`'s \`${p.name}\` is one of ${p.options.map((o) => `\`${o}\``).join(", ")}.`, e.value.span);
+        props.push(`${JSON.stringify(e.key)}: ${g.code}`);
       } else {
         const common0 = widget("Container")?.keys.find((k) => k.name === e.key && ["margin", "opacity", "hide", "shrink", "flex", "cursor", "w", "h", "minW", "maxW", "minH", "maxH"].includes(k.name));
         if (common0) common.push(`${JSON.stringify(e.key)}: ${this.expr(e.value, sc, { type: common0.type, values: common0.values }).code}`);
@@ -544,9 +622,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         }
       }
     }
+    const kids = n.children.get("obj") ?? [];
+    // What the caller puts in `.obj(...)` is the widget's `obj` param.
+    if (kids.length) seen.add("obj").add("objs");
     for (const p of target.params) if (p.required && !seen.has(p.name)) this.err("L1008", `\`${target.name}\` needs \`${p.name}\`.`, n.call.span);
     if (common.length) props.push(`$o: { ${common.join(", ")} }`);
-    const kids = n.children.get("obj") ?? [];
     if (kids.length) {
       const rendered = kids.map((c) => this.child(c, sc, comp, false));
       props.push(`children: ${rendered.length === 1 ? rendered[0] : `$js($Fr, { children: [${rendered.join(", ")}] })`}`);
@@ -558,6 +638,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
     const events = this.events(n, null, sc);
     if (events) props.push(`$on: ${events}`);
+    if (n.mirror) props.push(`$mi: ${this.mirrorCode(n, sc, () => null)}`);
     const ref = this.mod.layrImports.has(target.name) || this.mod.comps.includes(target) ? target.name : [...this.mod.layrImports.entries()].find(([, v]) => v.name === target.name)?.[0] ?? target.name;
     return `$j(${ref}, { ${props.join(", ")} })`;
   }
@@ -652,6 +733,38 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       const cls = `xds${hash(JSON.stringify(cfg))}`;
       if (!this.cssRules.has(cls)) this.cssRules.set(cls, `.${cls}{width:100%;align-self:stretch}\n${scaleCss(cfg, { selector: `.${cls}`, basis: "container" })}`);
       return `$j($.N, { w: "Container", c: ${JSON.stringify(`l l-box ${cls}`)}, children: ${renderList("obj")} })`;
+    }
+    if (n.name === "Duplicate") {
+      // The copy is the Duplicate's object (built by the project); its order sits in the original's chain.
+      const copy = (n.children.get("obj") ?? []).find((c) => c.kind === "node");
+      if (copy?.kind === "node" && copy.node.mirror) {
+        const m = copy.node.mirror;
+        const orderExpr = exprItems(mods.get("exeOrder")?.[0]?.items ?? null)[0];
+        const op = { op: `${this.mod.path}@${n.call.span.start}`, opKind: "Duplicate" as const, ...(orderExpr ? { orderSpan: orderExpr.span } : {}) };
+        const name = n.id ?? "a copy";
+        this.graph.entries.push({ kind: "extract", address: runtimeAddress(m.of.comp, m.of), key: "obj", order: m.order, file: this.mod.path, span: n.call.span, owner: this.currentComp?.name ?? null, ...op, text: `copied as ${name}` });
+        // Its config changes the copy, at the root or inside it (`plan.text.weight: bold`).
+        walk(copy.node, (c) => {
+          for (const e of c.mirror?.over ?? []) this.graph.entries.push({ kind: "inject", address: runtimeAddress(comp, c), key: e.key, order: m.order, file: this.mod.path, span: e.span, owner: this.currentComp?.name ?? null, ...op, text: `${e.key} = ${exprText(this.mod, e.value)}` });
+        });
+      }
+      return renderList("obj");
+    }
+    if (n.name === "Repeat") {
+      const times = exprItems(mods.get("times")?.[0]?.items ?? null)[0];
+      if (!times) this.err("L1008", "`Repeat` needs `.times(n)`.", n.call.span);
+      const name = identName(exprItems(mods.get("as")?.[0]?.items ?? null)[0]);
+      // `rep.index`/`rep.count`/`rep.first`/`rep.last`, and the index under `.as(name)`.
+      const inner = new Scope(sc);
+      inner.set("rep", { kind: "value", code: "$rep", type: null });
+      inner.set("repOrder", { kind: "value", code: "$rep.index", type: "int" });
+      if (name) inner.set(name, { kind: "value", code: "$rep.index", type: "int" });
+      const body = (n.children.get("obj") ?? []).map((c) => this.child(c, inner, comp, false));
+      const sep = (n.children.get("sep") ?? []).map((c) => this.child(c, inner, comp, false));
+      const one = body.length === 1 ? (body[0] as string) : `$js($Fr, { children: [${body.join(", ")}] })`;
+      const each = sep.length ? `$js($Fr, { children: [$rep.first ? null : ${sep.length === 1 ? sep[0] : `$js($Fr, { children: [${sep.join(", ")}] })`}, ${one}] }, $i)` : `$j($Fr, { children: ${one} }, $i)`;
+      const n0 = times ? this.expr(times, sc, { type: "int" }).code : "0";
+      return `$j($Fr, { children: (($n) => Array.from({ length: $n }, (_, $i) => { const $rep = { index: $i, count: $n, first: $i === 0, last: $i === $n - 1 }; return ${each}; }))(Math.max(0, Math.floor(Number(${n0}) || 0))) })`;
     }
     const of = exprItems(mods.get("of")?.[0]?.items ?? null)[0];
     if (!of) this.err("L1008", "`Each` needs `.of(list)`.", n.call.span);
@@ -816,6 +929,13 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       enum: ["enum", "txt"],
     };
     const accepted = ok[want];
+    // A param with listed values fits a key that takes every one of them.
+    if (g.options) {
+      const allowed = k.values ?? (want === "align" ? ALIGN_ALL : want === "axis" ? AXIS_VALUES : null);
+      const bad = allowed ? g.options.filter((o) => !allowed.includes(o) && !(want === "align" && canonicalAlign(o))) : [];
+      if (bad.length) this.err("L1004", `\`${k.name}\` takes ${allowed?.join(", ")}; this param can also be ${bad.map((b) => `\`${b}\``).join(", ")}.`, span);
+      return;
+    }
     // Font weights are named or numeric (variable fonts take any weight from 1 to 1000).
     const numericWeight = k.name === "weight" && (g.type === "int" || g.type === "num");
     if (accepted && !accepted.includes(g.type) && !numericWeight) this.err("L1003", `\`${k.name}\` expects ${describeType(want)} but got ${describeType(g.type)}.`, span);
@@ -1085,6 +1205,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
     const force = !!firstModifier(call.items, "force");
     if (force && !this.forceAllowed()) this.err("L3105", "`Inject(.force …)` is only allowed in files matched by `access.force` in layr.yaml.", call.span);
+    const op = { op: `${this.mod.path}@${call.span.start}`, opKind: e.kind, ...(orderExpr ? { orderSpan: orderExpr.span } : {}) } as const;
     const tsc = new Scope(sc);
     if (target) for (const name of target.names ?? [target.local]) tsc.set(name, { kind: "object", node: target.node as ObjNode, comp: target.comp, address: target.address });
     const out: string[] = [];
@@ -1094,7 +1215,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         if (it.type !== "Decl") continue;
         const ref = it.init ? this.resolveRef(it.init, tsc) : null;
         if (ref?.key) {
-          this.graph.entries.push({ kind: "extract", address: ref.address, key: ref.key, order, file: this.mod.path, span: it.init?.span ?? it.span, owner: this.currentComp?.name ?? null });
+          this.graph.entries.push({ kind: "extract", address: ref.address, key: ref.key, order, file: this.mod.path, span: it.init?.span ?? it.span, owner: this.currentComp?.name ?? null, ...op, text: `${it.name} = ${it.init ? exprText(this.mod, it.init) : ""}` });
           if (order === null) this.finalExtracts.set(it.name, { address: ref.address, key: ref.key, span: it.span });
           const read = `$.read(${JSON.stringify(ref.address)}, ${JSON.stringify(ref.key)}${order !== null ? `, ${order}` : ""})${ref.rest}`;
           out.push(`const ${it.name} = $.computed(() => ${read});`);
@@ -1132,7 +1253,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         this.prevTarget = null;
         this.checkSelfRead(ex.value, ref.address, ref.key as string);
         valueFn = ex.op === "=" ? `($prev) => ${v}` : `($prev) => $V.arith(${JSON.stringify(ex.op.slice(0, -1))}, $prev, ${v})`;
-        this.injectLayer({ address: ref.address, key: ref.key as string, node: ref.node }, order, force, ex.target.span, valueFn, layers);
+        this.injectLayer({ address: ref.address, key: ref.key as string, node: ref.node }, order, force, ex.target.span, valueFn, layers, { ...op, text: exprText(this.mod, ex) });
       } else if (ex.type === "Update" || (ex.type === "Unary" && (ex.op === "++" || ex.op === "--"))) {
         tgt = ex.argument;
         const ref = this.resolveRef(tgt, tsc);
@@ -1141,7 +1262,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
           continue;
         }
         valueFn = `($prev) => $V.arith(${JSON.stringify(ex.op === "++" ? "+" : "-")}, $prev, 1)`;
-        this.injectLayer({ address: ref.address, key: ref.key as string, node: ref.node }, order, force, ex.span, valueFn, layers);
+        this.injectLayer({ address: ref.address, key: ref.key as string, node: ref.node }, order, force, ex.span, valueFn, layers, { ...op, text: exprText(this.mod, ex) });
       } else this.err("L0011", "Inject holds assignments such as `card.padding = pad * 2`.", ex.span);
     }
     if (!layers.length) return "";
@@ -1179,9 +1300,9 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
   }
 
-  private injectLayer(ref: { address: string; key: string; node?: ObjNode | null }, order: number | null, force: boolean, span: Span, fn: string, layers: string[]) {
+  private injectLayer(ref: { address: string; key: string; node?: ObjNode | null }, order: number | null, force: boolean, span: Span, fn: string, layers: string[], op: Partial<GraphEntry> = {}) {
     this.checkMutation(ref.address, ref.key, span, force, ref.node);
-    this.graph.entries.push({ kind: force ? "force" : "inject", address: ref.address, key: ref.key, order, file: this.mod.path, span, owner: this.currentComp?.name ?? null });
+    this.graph.entries.push({ kind: force ? "force" : "inject", address: ref.address, key: ref.key, order, file: this.mod.path, span, owner: this.currentComp?.name ?? null, ...op });
     const pos = this.mod.source.position(span.start);
     layers.push(`{ a: ${JSON.stringify(ref.address)}, k: ${JSON.stringify(ref.key)}, o: ${order ?? "null"}, f: ${fn}, src: ${JSON.stringify(`${this.mod.path}:${pos.line}`)}${force ? ", force: true" : ""} }`);
   }
@@ -1516,6 +1637,8 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
         case "computed":
           return { code: `${b.code}.get()`, type: b.type ? normalizeType(b.type) : "any" };
         case "value":
+          if (name === "repOrder" && b.code === "$rep.index")
+            report(this.mod, "L1011", "Inside Repeat the index is written `rep.index` (or a name from `.as(i)`).", span, "info", { fixes: [{ title: "Use rep.index", edits: [{ span, text: "rep.index" }] }] });
           return { code: b.code, type: b.type ? normalizeType(b.type) : "any" };
         case "function":
           return { code: b.code, type: "fn" };
@@ -1596,6 +1719,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       case "-":
       case "*":
       case "/": {
+        if (a.type === "sizing" || b.type === "sizing") {
+          const side = a.type === "sizing" ? l : r;
+          const key = exprText(this.mod, side).endsWith(".h") ? "h" : "w";
+          this.err("L2004", `\`${exprText(this.mod, side)}\` is \`hug\` or \`fill\`: a size worked out by layout, not a number, so \`${op}\` has nothing to compute with. Give it a length (\`${key}: 120\`), change what it hugs (\`padding\`), or read the measured size (\`${exprText(this.mod, side).replace(/\.(w|h)$/, ".size.$1")}\`) where it does not feed back into this size.`, { start: l.span.start, end: r.span.end });
+        }
         if (a.type === "txt" || b.type === "txt") return { code: `(${a.code} + ${b.code})`, type: "txt", konst: constBoth && op === "+" ? `${a.konst}${b.konst}` : NOT_CONST };
         if (numeric(a.type) && numeric(b.type)) {
           const k = constBoth ? evalArith(op, a.konst as number, b.konst as number) : NOT_CONST;
@@ -1641,6 +1769,9 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
           const s = suggest(e.name, b.comp.params.map((x) => x.name));
           this.err("L1005", `\`${b.comp.name}\` has no param \`${e.name}\`.${s.length ? ` Did you mean \`${s[0]}\`?` : ""}`, e.nameSpan);
         }
+        // A param named obj/objs is what the caller puts in `.obj(...)`/`.objs(...)`.
+        if (p && (e.name === "obj" || e.name === "objs") && normalizeType(p.type ?? "obj") === "obj") return { code: "$p.children", type: "obj" };
+        if (p?.options) return { code: `$p.${e.name}`, type: "enum", options: p.options };
         return { code: `$p.${e.name}`, type: p?.type ? normalizeType(p.type) : "any" };
       }
       // Namespaces: spring.gentle, ease.inOut, frame.name
@@ -1657,9 +1788,11 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     const ref = attempted ? this.resolveRef(e, sc) : null;
     if (attempted && !ref?.key) return { code: "undefined", type: "any" };
     if (ref?.key) {
-      if (this.prevTarget && ref.address === this.prevTarget.address && ref.key === this.prevTarget.key) return { code: `$prev${ref.rest}`, type: "any" };
+      // A `w`/`h` that sizes to content or fills is a keyword, not a number to compute with (L2004).
+      const sizing = !ref.rest && contentSized(ref.node, ref.key) ? "sizing" : null;
+      if (this.prevTarget && ref.address === this.prevTarget.address && ref.key === this.prevTarget.key) return { code: `$prev${ref.rest}`, type: sizing ?? "any" };
       this.graph.entries.push({ kind: "read", address: ref.address, key: ref.key, order: null, file: this.mod.path, span: e.span, owner: this.currentComp?.name ?? null });
-      return { code: `$.read(${JSON.stringify(ref.address)}, ${JSON.stringify(ref.key)})${ref.rest}`, type: featureType(ref.node, ref.key) };
+      return { code: `$.read(${JSON.stringify(ref.address)}, ${JSON.stringify(ref.key)})${ref.rest}`, type: sizing ?? featureType(ref.node, ref.key) };
     }
     // Plain member access (colour getters, size fields, TS values).
     const o = this.expr(e.object, sc, e.object.type === "Ident" && NAMED_COLORS[e.object.name] ? { type: "color" } : {});
@@ -1909,7 +2042,7 @@ const BEHAVIOUR_KEYS = new Set([
   "className",
   "label", "value", "options", "placeholder", "open", "modal", "dismissible", "disabled", "kind", "multiline", "rows",
   "min", "max", "step", "required", "src", "poster", "captions", "autoplay", "loop", "muted", "controls", "name",
-  "to", "href", "external", "submit", "auto", "ring", "trap", "backdrop", "placement", "duration", "ease", "delay",
+  "to", "href", "external", "download", "submit", "auto", "ring", "trap", "backdrop", "placement", "duration", "ease", "delay",
   "motion", "resize", "alt", "decorative", "lazy", "type", "overflow", "stackAt", "values", "stops", "direction", "blurOn", "mode", "selectable",
   "edge", "extent", "layers", "curve", "fade",
 ]);
@@ -1988,6 +2121,21 @@ function canonicalKey(node: ObjNode, key: string): string {
 function slotType(node: ObjNode, key: string): "txt" | "obj" | null {
   if (slotFeature(node, key) !== key) return null;
   return node.def?.slots.find((s) => s.name === key)?.kind === "text" ? "txt" : "obj";
+}
+
+/** The source text of an expression. */
+function exprText(mod: Module, e: Expr): string {
+  return mod.source.text.slice(e.span.start, e.span.end);
+}
+
+/** Whether `node.key` is `w`/`h` written as `hug`/`fill` or left to its default (content size). */
+function contentSized(node: ObjNode | null, key: string): boolean {
+  if (!node?.def || (key !== "w" && key !== "h")) return false;
+  if (node.def.layout === "passthrough") return false;
+  const entry = node.config.find((c) => c.key === key) ?? node.config.find((c) => c.key === "size");
+  if (!entry) return true;
+  const v = entry.key === "size" && entry.value.type === "Tuple" ? entry.value.elements[key === "w" ? 0 : 1] : entry.value;
+  return v?.type === "Ident" && (v.name === "hug" || v.name === "fill");
 }
 
 function featureType(node: ObjNode | null, key: string): string {
@@ -2150,13 +2298,14 @@ export function globMatch(glob: string, path: string): boolean {
  * system setting unless the page pins data-theme on <html>. Empty when the theme sets nothing.
  */
 export function themeCss(theme: ThemeConfig): string {
-  const vars = Object.entries(theme.colors).map(([k, v]) => `--layr-color-${k}:${v}`);
+  // Each colour's readable ink (`--layr-on-<name>`) beside it, for text on objects painted with it.
+  const vars = [...Object.entries(theme.colors).map(([k, v]) => `--layr-color-${k}:${v}`), ...inkVars(theme.colors)];
   const fallback = (k: string) => (k === "code" ? "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" : "system-ui, sans-serif");
   for (const [k, v] of Object.entries(theme.fonts)) vars.push(`--layr-font-${k}:"${v}", ${fallback(k)}`);
   if (theme.fonts.body) vars.push("font-family:var(--layr-font-body)");
   const rules: string[] = [];
   if (vars.length) rules.push(`.l-root{${vars.join(";")}}`);
-  const dark = Object.entries(theme.dark).map(([k, v]) => `--layr-color-${k}:${v}`).join(";");
+  const dark = [...Object.entries(theme.dark).map(([k, v]) => `--layr-color-${k}:${v}`), ...inkVars(theme.dark)].join(";");
   if (dark) rules.push(`@media (prefers-color-scheme: dark){:root:not([data-theme=light]) .l-root{${dark};color-scheme:dark}}`, `:root[data-theme=dark] .l-root{${dark};color-scheme:dark}`);
   return rules.join("\n");
 }

@@ -20,7 +20,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 12, padding: all(24))
+        .config(
+          gap: 12
+          padding: all(24)
+        )
         Container(
           .id(bar)
           .config(
@@ -31,7 +34,15 @@ Page(
             objAlign: midLeft
             padding: sym(x: 14)
           )
-          .obj(Text(.config(color: onAccent, weight: semibold) .obj('w: 240')))
+          .obj(
+            Text(
+              .config(
+                color: onAccent
+                weight: semibold
+              )
+              .obj('w: 240')
+            )
+          )
         )
         Text(
           .config(color: muted)
@@ -66,9 +77,18 @@ Set yours in `src/app.layr` to match your design files:
 App(
   .scale(
     DesignScale(
-      .m(w: 375, h: 812)
-      .w(w: 1280, h: 800)
-      .config(min: 0.9, max: 1.2)
+      .m(
+        w: 375
+        h: 812
+      )
+      .w(
+        w: 1280
+        h: 800
+      )
+      .config(
+        min: 0.9
+        max: 1.2
+      )
     )
   )
 )
@@ -86,13 +106,22 @@ App(
 Column(
   .config(gap: 8)
   Text(
-    .config(size: 32, weight: bold)
-    .at(w, size: 64)
+    .config(
+      size: 32
+      weight: bold
+    )
+    .at(
+      w
+      size: 64
+    )
     .obj('32 on phones, 64 on desktop')
   )
   Text(
     .config(color: muted)
-    .at(t, step hide: true)
+    .at(
+      t
+      step hide: true
+    )
     .obj('This line is only on phones.')
   )
 )
@@ -116,23 +145,45 @@ Wrap an object in `DesignScale(...)` to scale it against the space its parent gi
 
 ```layr
 Row(
-  .config(gap: 16, yAlign: start)
+  .config(
+    gap: 16
+    yAlign: start
+  )
   Container(
     .config(w: 200)
     .obj(
       DesignScale(
-        .frame(card, w: 400, h: 300, from: 0)
-        .config(min: 0.25, max: 4)
+        .frame(
+          card
+          w: 400
+          h: 300
+          from: 0
+        )
+        .config(
+          min: 0.25
+          max: 4
+        )
         .obj(
           Container(
             .config(
               w: 400
-              .border(color: line, width: 2)
               color: panel
               cornerRadius: 20
               padding: all(24)
+              .border(
+                color: line
+                width: 2
+              )
             )
-            .obj(Text(.config(size: 28, weight: bold) .obj('Designed at 400')))
+            .obj(
+              Text(
+                .config(
+                  size: 28
+                  weight: bold
+                )
+                .obj('Designed at 400')
+              )
+            )
           )
         )
       )
@@ -142,18 +193,37 @@ Row(
     .config(w: 320)
     .obj(
       DesignScale(
-        .frame(card, w: 400, h: 300, from: 0)
-        .config(min: 0.25, max: 4)
+        .frame(
+          card
+          w: 400
+          h: 300
+          from: 0
+        )
+        .config(
+          min: 0.25
+          max: 4
+        )
         .obj(
           Container(
             .config(
               w: 400
-              .border(color: line, width: 2)
               color: panel
               cornerRadius: 20
               padding: all(24)
+              .border(
+                color: line
+                width: 2
+              )
             )
-            .obj(Text(.config(size: 28, weight: bold) .obj('Designed at 400')))
+            .obj(
+              Text(
+                .config(
+                  size: 28
+                  weight: bold
+                )
+                .obj('Designed at 400')
+              )
+            )
           )
         )
       )

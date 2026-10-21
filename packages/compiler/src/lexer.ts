@@ -147,6 +147,8 @@ export function lex(text: string): LexResult {
     if (c === "'" || c === '"' || c === "`") {
       i++;
       let closed = false;
+      // Strings stay on one line (a missing quote is caught there), except RichText's text, which is prose.
+      const prose = c !== "`" && enclosingCall(tokens) === "RichText";
       while (i < text.length) {
         const d = text[i];
         if (d === "\\") {
@@ -157,7 +159,7 @@ export function lex(text: string): LexResult {
           closed = true;
           break;
         }
-        if (d === "\n" && c !== "`") break;
+        if (d === "\n" && c !== "`" && !prose) break;
         if (d === "$" && text[i + 1] === "{") {
           const end = scanBlock(text, i + 1);
           i = end < 0 ? text.length : end + 1;
@@ -165,7 +167,7 @@ export function lex(text: string): LexResult {
         }
         i++;
       }
-      if (!closed) diagnostics.push(err("L0002", "Unterminated string.", start, i));
+      if (!closed) diagnostics.push(err("L0002", c === "`" || prose ? "Unterminated string." : "Unterminated string: close it on the same line, or write text over several lines between backticks (`…`).", start, i));
       push({ kind: "string", value: text.slice(start + 1, i), quote: c, span: { start, end: closed ? i + 1 : i } });
       if (closed) i++;
       continue;
@@ -235,11 +237,36 @@ export function lex(text: string): LexResult {
       i += p.length;
       continue;
     }
-    diagnostics.push(err("L0001", `Unexpected character \`${c}\`.`, i, i + 1));
+    diagnostics.push(err("L0001", c === "#" ? "Unexpected `#`: comments start with `//` (or `/* … */`); `#` writes a colour, like `#0d0d0d`." : `Unexpected character \`${c}\`.`, i, i + 1));
     i++;
   }
   tokens.push({ kind: "eof", value: "", span: { start: text.length, end: text.length }, nl: true });
   return { tokens, comments, diagnostics };
+}
+
+/** The call a value being lexed sits in: `RichText(` → RichText; inside `X(.obj(` → X. */
+function enclosingCall(tokens: readonly Token[]): string | null {
+  let depth = 0;
+  for (let k = tokens.length - 1; k >= 0; k--) {
+    const t = tokens[k] as Token;
+    if (t.kind !== "punct") continue;
+    if (t.value === ")") depth++;
+    else if (t.value === "(") {
+      if (depth) {
+        depth--;
+        continue;
+      }
+      const name = tokens[k - 1];
+      if (name?.kind !== "ident") return null;
+      // A slot modifier belongs to the call around it.
+      if (tokens[k - 2]?.kind === "punct" && tokens[k - 2]?.value === "." && (name.value === "obj" || name.value === "objs")) {
+        k -= 2;
+        continue;
+      }
+      return name.value;
+    }
+  }
+  return null;
 }
 
 /** Given the index of `{`, returns the index of its matching `}` (respecting strings, templates and comments), or -1. */

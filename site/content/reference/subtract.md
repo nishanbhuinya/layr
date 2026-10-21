@@ -6,14 +6,32 @@ Subtract cuts the upper layers' shapes out of the base layer, the one with the l
 Subtract(
   Order(
     .posOrder(0)
-    .obj(Container(.config(size: 160, color: accent, cornerRadius: 80)))
+    .obj(
+      Container(
+        .config(
+          size: 160
+          color: accent
+          cornerRadius: 80
+        )
+      )
+    )
   )
   Order(
     .posOrder(1)
     .obj(
       Position(
-        .config(bottom: 18, right: 18)
-        .obj(Container(.config(size: 56, cornerRadius: 28)))
+        .config(
+          bottom: 18
+          right: 18
+        )
+        .obj(
+          Container(
+            .config(
+              size: 56
+              cornerRadius: 28
+            )
+          )
+        )
       )
     )
   )
@@ -30,13 +48,31 @@ The base keeps everything the cut does not cover, even where it reaches outside 
 
 ```layr
 Subtract(
-  Order(.posOrder(1) .obj(Container(.config(size: 140, color: ember))))
+  Order(
+    .posOrder(1)
+    .obj(
+      Container(
+        .config(
+          size: 140
+          color: ember
+        )
+      )
+    )
+  )
   Order(
     .posOrder(0)
     .obj(
       Position(
         .config(bottom: -40)
-        .obj(Container(.config(size: 90, color: teal, cornerRadius: 45)))
+        .obj(
+          Container(
+            .config(
+              size: 90
+              color: teal
+              cornerRadius: 45
+            )
+          )
+        )
       )
     )
   )

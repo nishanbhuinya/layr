@@ -11,7 +11,10 @@ Page(
     .config(color: canvas)
     .body(
       Column(
-        .config(gap: 14, padding: all(24))
+        .config(
+          gap: 14
+          padding: all(24)
+        )
         Toggle(
           .config(
             kind: switch
