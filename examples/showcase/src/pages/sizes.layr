@@ -1,0 +1,109 @@
+Page(
+  .name(Sizes)
+  .route('/sizes')
+  var bool press = false
+  var txt label = 'Press me'
+  Inject(
+    .into(Sizes.but)
+    but.w = press ? but.w + 10 : but.w + 0
+    but.h = press ? but.h + 10 : but.h + 0
+  )
+
+  Scaffold(
+    .config(padding: all(24))
+    .body(
+      Column(
+        .config(
+          w: fill
+          gap: 20
+        )
+        Text(
+          .config(type: h2)
+          .obj('Sizes')
+        )
+
+        // A hugging box grows by 10 when pressed, and keeps hugging what it holds.
+        Animate(
+          Container(
+            .id(but)
+            .config(
+              w: hug
+              h: hug
+              color: grey
+              cornerRadius: 15
+              padding: 5
+            )
+            .on(tap: press = !press)
+            Text(.obj(label))
+          )
+        )
+        Button(
+          .fnc(label = label == 'Press me' ? 'Press me, a longer label' : 'Press me')
+          .obj('Rename')
+        )
+
+        // Hug plus a length, written in the config: chips that still wrap.
+        Container(
+          .id(chips)
+          .config(w: 260)
+          Row(
+            .config(gap: 8)
+            Container(
+              .config(
+                w: hug + 24
+                color: grey
+              )
+              Text('alpha')
+            )
+            Container(
+              .config(
+                w: hug + 24
+                color: grey
+              )
+              Text('beta')
+            )
+            Container(
+              .config(
+                w: hug + 24
+                color: grey
+              )
+              Text('gamma')
+            )
+            Container(
+              .config(
+                w: hug + 24
+                color: grey
+              )
+              Text('delta')
+            )
+          )
+        )
+
+        // Fill plus a length shares a row with a plain fill, and the row still stacks when narrow.
+        Row(
+          .id(panes)
+          .config(
+            w: fill
+            gap: 0
+          )
+          Container(
+            .id(wide)
+            .config(
+              w: fill + 40
+              color: grey
+            )
+            Text('a pane that takes 40 more than its share')
+          )
+          Container(
+            .id(rest)
+            .config(
+              w: fill
+              color: grey
+            )
+            Text('the other pane')
+          )
+        )
+      )
+    )
+  )
+)

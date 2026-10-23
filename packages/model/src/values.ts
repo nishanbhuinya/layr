@@ -57,10 +57,48 @@ export function isLengthObj(v: unknown): v is Px | Pct | Fr | Ds | Vp | Calc {
   return typeof v === "object" && v !== null && "$" in v && ["px", "pct", "fr", "ds", "vp", "calc"].includes((v as { $: string }).$);
 }
 
-/** Converts a length to CSS. `fill`/`hug` are handled by layout classes, so they map to `auto` here. */
+/**
+ * The layout size a computed length starts from: `hug + 10` and `(fill - 8) * 2` are sizes worked
+ * out by layout and then changed, so they keep their basis (`hug`, `fill`). Null for a plain length.
+ */
+export function sizingBasis(v: unknown): Sizing | null {
+  if (v === "hug" || v === "fill") return v;
+  if (typeof v === "object" && v !== null && (v as Calc).$ === "calc") return sizingBasis((v as Calc).a) ?? sizingBasis((v as Calc).b);
+  return null;
+}
+
+/** A length computed from a layout size (`hug + 10`), as opposed to `hug` itself or a plain length. */
+export function isComputedSize(v: unknown): v is Calc {
+  return typeof v === "object" && v !== null && (v as Calc).$ === "calc" && sizingBasis(v) !== null;
+}
+
+/** The body of a `calc()` for a calc tree, with a layout size written as `basis`. */
+function calcBody(v: Calc, basis: string, font: boolean): string {
+  const inner = (x: Length | number) => {
+    if (x === "hug" || x === "fill") return basis;
+    const s = typeof x === "number" && (v.op === "*" || v.op === "/") ? num(x) : typeof x === "object" && x.$ === "calc" ? `(${calcBody(x, basis, font)})` : lengthCss(x as Length, font);
+    return s.startsWith("calc(") ? s.slice(4) : s;
+  };
+  return `${inner(v.a)} ${v.op} ${inner(v.b)}`;
+}
+
+/**
+ * A computed size as CSS, with its layout size written as `basis`: `size` inside `calc-size()`, or
+ * the measured size (`var(--l-bw)`) where the browser has no `calc-size()`.
+ */
+export function computedSizeCss(v: Calc, basis: string): string {
+  return `calc(${calcBody(v, basis, false)})`;
+}
+
+/**
+ * Converts a length to CSS. `fill`/`hug` are handled by layout classes, so they map to `auto` here. A
+ * size computed from `hug` is `calc-size(fit-content, …)`; one computed from `fill` is laid out as
+ * fill and measured by the render target, so it is `auto` here too.
+ */
 export function lengthCss(v: Length, font = false): string {
   if (typeof v === "number") return font ? dsFont(v) : dsLength(v);
   if (v === "fill" || v === "hug") return "auto";
+  if (v.$ === "calc" && sizingBasis(v)) return sizingBasis(v) === "hug" ? `calc-size(fit-content, ${calcBody(v, "size", font)})` : "auto";
   switch (v.$) {
     case "px":
       return `${num(v.v)}px`;
@@ -72,13 +110,8 @@ export function lengthCss(v: Length, font = false): string {
       return font ? dsFont(v.v) : dsLength(v.v);
     case "vp":
       return `${num(v.v)}${v.u}`;
-    case "calc": {
-      const inner = (x: Length | number) => {
-        const s = typeof x === "number" && (v.op === "*" || v.op === "/") ? num(x) : lengthCss(x as Length, font);
-        return s.startsWith("calc(") ? s.slice(4) : s;
-      };
-      return `calc(${inner(v.a)} ${v.op} ${inner(v.b)})`;
-    }
+    case "calc":
+      return `calc(${calcBody(v, "auto", font)})`;
   }
 }
 
@@ -158,8 +191,7 @@ type Num = number;
 
 function mapLen(a: Length, f: (n: Num) => Num, op?: Calc["op"], by?: number): Length {
   if (typeof a === "number") return f(a);
-  if (typeof a === "string") return a;
-  if (a.$ === "calc") return op && by !== undefined ? { $: "calc", op, a, b: by } : a;
+  if (typeof a === "string" || a.$ === "calc") return op && by !== undefined ? { $: "calc", op, a, b: by } : a;
   return { ...a, v: f(a.v) } as Length;
 }
 
@@ -180,17 +212,32 @@ function zipLen(a: Length, b: Length, f: (x: Num, y: Num) => Num, op: Calc["op"]
     if (typeof a === "object" && typeof b === "number" && a.$ !== "calc") return { ...a, v: f(a.v, b) } as Length;
     if (typeof a === "number" && typeof b === "object" && b.$ !== "calc") return { ...b, v: f(a, b.v) } as Length;
   }
-  if (typeof a === "string" || typeof b === "string") return a;
   return { $: "calc", op, a, b };
 }
+
+/** `x + 0`, `x - 0`, `x * 1`, `x / 1` (and `0 + x`, `1 * x`) leave a layout size as it is. */
+function identity(op: Calc["op"], a: unknown, b: unknown): unknown {
+  if (typeof b === "number" && (((op === "+" || op === "-") && b === 0) || ((op === "*" || op === "/") && b === 1))) return a;
+  if (typeof a === "number" && ((op === "+" && a === 0) || (op === "*" && a === 1))) return b;
+  return undefined;
+}
+
+const isLen = (x: unknown): x is Length => typeof x === "number" || x === "hug" || x === "fill" || isLengthObj(x);
 
 /** Generic arithmetic used by compiled LAYR expressions (numbers, lengths, insets, sizes). */
 export function arith(op: "+" | "-" | "*" | "/", a: unknown, b: unknown): unknown {
   const f = (x: Num, y: Num) => (op === "+" ? x + y : op === "-" ? x - y : op === "*" ? x * y : x / y);
   if (typeof a === "number" && typeof b === "number") return f(a, b);
-  // A layout size (`hug`, `fill`) or a value never set has no number to compute with: it stays as it is.
-  if (a === "hug" || a === "fill" || (a == null && typeof b !== "string")) return a;
-  if (b === "hug" || b === "fill" || (b == null && typeof a !== "string")) return b;
+  // A layout size (`hug`, `fill`, or one computed from them) is the size layout works out; arithmetic
+  // on it is a size computed from that one (`hug + 10`), resolved by the render target.
+  if (sizingBasis(a) || sizingBasis(b)) {
+    const same = identity(op, a, b);
+    if (same !== undefined) return same;
+    if (isLen(a) && isLen(b)) return { $: "calc", op, a, b } satisfies Calc;
+  }
+  // A value never set has no number to compute with: it stays as it is.
+  if (a == null && typeof b !== "string") return a;
+  if (b == null && typeof a !== "string") return b;
   if (typeof a === "string" || typeof b === "string") return op === "+" ? `${a}${b}` : Number.NaN;
   const scale = op === "*" || op === "/";
   if (isInsets(a)) {

@@ -24,4 +24,4 @@ body:
     id: version
     attributes:
       label: Version
-      description: "`npx layr --version`"
+      description: "`layr --version` (or `npx @dynshift/layr --version`)"

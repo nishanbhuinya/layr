@@ -95,7 +95,79 @@ These are the same three modes as Figma's auto layout, so a design translates di
 
 `hug` holds everywhere, including directly in a Scaffold's body: a Container there is as wide as its content until you give it `w: fill`. The body arranges its objects like a Column.
 
-`hug` and `fill` are worked out by layout, so they are not numbers to compute with: `card.h + 10` on a hugging card is an error (L2004). To make a hugging box bigger, change what it hugs, its `padding` for instance. Or give it a length, or read the measured `card.size.h` where that does not feed back into the same size.
+### Computing with hug and fill
+
+`hug` and `fill` are sizes too, worked out by layout, and arithmetic on them is a size worked out from them: `w: hug + 24` is as wide as the content plus 24, and `w: fill - 40` takes its share of the row less 40. A size that nothing changes stays plain `hug` or `fill`; one that is changed keeps being worked out from them. When the label gets longer, `hug + 24` is still 24 wider than the new label, and a Row of such boxes still wraps, shrinks and stacks the way a Row of hugging or filling boxes does.
+
+This is how a button grows when pressed, with no size of its own written anywhere:
+
+```layr
+Page(
+  .name(Press)
+  .route('/')
+  var bool press = false
+  Inject(
+    .into(Press.pill)
+    pill.w = press ? pill.w + 16 : pill.w
+    pill.h = press ? pill.h + 8 : pill.h
+  )
+
+  Scaffold(
+    .config(color: canvas)
+    .body(
+      Column(
+        .config(
+          w: fill
+          gap: 16
+          padding: all(24)
+        )
+        Animate(
+          Container(
+            .id(pill)
+            .config(
+              color: accent
+              cornerRadius: 20
+              padding: sym(x: 14, y: 6)
+            )
+            .on(tap: press = !press)
+            Text('Press me')
+          )
+        )
+        Row(
+          .config(
+            w: fill
+            gap: 8
+          )
+          Container(
+            .config(
+              w: hug + 24
+              color: panel
+              cornerRadius: 6
+            )
+            Text('hug + 24')
+          )
+          Container(
+            .config(
+              w: fill - 40
+              color: panel
+              cornerRadius: 6
+            )
+            Text('fill - 40')
+          )
+        )
+      )
+    )
+  )
+)
+```
+
+Inside an Inject, `pill.w` on the right is the size the object had before this Inject: here, its hugged width. So the pill is its hugged size plus 16 while pressed, and animates there.
+
+> **Try it**
+> - Press the pill, then change `'Press me'` to a longer label: it still hugs the label, 16 wider.
+> - Change `pill.w + 16` to `pill.w * 1.5`.
+
+Another object's `hug` or `fill` size in arithmetic is the size it was laid out at, the same as its measured `card.size.w`. A size times a size, or anything divided by a size, is not a length: that is the one error (L2004).
 
 ## Arranging: the primitives
 

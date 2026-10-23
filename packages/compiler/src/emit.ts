@@ -13,6 +13,7 @@ import {
   ease,
   gradient,
   inkVars,
+  isComputedSize,
   type KeyDef,
   keyOf,
   type LowerContext,
@@ -123,6 +124,8 @@ export interface Gen {
   konst?: unknown;
   /** The values it can take (a param declared `= in | mid | out`). */
   options?: string[];
+  /** Another object's `hug`/`fill` size: its measured size, for arithmetic (`card.w + 10`). */
+  measured?: string;
 }
 
 const NOT_CONST = Symbol("not-const");
@@ -831,8 +834,9 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       if (e.immutable) this.markImmutable(n, k.name, e.span);
       const g = this.expr(e.value, sc, { type: k.type, values: k.values });
       this.checkType(k, g, e.value.span);
-      if (g.konst !== undefined && g.konst !== NOT_CONST) staticCfg[k.name] = g.konst;
-      else dynamic[k.name] = g.code;
+      // A size computed from hug/fill renders through the runtime, which measures it where CSS cannot.
+      if (g.konst !== undefined && g.konst !== NOT_CONST && !isComputedSize(g.konst)) staticCfg[k.name] = g.konst;
+      else dynamic[k.name] = g.konst !== undefined && g.konst !== NOT_CONST ? this.constCode(g.konst) : g.code;
     }
     return { staticCfg, dynamic, keysSeen };
   }
@@ -1710,8 +1714,10 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
   }
 
   private binary(op: string, l: Expr, r: Expr, sc: Scope, expect: Expect): Gen {
-    const a = this.expr(l, sc, ["&&", "||"].includes(op) ? { type: "bool" } : op === "??" ? expect : {});
-    const b = this.expr(r, sc, ["&&", "||"].includes(op) ? { type: "bool" } : op === "??" ? expect : { type: a.type === "len" ? "len" : undefined });
+    // Where a length is expected, `hug`/`fill` in arithmetic are the layout sizes (`w: hug + 12`).
+    const len: Expect = expect.type === "len" && ["+", "-", "*", "/"].includes(op) ? { type: "len", values: expect.values } : {};
+    const a = this.expr(l, sc, ["&&", "||"].includes(op) ? { type: "bool" } : op === "??" ? expect : len);
+    const b = this.expr(r, sc, ["&&", "||"].includes(op) ? { type: "bool" } : op === "??" ? expect : a.type === "len" || a.type === "sizing" ? { ...len, type: "len" } : len);
     const numeric = (t: string) => t === "num" || t === "int" || t === "time";
     const constBoth = isConst(a) && isConst(b);
     switch (op) {
@@ -1719,11 +1725,7 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
       case "-":
       case "*":
       case "/": {
-        if (a.type === "sizing" || b.type === "sizing") {
-          const side = a.type === "sizing" ? l : r;
-          const key = exprText(this.mod, side).endsWith(".h") ? "h" : "w";
-          this.err("L2004", `\`${exprText(this.mod, side)}\` is \`hug\` or \`fill\`: a size worked out by layout, not a number, so \`${op}\` has nothing to compute with. Give it a length (\`${key}: 120\`), change what it hugs (\`padding\`), or read the measured size (\`${exprText(this.mod, side).replace(/\.(w|h)$/, ".size.$1")}\`) where it does not feed back into this size.`, { start: l.span.start, end: r.span.end });
-        }
+        if (a.type === "sizing" || b.type === "sizing") return this.sizingArith(op, a, b, l, r);
         if (a.type === "txt" || b.type === "txt") return { code: `(${a.code} + ${b.code})`, type: "txt", konst: constBoth && op === "+" ? `${a.konst}${b.konst}` : NOT_CONST };
         if (numeric(a.type) && numeric(b.type)) {
           const k = constBoth ? evalArith(op, a.konst as number, b.konst as number) : NOT_CONST;
@@ -1759,6 +1761,26 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     }
   }
 
+  /**
+   * Arithmetic on a layout size. The object's own `hug`/`fill` (an Inject's `card.w`, or `hug` written
+   * in its config) is a basis: `card.w + 10` is the size layout works out, plus 10, resolved by the
+   * render target, and it keeps adapting as `hug`/`fill` do. Another object's `hug`/`fill` size is its
+   * measured size. A size times a size, or anything divided by a size, has no meaning (L2004).
+   */
+  private sizingArith(op: string, a: Gen, b: Gen, l: Expr, r: Expr): Gen {
+    const lengthy = (g: Gen) => g.type === "len" || g.type === "sizing";
+    if ((op === "*" && lengthy(a) && lengthy(b)) || (op === "/" && lengthy(b))) {
+      const side = b.type === "sizing" ? r : l;
+      this.err("L2004", `\`${exprText(this.mod, l)} ${op} ${exprText(this.mod, r)}\` ${op === "*" ? "multiplies two sizes" : "divides by a size"}, which is not a size. Add to or subtract from \`${exprText(this.mod, side)}\`, or scale it by a number (\`${exprText(this.mod, side)} * 1.5\`).`, { start: l.span.start, end: r.span.end });
+      return { code: "undefined", type: "any" };
+    }
+    const ac = a.measured ?? a.code;
+    const bc = b.measured ?? b.code;
+    const own = (g: Gen) => g.type === "sizing" && !g.measured;
+    const konst = isConst(a) && isConst(b) ? arith(op as "+" | "-" | "*" | "/", a.konst, b.konst) : NOT_CONST;
+    return { code: `$V.arith(${JSON.stringify(op)}, ${ac}, ${bc})`, type: own(a) || own(b) ? "sizing" : "len", konst };
+  }
+
   private member(e: Expr & { type: "Member" }, sc: Scope, expect: Expect): Gen {
     // param.x
     if (e.object.type === "Ident") {
@@ -1788,11 +1810,16 @@ ${comp.name}.displayName = ${JSON.stringify(comp.name)};`;
     const ref = attempted ? this.resolveRef(e, sc) : null;
     if (attempted && !ref?.key) return { code: "undefined", type: "any" };
     if (ref?.key) {
-      // A `w`/`h` that sizes to content or fills is a keyword, not a number to compute with (L2004).
+      // A `w`/`h` that hugs or fills is a layout size: arithmetic on the target's own (`$prev`) is a
+      // computed size, and on another object's it uses the size that object was laid out at.
       const sizing = !ref.rest && contentSized(ref.node, ref.key) ? "sizing" : null;
-      if (this.prevTarget && ref.address === this.prevTarget.address && ref.key === this.prevTarget.key) return { code: `$prev${ref.rest}`, type: sizing ?? "any" };
+      // A size never written is the default, `hug` (`fill` for Expand, Mid, Align), so arithmetic on it
+      // starts from that size.
+      if (this.prevTarget && ref.address === this.prevTarget.address && ref.key === this.prevTarget.key) return { code: sizing ? `($prev ?? ${JSON.stringify(ref.node && fills(ref.node) ? "fill" : "hug")})` : `$prev${ref.rest}`, type: sizing ?? "any" };
       this.graph.entries.push({ kind: "read", address: ref.address, key: ref.key, order: null, file: this.mod.path, span: e.span, owner: this.currentComp?.name ?? null });
-      return { code: `$.read(${JSON.stringify(ref.address)}, ${JSON.stringify(ref.key)})${ref.rest}`, type: sizing ?? featureType(ref.node, ref.key) };
+      const code = `$.read(${JSON.stringify(ref.address)}, ${JSON.stringify(ref.key)})${ref.rest}`;
+      if (sizing) return { code, type: sizing, measured: `$.read(${JSON.stringify(ref.address)}, "size")?.${ref.key}` };
+      return { code, type: featureType(ref.node, ref.key) };
     }
     // Plain member access (colour getters, size fields, TS values).
     const o = this.expr(e.object, sc, e.object.type === "Ident" && NAMED_COLORS[e.object.name] ? { type: "color" } : {});
@@ -2135,7 +2162,15 @@ function contentSized(node: ObjNode | null, key: string): boolean {
   const entry = node.config.find((c) => c.key === key) ?? node.config.find((c) => c.key === "size");
   if (!entry) return true;
   const v = entry.key === "size" && entry.value.type === "Tuple" ? entry.value.elements[key === "w" ? 0 : 1] : entry.value;
-  return v?.type === "Ident" && (v.name === "hug" || v.name === "fill");
+  return v ? astBasis(v) !== null : false;
+}
+
+/** The layout size an expression is written from: `hug`, `fill`, `fill - 8`, `(hug + 4) * 2`. */
+function astBasis(v: Expr): "hug" | "fill" | null {
+  if (v.type === "Ident") return v.name === "hug" || v.name === "fill" ? v.name : null;
+  if (v.type === "Paren") return astBasis(v.expr);
+  if (v.type === "Binary" && ["+", "-", "*", "/"].includes(v.op)) return astBasis(v.left) ?? astBasis(v.right);
+  return null;
 }
 
 function featureType(node: ObjNode | null, key: string): string {
@@ -2258,7 +2293,7 @@ function fills(k: ObjNode, depth = 0): boolean {
   if (depth > 6) return false;
   if (k.name === "Expand" || k.name === "Mid" || k.name === "Align") return true;
   const w = k.config.find((e) => e.key === "w" || e.key === "width");
-  if (w) return w.value.type === "Ident" && w.value.name === "fill";
+  if (w) return astBasis(w.value) === "fill";
   if (k.kind === "user" && k.user?.root) return fills(k.user.root, depth + 1);
   if (k.name === "Animate" || k.name === "Focus" || k.name === "Position") {
     const inner = [...k.children.values()].flat().find((c) => c.kind === "node");

@@ -12,8 +12,10 @@ const INTERNAL = {
   "@layr-internal/react/ssr": ["../react/src/ssr.ts"],
   "@layr-internal/react/tsx": ["../react/src/tsx.tsx"],
   "@layr-internal/node": ["../node/src/index.ts"],
+  "@layr-internal/node/install": ["../node/src/install.ts"],
   "@layr-internal/cli": ["../cli/src/index.ts"],
   "@layr-internal/cli/vite": ["../cli/src/vite.ts"],
+  "@layr-internal/cli/install": ["../cli/src/install.ts"],
   "@layr-internal/lsp": ["../lsp/src/index.ts"],
 };
 

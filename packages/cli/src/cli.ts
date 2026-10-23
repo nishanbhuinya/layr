@@ -3,7 +3,7 @@ import { add, docs, eject, info, outdated, pack, publish, remove, search, update
 import { analyze, build, dev, doctor, explain, fmt, preview } from "./commands/core.ts";
 import { create } from "./commands/create.ts";
 import { type Args, c, CliError, parseArgs } from "./ui.ts";
-import { layrVersion } from "./version.ts";
+import { layrVersion, projectLayrVersion } from "./version.ts";
 
 type Command = { run: (a: Args) => Promise<void>; summary: string; usage?: string };
 
@@ -22,11 +22,11 @@ export const COMMANDS: Record<string, Command> = {
   analyze: { run: analyze, summary: "Check the project; explain a feature's cascade", usage: "layr analyze [--json] [--info] [--explain Page.id.feature]" },
   explain: { run: explain, summary: "Explain a diagnostic code", usage: "layr explain [L3102]" },
   chain: { run: lazy(() => import("./commands/chain.ts"), "chain"), summary: "Show what Export, Inject, Extract and Duplicate (EIED) change and read, in exeOrder", usage: "layr chain [object] [--all] [--json]" },
-  upgrade: { run: lazy(() => import("./commands/upgrade.ts"), "upgrade"), summary: "List deprecated forms and update them once you agree", usage: "layr upgrade [--check] [--yes]" },
+  upgrade: { run: lazy(() => import("./commands/upgrade.ts"), "upgrade"), summary: "Upgrade the project to the latest LAYR, then its code, once you agree", usage: "layr upgrade [--to 3.3] [--check] [--yes] [--code]" },
   test: { run: lazy(() => import("./commands/test.ts"), "test"), summary: "Screenshot every page at every design frame", usage: "layr test [--frames m,t,w,uw] [--update]" },
   add: { run: add, summary: "Install addons", usage: "layr add <addon>[@range] ..." },
   remove: { run: remove, summary: "Uninstall addons", usage: "layr remove <addon> ..." },
-  update: { run: update, summary: "Update addons", usage: "layr update [addon ...]" },
+  update: { run: update, summary: "Update addons (LAYR itself: layr upgrade)", usage: "layr update [addon ...]" },
   outdated: { run: outdated, summary: "List addons with newer versions" },
   search: { run: search, summary: "Search addons", usage: "layr search <query>" },
   info: { run: info, summary: "Show an addon's details", usage: "layr info <addon>" },
@@ -36,7 +36,7 @@ export const COMMANDS: Record<string, Command> = {
   docs: { run: docs, summary: "Generate API docs for an addon's widgets" },
   skills: { run: lazy(() => import("./commands/skills.ts"), "skills"), summary: "Install the LAYR Skill for AI agents", usage: "layr skills [install|update|path]" },
   doctor: { run: doctor, summary: "Check the environment and project" },
-  lsp: { run: lazy(() => import("@layr-internal/lsp"), "start"), summary: "Start the language server (stdio)" },
+  lsp: { run: async () => (await import("@layr-internal/lsp")).start({ version: layrVersion() }), summary: "Start the language server (stdio)" },
   mcp: { run: lazy(() => import("./commands/mcp.ts"), "mcp"), summary: "Start the MCP server for AI agents (stdio)" },
 };
 
@@ -57,12 +57,15 @@ const LONG_RUNNING = new Set(["dev", "preview", "lsp", "mcp"]);
 export async function main(argv: string[]): Promise<number | null> {
   const args = parseArgs(argv);
   const name0 = args._.shift();
-  if (!name0 || name0 === "help" || (!name0 && args.flags.help)) {
-    help();
+  if (name0 === "version" || (!name0 && (args.flags.version || args.flags.v))) {
+    // Inside a project, the version that matters is the one it installs (and `layr` runs).
+    const project = projectLayrVersion();
+    console.log(project ?? layrVersion());
+    if (project && project !== layrVersion()) console.log(c.gray(`this project's LAYR; the layr command is ${layrVersion()} and runs the project's version here`));
     return 0;
   }
-  if (name0 === "version" || args.flags.version || args.flags.v) {
-    console.log(layrVersion());
+  if (!name0 || name0 === "help") {
+    help();
     return 0;
   }
   const name = ALIASES[name0] ?? name0;

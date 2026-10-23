@@ -220,3 +220,73 @@ test("Adapt, subtree Design Scale, export groups and exit animations", async ({ 
   await expect(leaving).not.toBeAttached();
   expect(errors, errors.join("\n")).toEqual([]);
 });
+
+test("sizes computed from hug and fill: grow, follow content, keep adapting", async ({ page }) => {
+  const errors = collectErrors(page);
+  await page.goto("/sizes");
+  const but = page.locator('[data-a="Sizes::but"]');
+  const ds = await but.evaluate((el) => Number.parseFloat(getComputedStyle(el).getPropertyValue("--ds")) / 1000);
+  const box = async () => {
+    const r = await but.evaluate((el) => ({ w: Number.parseFloat(getComputedStyle(el).width), h: Number.parseFloat(getComputedStyle(el).height) }));
+    return r;
+  };
+  const base = await box();
+  expect(base.w).toBeGreaterThan(20);
+
+  // Pressed, it is its hugged size plus 10 on each axis (animated there).
+  await but.click();
+  await expect.poll(async () => (await box()).w).toBeCloseTo(base.w + 10 * ds, 0);
+  await expect.poll(async () => (await box()).h).toBeCloseTo(base.h + 10 * ds, 0);
+  // Measuring never feeds back: it stays put.
+  await page.waitForTimeout(600);
+  expect((await box()).w).toBeCloseTo(base.w + 10 * ds, 0);
+
+  // It still hugs: a longer label makes it wider, still plus 10.
+  await page.getByRole("button", { name: "Rename" }).click();
+  const text = but.locator(".l-text").first();
+  await expect.poll(async () => (await box()).w - (await text.evaluate((el) => (el as HTMLElement).getBoundingClientRect().width))).toBeCloseTo(10 * ds + 10 * ds, 0);
+
+  // Released, it is plain hug again.
+  await but.click();
+  await expect.poll(async () => (await box()).w - (await text.evaluate((el) => (el as HTMLElement).getBoundingClientRect().width))).toBeCloseTo(10 * ds, 0);
+
+  // `w: hug + 24` chips: 24 wider than their text, and the row still wraps them.
+  const chip = page.getByText("alpha", { exact: true });
+  const chipBox = chip.locator("..");
+  const extra = await chipBox.evaluate((el) => el.getBoundingClientRect().width - (el.firstElementChild as HTMLElement).getBoundingClientRect().width);
+  expect(extra).toBeCloseTo(24 * ds, 0);
+  const tops = await page.locator('[data-a="Sizes::chips"]').evaluate((el) => [...(el.firstElementChild as HTMLElement).children].map((c) => Math.round(c.getBoundingClientRect().top)));
+  expect(new Set(tops).size).toBeGreaterThan(1);
+
+  // `w: fill + 40` next to a plain fill: its share plus 40; the other takes the rest.
+  const panes = await page.locator('[data-a="Sizes::panes"]').evaluate((el) => {
+    const [a, b] = [...el.children].map((c) => c.getBoundingClientRect().width);
+    return { row: el.getBoundingClientRect().width, a: a as number, b: b as number };
+  });
+  expect(panes.a + panes.b).toBeCloseTo(panes.row, 0);
+  expect(panes.a).toBeCloseTo(panes.row / 2 + 40 * ds, 0);
+  expect(errors).toEqual([]);
+});
+
+test("computed sizes keep adapting at every frame", async ({ page }) => {
+  for (const [w, h] of [[390, 844], [834, 1194], [1440, 900], [2560, 1080]] as const) {
+    await page.setViewportSize({ width: w, height: h });
+    await page.goto("/sizes");
+    const ds = await page.locator('[data-a="Sizes::panes"]').evaluate((el) => Number.parseFloat(getComputedStyle(el).getPropertyValue("--ds")) / 1000);
+    // Chips that hug plus 24 still wrap inside their 260-wide box.
+    const tops = await page.locator('[data-a="Sizes::chips"]').evaluate((el) => [...(el.firstElementChild as HTMLElement).children].map((c) => Math.round(c.getBoundingClientRect().top)));
+    expect(new Set(tops).size).toBeGreaterThan(1);
+    // The row with a `fill + 40` pane shares when there is room and stacks when there is not, never wider than itself.
+    const r = await page.locator('[data-a="Sizes::panes"]').evaluate((el) => ({ stacked: el.classList.contains("l-stacked"), row: el.getBoundingClientRect().width, kids: [...el.children].map((c) => c.getBoundingClientRect()).map((b) => ({ top: b.top, w: b.width })) }));
+    const [a, b] = r.kids as [{ top: number; w: number }, { top: number; w: number }];
+    if (r.stacked) {
+      expect(b.top).toBeGreaterThan(a.top);
+      expect(a.w).toBeLessThanOrEqual(r.row + 0.5);
+    } else {
+      expect(a.top).toBeCloseTo(b.top, 0);
+      expect(a.w).toBeCloseTo(r.row / 2 + 40 * ds, 0);
+    }
+    if (w === 390) expect(r.stacked).toBe(true);
+    if (w >= 834) expect(r.stacked).toBe(false);
+  }
+});

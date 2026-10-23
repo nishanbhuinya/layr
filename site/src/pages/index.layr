@@ -459,8 +459,8 @@ Page(
           AiPanel()
           TextLink(
             .config(
-              label: 'AI Skill and MCP'
-              href: '/skills'
+              label: 'AI agents: the Skill and MCP'
+              href: '/docs/ai'
             )
           )
         )

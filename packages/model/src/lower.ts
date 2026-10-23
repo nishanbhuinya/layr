@@ -9,10 +9,12 @@ import type { LayoutKind } from "./schema.ts";
 import { runtimeWidget } from "./table.ts";
 import {
   alignPoint,
+  type Calc,
   type FontValue,
   type Gradient,
   type Insets,
   insetsCss,
+  isComputedSize,
   isFontValue,
   isInsets,
   isSize,
@@ -23,6 +25,7 @@ import {
   paintCss,
   type Shadow,
   shadowCss,
+  sizingBasis,
   toColor,
   toInsets,
 } from "./values.ts";
@@ -38,6 +41,11 @@ export interface Lowered {
   attrs: Record<string, string | boolean | number>;
   /** Declarations for the element's direct children (e.g. Row gap handled by the parent). */
   notes: string[];
+  /**
+   * Sizes computed from a layout size (`w: hug + 10`). Where the browser has no `calc-size()` (and
+   * always for a `fill` basis) the render target measures the basis and writes the result.
+   */
+  computed?: { w?: Calc; h?: Calc };
 }
 
 export interface LowerContext {
@@ -81,6 +89,15 @@ const BASE_RULES = `
 .l-row.l-stackable>*,.l-row.l-stackable>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
 /* Stacked, a row's children keep their own heights: a fill share was for the width. */
 .l-row.l-stacked>*,.l-row.l-stacked.l-stacked>.l-wfill.l-wfill{flex:0 0 auto}
+/* A size computed from fill (\`fill + 10\`, measured into --l-cw/--l-ch) keeps fill's class, so its row
+   still shares, stacks and switches; along a row it takes its computed share instead of growing. */
+.l-wfill.l-wcomp{width:var(--l-cw)}
+.l-hfill.l-hcomp{height:var(--l-ch)}
+.l-row>.l-wfill.l-wcomp,.l-wrap>.l-wfill.l-wcomp{flex-grow:0;flex-basis:var(--l-cw)}
+.l-col>.l-hfill.l-hcomp,.l-box>.l-hfill.l-hcomp,.l-scroll>.l-hfill.l-hcomp{flex-grow:0;flex-basis:var(--l-ch)}
+.l-row.l-stackable>.l-wfill.l-wcomp.l-wcomp{flex-grow:0;flex-basis:max(var(--l-cw),calc((var(--l-stack-at) - 100%) * 999))}
+/* Stacked, there is no row to take a share from: it fills the line and goes no further. */
+.l-row.l-stacked>.l-wfill.l-wcomp.l-wcomp.l-wcomp{flex:0 0 auto;max-width:100%}
 .l-root{color:CanvasText;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / ${UNIT});line-height:1.5}
 dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
 dialog.l:not([open]){display:none}
@@ -174,9 +191,14 @@ function radiusCss(v: unknown): string {
   return lengthCss(v as Length);
 }
 
+/**
+ * A size computed from a layout size keeps that size's kind (`fill + 10` is fill, `hug + 10` hugs),
+ * so a Row of them wraps, shrinks or stacks exactly as it would without the arithmetic.
+ */
 function sizingClass(axis: "w" | "h", v: unknown, classes: string[]) {
-  if (v === "fill") classes.push(`l-${axis}fill`);
-  else if (v !== undefined && v !== "hug" && !(typeof v === "object" && v !== null && (v as { $: string }).$ === "pct")) classes.push(`l-${axis}fix`);
+  const basis = sizingBasis(v);
+  if (basis === "fill") classes.push(`l-${axis}fill`);
+  else if (v !== undefined && !basis && !(typeof v === "object" && v !== null && (v as { $: string }).$ === "pct")) classes.push(`l-${axis}fix`);
 }
 
 /**
@@ -289,9 +311,20 @@ function applyKeys(name: string, layout: LayoutKind, cfg: Record<string, unknown
   }
   sizingClass("w", w, out.classes);
   sizingClass("h", h, out.classes);
-  if (w !== undefined && w !== "fill" && w !== "hug") d.width = lengthCss(w);
-  if (h !== undefined && h !== "fill" && h !== "hug") d.height = lengthCss(h);
+  if (w !== undefined && !sizingBasis(w)) d.width = lengthCss(w);
+  if (h !== undefined && !sizingBasis(h)) d.height = lengthCss(h);
   if (w === "hug") d.width = "fit-content";
+  if (isComputedSize(w) || isComputedSize(h)) {
+    out.computed = {};
+    if (isComputedSize(w)) {
+      out.computed.w = w;
+      if (sizingBasis(w) === "hug") d.width = lengthCss(w);
+    }
+    if (isComputedSize(h)) {
+      out.computed.h = h;
+      if (sizingBasis(h) === "hug") d.height = lengthCss(h);
+    }
+  }
   for (const key of ["minW", "maxW", "minH", "maxH"]) {
     if (has(key)) d[LENGTH_PROP[key] as string] = lengthCss(cfg[key] as Length);
   }

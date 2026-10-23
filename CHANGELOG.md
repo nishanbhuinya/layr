@@ -2,6 +2,32 @@
 
 All notable changes to `@dynshift/layr`. The format follows [Keep a Changelog](https://keepachangelog.com), and the project uses semantic versioning.
 
+## 3.3.0
+
+Sizes that hug or fill can be computed with, the editor and AI agents use the LAYR version your project installs, `layr upgrade` upgrades LAYR itself, and plain `layr` works everywhere. Code written for 3.2 compiles unchanged.
+
+### Added
+
+- **Arithmetic on `hug` and `fill`.** A size worked out by layout is a size to compute with: `w: hug + 24` is the content's width plus 24, `w: fill - 40` a share of the row less 40, and in an Inject `but.w = press ? but.w + 10 : but.w` grows a hugging button by 10 while pressed. The result keeps hugging or filling: it follows its content and its room, a Row of such boxes still wraps, shrinks and stacks, and Animate animates the change. Another object's `hug` or `fill` size in arithmetic is its measured size. Browsers with CSS `calc-size()` (Chrome, Edge) do it in CSS; Firefox and Safari measure the size it starts from, before paint.
+- **`layr upgrade` upgrades LAYR.** It shows `LAYR 3.1.0 → 3.3.0`, installs the latest version (or `--to 3.2`, `--to next`) with your package manager once you agree, sets `layr:` in `layr.yaml`, refreshes an installed Skill, then runs the new version's code upgrade. `--code` runs only the code step; `--check` reports both. From 3.2 or older: `npx @dynshift/layr@latest upgrade`.
+- **A global `layr` runs your project's version.** Install it once (`npm i -g @dynshift/layr`) and type `layr dev`, `layr build`, `layr upgrade` anywhere: inside a project it runs the `@dynshift/layr` that project installs, so no command needs `npx` and none runs a different version from the build. `layr --version` shows the project's version; `LAYR_NO_LOCAL=1` runs the global copy.
+- **The VS Code extension uses each project's installed LAYR.** It starts the language server of the `@dynshift/layr` each project installs, so a 3.1 project is checked by 3.1 rules; the status bar shows the version, and after `npm install` or `layr upgrade` it switches by itself. Files outside a project use the bundled version; the setting `layr.server` chooses.
+- `layr skills install` adds the LAYR MCP server to `.mcp.json`, keeping other servers.
+- `layr doctor` reports the installed LAYR version and whether it matches `layr.yaml`.
+- The reference at [/api](https://layr.dynshift.com/api) covers the language objects (Page, Widget, If, Each, Repeat, Duplicate, Inject and the rest) with their modifiers, and [Repeat](https://layr.dynshift.com/api/repeat) has live examples.
+
+### Changed
+
+- L2004 now reports only arithmetic that is not a length: a size times a size, or a division by a size.
+- Agents, the Skill, `AGENTS.md` and MCP configurations run `npx @dynshift/layr …`, the scoped name: the unscoped `npx layr` fetches an unrelated npm package outside a project.
+- The AI pages are one: [/docs/ai](https://layr.dynshift.com/docs/ai) (the old `/skills` address redirects there).
+- `layr update` says it updates addons; LAYR itself is `layr upgrade`.
+
+### Fixed
+
+- `layr --version` printed the help instead of the version.
+- The language server reports its real version.
+
 ## 3.2.0
 
 New objects (Duplicate, Repeat, RichText), each object's own exeOrder chain, guided upgrades, the canonical form that reads down the page, and an editor that keeps up. Code written for 3.1 compiles, except operations that share an order on one object (see Changed); `layr upgrade` updates the one renamed form.

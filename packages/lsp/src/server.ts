@@ -52,7 +52,8 @@ function findRoot(start: string): string {
   }
 }
 
-export function start() {
+/** Starts the server on stdio. `version` is the LAYR version it reports (the package it runs from). */
+export function start(opts: { version?: string } = {}) {
   const connection = createConnection(ProposedFeatures.all, process.stdin, process.stdout);
   const documents = new TextDocuments(TextDocument);
   let root = process.cwd();
@@ -140,7 +141,7 @@ export function start() {
         codeActionProvider: { codeActionKinds: [CodeActionKind.QuickFix, CodeActionKind.RefactorRewrite, CodeActionKind.RefactorExtract] },
         executeCommandProvider: { commands: [UPGRADE_COMMAND] },
       },
-      serverInfo: { name: "layr", version: "3" },
+      serverInfo: { name: "layr", version: opts.version ?? "3" },
     };
   });
 

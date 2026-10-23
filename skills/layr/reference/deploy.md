@@ -7,7 +7,7 @@ order: 41
 # Deploy
 
 ```sh
-npx layr build
+layr build
 ```
 
 `dist/` now holds a static site: every page without route params is prerendered to HTML (fast first paint, readable by search engines), then becomes interactive in the browser. `404.html` hands unknown paths to the client router. `--base /my-app/` builds for a sub-path.
@@ -38,7 +38,7 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npx layr build
+      - run: npx @dynshift/layr build
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
@@ -46,8 +46,8 @@ jobs:
         uses: actions/deploy-pages@v4
 ```
 
-For a project site at `https://you.github.io/my-app/`, build with `npx layr build --base /my-app/` or set `base: /my-app/` in `layr.yaml`.
+For a project site at `https://you.github.io/my-app/`, build with `layr build --base /my-app/` or set `base: /my-app/` in `layr.yaml`.
 
 ## Other hosts
 
-Cloudflare Pages, Netlify and Vercel: build command `npx layr build`, output directory `dist`.
+Cloudflare Pages, Netlify and Vercel: build command `npx @dynshift/layr build` (or `npm run build`), output directory `dist`.

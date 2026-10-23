@@ -148,7 +148,7 @@ RichText('(blue)[Blue]')
 
 ## L1017: Deprecated form (warning)
 
-This form still compiles but has a newer spelling, and a later major version removes it. The message names the new form. `layr upgrade` lists every deprecated form in the project and rewrites them once you agree; in VS Code the quick fix or **Update all** does the same.
+This form still compiles but has a newer spelling, and a later major version removes it. The message names the new form. `layr upgrade --code` lists every deprecated form in the project and rewrites them once you agree (`layr upgrade` does the same after moving the project to the latest LAYR); in VS Code the quick fix or **Update all** does the same.
 
 Wrong:
 
@@ -182,20 +182,20 @@ Scroll(Column(Container(.config(h: 400))))
 
 A `hug` Container with no child is 0×0, so its paint is never visible. Give it a size.
 
-## L2004: Arithmetic on a layout size (error)
+## L2004: Arithmetic that is not a length (error)
 
-`w` and `h` written as `hug` or `fill`, or not written at all, are sizes the layout works out; they are not numbers, so `box.w + 10` has nothing to add to. Give the size a length, change what the box hugs (its `padding`, its content), or read the measured size `box.size.w`. Do not feed a measured size back into the same size: it would grow on every measure.
+Arithmetic on a layout size is a size worked out from it: `box.w + 10` on a hugging box is its hugged size plus 10, `pane.w * 0.5` half its fill share, and both keep hugging, filling and adapting. What has no meaning is a size times a size, or anything divided by a size: the result is not a length. Add to the size, subtract from it, or scale it by a number.
 
 Wrong:
 
 ```layr
-Inject(.into(Home.button) button.h = button.h + 10)
+Inject(.into(Home.button) button.w = button.w * button.h)
 ```
 
 Right:
 
 ```layr
-Inject(.into(Home.button) button.padding = all(10))
+Inject(.into(Home.button) button.w = button.w * 1.5)
 ```
 
 ## L2101: Overflow cannot adapt (warning)

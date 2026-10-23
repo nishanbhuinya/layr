@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.3.0
+
+- Each LAYR project is checked by the `@dynshift/layr` it installs: the extension starts that version's language server, so a 3.1 project gets 3.1's rules and completions. The status bar shows the version; after `npm install` or `layr upgrade` the extension switches to the new one by itself.
+- Files outside a project, and projects with nothing installed yet, use the version bundled with the extension. The setting `layr.server` (`project` or `bundled`) chooses.
+- Follows LAYR 3.3: arithmetic on `hug` and `fill` sizes.
+
 ## 3.2.0
 
 - Completion writes whole calls: `Container()` with the cursor inside, `Text('')`, and `Page`, `Widget`, `If`, `Each`, `Repeat` and `Duplicate` with their essential modifiers. No more unclosed brackets.

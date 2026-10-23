@@ -11,8 +11,8 @@ An addon is an npm package of LAYR widgets. Core LAYR holds meaning and mechanic
 ## Use an addon
 
 ```sh
-npx layr add google_fonts
-npx layr add @someone/layr-glass@^1.2.0
+layr add google_fonts
+layr add @someone/layr-glass@^1.2.0
 ```
 
 `layr add` resolves the addon (by its LAYR id through the [Library](/library), or by npm name), checks that it supports your LAYR version, installs it with your package manager and records it in `layr.yaml`. Then import its widgets:
@@ -41,10 +41,10 @@ Addons ship `.layr` source that your compiler compiles with your app: they get t
 ## Create an addon
 
 ```sh
-npx @dynshift/layr create addon glass
+layr create addon glass
 cd glass
 npm install
-npx layr dev
+layr dev
 ```
 
 ```text
@@ -79,8 +79,8 @@ The `layr` field in `package.json`:
 ## Publish
 
 ```sh
-npx layr pack       # validate: manifest, analyzer, LAYR range, contents, no install scripts
-npx layr publish    # validate, then npm publish
+layr pack           # validate: manifest, analyzer, LAYR range, contents, no install scripts
+layr publish        # validate, then npm publish
 ```
 
 Publishing is plain npm: your package, your scope, your account. From CI, the template's `release.yml` publishes with npm provenance when you push a `v*` tag.

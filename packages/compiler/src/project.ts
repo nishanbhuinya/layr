@@ -591,7 +591,7 @@ function collectComp(mod: Module, call: Call, kind: CompKind): CompDef {
             if (root?.type === "Call") comp.rootCall = root;
             else report(mod, "L1014", "`.wgt(...)` of a Widget is the one object it renders.", item.span);
             if (item.name !== "wgt")
-              report(mod, "L1017", `A Widget renders \`.wgt(...)\` since LAYR 3.2; \`.${item.name}(...)\` still works until 4.0. \`layr upgrade\` rewrites it.`, item.nameSpan, "warning", {
+              report(mod, "L1017", `A Widget renders \`.wgt(...)\` since LAYR 3.2; \`.${item.name}(...)\` still works until 4.0. \`layr upgrade --code\` rewrites it.`, item.nameSpan, "warning", {
                 deprecation: "widget-wgt",
                 fixes: [{ title: "Use .wgt(...)", edits: [{ span: item.nameSpan, text: "wgt" }] }],
               });

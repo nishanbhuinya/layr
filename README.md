@@ -44,10 +44,11 @@ Page(
 ## Start
 
 ```bash
-npx @dynshift/layr create my-app
+npm i -g @dynshift/layr   # the layr command; in a project it runs that project's version
+layr create my-app
 cd my-app
 npm install
-npx layr dev
+layr dev
 ```
 
 Or try it without installing anything in the [playground](https://layr.dynshift.com/playground).

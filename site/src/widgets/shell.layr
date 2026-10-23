@@ -410,12 +410,6 @@ Widget(
         )
         NavItem(
           .config(
-            label: 'AI Skill and MCP'
-            href: '/skills'
-          )
-        )
-        NavItem(
-          .config(
             label: 'VS Code extension'
             href: '/editor'
           )

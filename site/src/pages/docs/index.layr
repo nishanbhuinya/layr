@@ -208,9 +208,9 @@ Page(
             )
             IndexEntry(
               .config(
-                title: 'AI Skill and MCP'
-                href: '/skills'
-                description: 'Give coding agents the LAYR rules, references and a language server.'
+                title: 'AI agents'
+                href: '/docs/ai'
+                description: 'The LAYR Skill, the MCP server and llms.txt, so coding agents write real LAYR.'
               )
             )
           )

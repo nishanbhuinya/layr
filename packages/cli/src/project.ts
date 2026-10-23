@@ -48,6 +48,6 @@ export function printDiagnostics(p: LoadedProject, list: Diagnostic[] = p.result
     console.log(`${color(head ?? "")}\n${rest.map((l) => c.gray(l)).join("\n")}\n`);
   }
   const deprecated = list.filter((d) => d.deprecation).length;
-  if (deprecated) console.log(c.yellow(`${deprecated} deprecated form(s): ${c.bold("layr upgrade")} lists them and updates them when you agree.\n`));
+  if (deprecated) console.log(c.yellow(`${deprecated} deprecated form(s): ${c.bold("layr upgrade --code")} lists them and updates them when you agree.\n`));
   return counts;
 }

@@ -50,6 +50,15 @@
 :is(.l-row.l-stackable,:where(.l-row.l-stackable>.l-pass,.l-row.l-stackable>.l-pass>.l-pass))>*,:is(.l-row.l-stackable,:where(.l-row.l-stackable>.l-pass,.l-row.l-stackable>.l-pass>.l-pass))>.l-wfill.l-wfill{flex-grow:var(--l-flex,1);flex-basis:calc((var(--l-stack-at) - 100%) * 999)}
 /* Stacked, a row's children keep their own heights: a fill share was for the width. */
 :is(.l-row.l-stacked,:where(.l-row.l-stacked>.l-pass,.l-row.l-stacked>.l-pass>.l-pass))>*,:is(.l-row.l-stacked.l-stacked,:where(.l-row.l-stacked.l-stacked>.l-pass,.l-row.l-stacked.l-stacked>.l-pass>.l-pass))>.l-wfill.l-wfill{flex:0 0 auto}
+/* A size computed from fill (`fill + 10`, measured into --l-cw/--l-ch) keeps fill's class, so its row
+   still shares, stacks and switches; along a row it takes its computed share instead of growing. */
+.l-wfill.l-wcomp{width:var(--l-cw)}
+.l-hfill.l-hcomp{height:var(--l-ch)}
+:is(.l-row,:where(.l-row>.l-pass,.l-row>.l-pass>.l-pass))>.l-wfill.l-wcomp,:is(.l-wrap,:where(.l-wrap>.l-pass,.l-wrap>.l-pass>.l-pass))>.l-wfill.l-wcomp{flex-grow:0;flex-basis:var(--l-cw)}
+:is(.l-col,:where(.l-col>.l-pass,.l-col>.l-pass>.l-pass))>.l-hfill.l-hcomp,:is(.l-box,:where(.l-box>.l-pass,.l-box>.l-pass>.l-pass))>.l-hfill.l-hcomp,:is(.l-scroll,:where(.l-scroll>.l-pass,.l-scroll>.l-pass>.l-pass))>.l-hfill.l-hcomp{flex-grow:0;flex-basis:var(--l-ch)}
+:is(.l-row.l-stackable,:where(.l-row.l-stackable>.l-pass,.l-row.l-stackable>.l-pass>.l-pass))>.l-wfill.l-wcomp.l-wcomp{flex-grow:0;flex-basis:max(var(--l-cw),calc((var(--l-stack-at) - 100%) * 999))}
+/* Stacked, there is no row to take a share from: it fills the line and goes no further. */
+:is(.l-row.l-stacked,:where(.l-row.l-stacked>.l-pass,.l-row.l-stacked>.l-pass>.l-pass))>.l-wfill.l-wcomp.l-wcomp.l-wcomp{flex:0 0 auto;max-width:100%}
 .l-root{color:CanvasText;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:calc(16 * var(--dsf) / 1000);line-height:1.5}
 dialog.l{padding:0;border:none;background:transparent;color:inherit;max-width:100vw;max-height:100dvh}
 dialog.l:not([open]){display:none}

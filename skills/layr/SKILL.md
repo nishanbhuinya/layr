@@ -11,9 +11,11 @@ LAYR is its own language. It compiles `.layr` files to CSS and React, but you do
 
 1. Read `layr.yaml`, `src/app.layr` (design frames, theme colours) and the files you will touch.
 2. Write LAYR using the rules below and the references.
-3. `npx layr format` (canonical form).
-4. `npx layr analyze --json` and fix every error and warning. `npx layr explain <code>` explains any code. Repeat until clean.
-5. For UI changes, `npx layr build` must succeed; `npx layr test` screenshots every page at every design frame.
+3. `npx @dynshift/layr format` (canonical form).
+4. `npx @dynshift/layr analyze --json` and fix every error and warning. `npx @dynshift/layr explain <code>` explains any code. Repeat until clean.
+5. For UI changes, `npx @dynshift/layr build` must succeed; `npx @dynshift/layr test` screenshots every page at every design frame.
+
+Always run the scoped name `@dynshift/layr`: it runs the project's installed version. The unscoped `npx layr` is an unrelated npm package. Where `layr` is installed globally, plain `layr <command>` runs the project's version too.
 
 If the `layr` MCP server is available, `check_snippet`, `get_widget` and `explain_error` answer the same questions without a shell.
 
@@ -23,7 +25,7 @@ If the `layr` MCP server is available, `check_snippet`, `get_widget` and `explai
 - **Objects:** `Widget(.id(x) .preset(p) .config(key: value …) .at(frame, key: value) .fnc(action) .on(event: action) .obj(child))`. Several children: `.objs(a, b)` or positional `Column(a, b)`.
 - **Items** are separated by line breaks or commas. Two modifiers may share a line with a space: `.config(w: 2) .obj(x)`.
 - **Numbers are design pixels** (`w: 200`). Use `px` only for hairlines, `%` for parent-relative sizes. Never `rem`, `em`, `vw`, `clamp()`.
-- **Sizes:** `w`, `h`, `size` with a length, `fill` (share spare space) or `hug` (fit content, the default). `x`/`y` mean position and axis, never size.
+- **Sizes:** `w`, `h`, `size` with a length, `fill` (share spare space) or `hug` (fit content, the default). Arithmetic on them is a size worked out from them: `w: hug + 24`, or `but.w + 10` in an Inject on a hugging box, is the hugged size plus 24 or 10, and still hugs and adapts. `x`/`y` mean position and axis, never size.
 - **Alignment:** `objAlign: mid` (2-D: `topLeft … bottomRight`); Row/Column use `xAlign` (horizontal) and `yAlign` (vertical): `start mid end between around evenly stretch`.
 - **Insets:** `all(16)`, `sym(x: 16, y: 8)`, `only(left: 16, top: 8)` (named only).
 - **Colours:** `#0d0d0d`, `0xFF0D0D0D`, named (`white`, `blue`), theme names from `app.layr`, methods `.alpha(50%)`, `.shade(n)`, `.tint(n)`, `.invert`, `.mix(c, t)`.
@@ -35,8 +37,8 @@ If the `layr` MCP server is available, `check_snippet`, `get_widget` and `explai
 - **Conditions and lists:** `If(.cnd(test) .obj(A) .fb(B))`, `Each(.of(list) .as(item, i) Row(…))`, `Repeat(.times(n) .as(i) Card(seed: i))` (`rep.index`, `rep.count`, `rep.first`, `rep.last`; `.sep(…)` between). Never `.map()` or ternaries that return objects in layout.
 - **Rich text:** `RichText('(blue)[Blue], (24, bold)[Big], *bold*, _italic_, \`code\`')`; `\n` breaks a line, a blank line starts a paragraph, `/(` prints markup as written. Values from `$name` stay plain text.
 - **Pages:** `Page(.name(X) .route('/x') … Scaffold(.body(…)))`, one root object. Navigation: `Link(.config(to: Page))`, `go(Page)`.
-- **Widgets:** `Widget(.name(Card) .param(req txt title, color tint = blue, align a = in | mid | out) .wgt(…))`; read `param.title`; a param `obj obj` (or `.obj` alone) is the object the caller puts in `.obj`. `.wgt` is canonical: `.obj` as a Widget's body is deprecated (`layr upgrade` rewrites it).
-- **Export/Extract/Inject/Duplicate:** address objects by `Page.id` or lookup path (`Page.scaffold.body.column.text(1)`); a path continues into a widget instance (`Page.….card(1).text(0)` reaches that one instance, `Card.text(0)` every instance). `Extract(.from(Page.card) .exeOrder(-1) insets pad = card.padding)` reads the declared value (without an order it reads the final value, after every Inject); `Inject(.into(Page.card) .exeOrder(0) card.padding = card.padding * 2)` adds a reversible layer; `Duplicate(.id(copy) .from(card) .exeOrder(1))` shows a copy as it is below order 1. **On one object every operation needs its own `exeOrder`** (L3102); `layr chain card` lists them. Never do arithmetic on `hug`/`fill` sizes (L2004). Never mutate `!mut` features.
+- **Widgets:** `Widget(.name(Card) .param(req txt title, color tint = blue, align a = in | mid | out) .wgt(…))`; read `param.title`; a param `obj obj` (or `.obj` alone) is the object the caller puts in `.obj`. `.wgt` is canonical: `.obj` as a Widget's body is deprecated (`layr upgrade --code` rewrites it).
+- **Export/Extract/Inject/Duplicate:** address objects by `Page.id` or lookup path (`Page.scaffold.body.column.text(1)`); a path continues into a widget instance (`Page.….card(1).text(0)` reaches that one instance, `Card.text(0)` every instance). `Extract(.from(Page.card) .exeOrder(-1) insets pad = card.padding)` reads the declared value (without an order it reads the final value, after every Inject); `Inject(.into(Page.card) .exeOrder(0) card.padding = card.padding * 2)` adds a reversible layer; `Duplicate(.id(copy) .from(card) .exeOrder(1))` shows a copy as it is below order 1. **On one object every operation needs its own `exeOrder`** (L3102); `layr chain card` lists them. A size times a size, or a division by a size, is L2004. Never mutate `!mut` features.
 - **Canonical form:** `layr format` puts every config entry, modifier and object of a tree on its own line whenever there are two or more; write it that way.
 - **Accessibility is required:** `alt` (or `decorative: true`) on Image, `label` on Input/Toggle/Select/Slider and Buttons without content.
 - **React packages:** import the component and use it as an object with `.props(...)`; hooks only inside `.react { }`.

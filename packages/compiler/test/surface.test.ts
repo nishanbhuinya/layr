@@ -29,12 +29,38 @@ describe("text on painted objects", () => {
   });
 });
 
-describe("layout sizes in arithmetic (L2004)", () => {
-  it("rejects hug and default sizes, accepts lengths and measured sizes", () => {
-    const bad = compile(page("Container(.id(b) .config(w: hug, padding: 5) Text('x'))", "var bool on = false Inject(.into(P.b) b.w = on ? b.w + 10 : b.w  b.h = b.h + 4)"));
-    expect(errors(bad).map((d) => d.code)).toEqual(["L2004", "L2004"]);
-    const good = compile(page("Container(.id(b) .config(w: 120, padding: 5) Text('x'))", "var bool on = false Inject(.into(P.b) b.w = on ? b.w + 10 : b.w)"));
-    expect(errors(good)).toEqual([]);
+describe("layout sizes in arithmetic", () => {
+  const js = (r: ReturnType<typeof compile>) => r.modules.get("src/pages/index.layr")?.js ?? "";
+
+  it("computes from a hugging size: the size layout works out, then changed", () => {
+    const r = compile(page("Animate(Container(.id(but) .config(w: hug, h: hug, padding: 5) .on(tap: press = !press) Text('x')))", "var bool press = false Inject(.into(P.but) but.w = press ? but.w + 10 : but.w + 0  but.h = press ? but.h + 10 : but.h + 0)"));
+    expect(errors(r)).toEqual([]);
+    expect(js(r)).toContain('$V.arith("+", ($prev ?? "hug"), 10)');
+  });
+
+  it("starts from hug when the size was never written", () => {
+    const r = compile(page("Container(.id(pill) .config(padding: 5) Text('x'))", "Inject(.into(P.pill) pill.w = pill.w + 16)"));
+    expect(errors(r)).toEqual([]);
+    expect(js(r)).toContain('$V.arith("+", ($prev ?? "hug"), 16)');
+  });
+
+  it("accepts hug and fill arithmetic in a config, rendered at runtime", () => {
+    const r = compile(page("Row(Container(.config(w: hug + 12) Text('a')) Container(.config(w: fill - 20) Text('b')))"));
+    expect(errors(r)).toEqual([]);
+    expect(js(r)).toContain('"w": { "$": "calc", "op": "+", "a": "hug", "b": 12 }');
+    // A Row with a child that fills (with arithmetic or without) still stacks when it runs out of room.
+    expect(js(r)).toContain("ad: 1");
+  });
+
+  it("reads another object's hug size as its measured size", () => {
+    const r = compile(page("Column(Container(.id(a) Text('x')) Container(.id(b) .config(w: 40)))", "Inject(.into(P.b) b.w = a.w + 10)"));
+    expect(errors(r)).toEqual([]);
+    expect(js(r)).toContain('$.read("P::a", "size")?.w');
+  });
+
+  it("rejects a size times a size and division by a size (L2004)", () => {
+    const r = compile(page("Container(.id(b) .config(padding: 5) Text('x'))", "Inject(.into(P.b) b.w = b.w * b.h  b.h = 100 / b.h)"));
+    expect(errors(r).map((d) => d.code)).toEqual(["L2004", "L2004"]);
   });
 });
 

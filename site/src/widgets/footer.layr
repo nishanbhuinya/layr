@@ -142,6 +142,12 @@ Widget(
                   href: '/errors'
                 )
               )
+              FootLink(
+                .config(
+                  label: 'Troubleshooting'
+                  href: '/docs/troubleshooting'
+                )
+              )
             )
             FootCol(
               .config(title: 'Build')
@@ -165,8 +171,8 @@ Widget(
               )
               FootLink(
                 .config(
-                  label: 'AI Skill'
-                  href: '/skills'
+                  label: 'AI agents'
+                  href: '/docs/ai'
                 )
               )
               FootLink(
@@ -204,6 +210,13 @@ Widget(
                   href: '/v1'
                 )
               )
+              FootLink(
+                .config(
+                  label: 'Contributing'
+                  href: 'https://github.com/nishanbhuinya/layr/blob/main/CONTRIBUTING.md'
+                  external: true
+                )
+              )
             )
             FootCol(
               .config(title: 'Legal')
@@ -223,6 +236,13 @@ Widget(
                 .config(
                   label: 'Terms'
                   href: '/terms'
+                )
+              )
+              FootLink(
+                .config(
+                  label: 'Trademark'
+                  href: 'https://github.com/nishanbhuinya/layr/blob/main/TRADEMARK.md'
+                  external: true
                 )
               )
               FootLink(

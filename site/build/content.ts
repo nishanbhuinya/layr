@@ -312,7 +312,6 @@ async function reference(repo: string) {
     keys: w.keys.map((k) => ({ name: k.name, type: typeLabel(k), default: k.default ?? "", aliases: (k.aliases ?? []).join(", "), doc: inlineMarkdown(k.doc) })),
     groups: (w.groups ?? []).map((g) => ({ name: g.name, keys: Object.keys(g.keys).join(", "), doc: inlineMarkdown(g.doc) })),
   }));
-  const modules = [...new Set(widgets.map((w) => w.module))].map((m) => ({ name: m, title: m.charAt(0).toUpperCase() + m.slice(1), widgets: widgets.filter((w) => w.module === m).map((w) => ({ name: w.name, slug: w.slug, summary: w.summary })) }));
   const constructs = CONSTRUCTS.map((c) => ({ name: c.name, doc: inlineMarkdown(c.doc), modifiers: c.modifiers.map((m) => `.${m}`).join(" "), example: codeBlock(h, formatCode(c.example), "layr") }));
   const diagnostics = DIAGNOSTICS.map((d) => ({
     code: d.code,
@@ -356,6 +355,32 @@ async function reference(repo: string) {
     Object.assign(entry, { head: renderMarkdown(h, headMd).html, html: r.html, toc: r.toc });
   }
 
+  // The language's own objects (Page, Widget, If, Each, Repeat, Duplicate, Inject…) get pages too,
+  // under "Language": their modifiers, with live examples from site/content/reference/<name>.md.
+  for (const c of CONSTRUCTS) {
+    const slug = c.name.toLowerCase();
+    const own = join(repo, "site", "content", "reference", `${slug}.md`);
+    const examples = existsSync(own) ? readFileSync(own, "utf8").replace(/\r\n/g, "\n").trim() : ["## Example", "", "```layr noexec", formatCode(c.example), "```"].join("\n");
+    const md = [examples, "", "## Modifiers", "", c.modifiers.map((m) => `\`.${m}\``).join(" · ")].join("\n");
+    const r = renderMarkdown(h, md);
+    widgets.push({
+      name: c.name,
+      slug,
+      module: "language",
+      aliases: [],
+      doc: inlineMarkdown(c.doc),
+      summary: c.doc.replace(/`/g, "").split(/(?<=\.)\s/)[0] ?? c.doc,
+      example: "",
+      slots: [],
+      events: [],
+      primaryAction: "",
+      keys: [],
+      groups: [],
+      ...{ head: renderMarkdown(h, `# ${c.name}\n\n${c.doc}`).html, html: r.html, toc: r.toc },
+    });
+  }
+  const modules = [...new Set(widgets.map((w) => w.module))].map((m) => ({ name: m, title: m.charAt(0).toUpperCase() + m.slice(1), widgets: widgets.filter((w) => w.module === m).map((w) => ({ name: w.name, slug: w.slug, summary: w.summary })) }));
+
   const FAMILIES: Record<string, string> = { L0: "Syntax", L1: "Names and types", L2: "Layout", L3: "Export, Extract, Inject", L4: "Design Scale", L5: "Motion", L6: "Accessibility", L7: "Addons", L8: "Assets", L9: "Interop" };
   const errorsMd = [
     "# Diagnostics",
@@ -384,7 +409,7 @@ async function reference(repo: string) {
   const cliMd = [
     "# CLI",
     "",
-    "`layr` ships in `@dynshift/layr`. Run it with `npx layr`, or through your package manager's scripts.",
+    "`layr` ships in `@dynshift/layr`. Install it once with `npm i -g @dynshift/layr`: inside a project it runs the version that project installs. Without it, run `npx @dynshift/layr <command>` (always the scoped name) or the project's `npm run` scripts.",
     "",
     "| Command | What it does |",
     "|---|---|",
@@ -562,7 +587,7 @@ async function home(repo: string, siteRoot: string) {
     eei: codeBlock(h, expanded(eei), "layr", "src/pages/store.layr"),
     eeiPlay: playgroundHref(expanded(eei)),
     react: codeBlock(h, expanded(read("content/home/react.layr")), "layr", "src/pages/stats.layr"),
-    install: codeBlock(h, "npx @dynshift/layr create my-app\ncd my-app\nnpm install\nnpx layr dev", "bash", "Terminal"),
+    install: codeBlock(h, "npm i -g @dynshift/layr\nlayr create my-app\ncd my-app\nnpm install\nlayr dev", "bash", "Terminal"),
   };
 }
 
@@ -682,7 +707,7 @@ export function siteContent(): Plugin {
         for (const w of ref.widgets) items.push({ t: w.name, s: w.summary, h: `/api/${w.slug}`, k: "widget" });
         for (const d of ref.diagnostics) items.push({ t: `${d.code} ${d.title}`, s: d.severity, h: `/errors#${d.code}`, k: "diagnostic" });
         for (const c of ref.commands) items.push({ t: `layr ${c.name}`, s: c.summary, h: `/cli#${c.name}`, k: "command" });
-        for (const p of [["Playground", "/playground"], ["Library", "/library"], ["AI Skill", "/skills"], ["VS Code extension", "/editor"], ["Changelog", "/changelog"], ["API reference", "/api"], ["Diagnostics", "/errors"], ["CLI", "/cli"]]) items.push({ t: p[0] as string, s: "", h: p[1] as string, k: "page" });
+        for (const p of [["Playground", "/playground"], ["Library", "/library"], ["VS Code extension", "/editor"], ["Changelog", "/changelog"], ["API reference", "/api"], ["Diagnostics", "/errors"], ["CLI", "/cli"]]) items.push({ t: p[0] as string, s: "", h: p[1] as string, k: "page" });
         return `export default ${JSON.stringify(items)};`;
       }
       if (what === "library") return `export default ${JSON.stringify(await getLib())};`;
@@ -697,7 +722,7 @@ export function siteContent(): Plugin {
         return `export default ${JSON.stringify({ slug: "changelog", title: "Changelog", description: "What changed in each release of LAYR: new language features, fixes, and what to update.", section: "Reference", html, toc, legal: false, edit: `${REPO_URL}/blob/main/CHANGELOG.md` })};`;
       }
       if (what.startsWith("page/")) {
-        // Plain Markdown pages under site/content/pages (skills, the legal pages, v1, publishing).
+        // Plain Markdown pages under site/content/pages (the editor, the legal pages, v1, publishing).
         const name = what.slice(5);
         const file = join(siteRoot, "content", "pages", `${name}.md`);
         const { data, body } = frontmatter(readFileSync(file, "utf8").replace(/\r\n/g, "\n"));
@@ -746,16 +771,20 @@ export function siteContent(): Plugin {
         this.emitFile({ type: "asset", fileName: `download/layr-${vsVersion}.vsix`, source });
         this.emitFile({ type: "asset", fileName: "download/layr-vscode.vsix", source });
       }
-      const pages = ["/", "/docs", ...docs.map((d) => `/docs/${d.slug}`), "/api", ...ref.widgets.map((w) => `/api/${w.slug}`), "/errors", "/cli", "/playground", "/library", ...entries.map((e) => `/library/${e.id}`), "/library/publish", "/skills", "/editor", "/changelog", "/privacy", "/cookies", "/terms", "/contact"];
+      const pages = ["/", "/docs", ...docs.map((d) => `/docs/${d.slug}`), "/api", ...ref.widgets.map((w) => `/api/${w.slug}`), "/errors", "/cli", "/playground", "/library", ...entries.map((e) => `/library/${e.id}`), "/library/publish", "/editor", "/changelog", "/privacy", "/cookies", "/terms", "/contact"];
       this.emitFile({ type: "asset", fileName: "sitemap.xml", source: `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages.map((p) => `  <url><loc>${SITE_URL}${p}</loc></url>`).join("\n")}\n</urlset>\n` });
       this.emitFile({ type: "asset", fileName: "robots.txt", source: `User-agent: *\nAllow: /\n\nSitemap: ${SITE_URL}/sitemap.xml\n` });
       this.emitFile({ type: "asset", fileName: "CNAME", source: "layr.dynshift.com\n" });
+      // Pages that moved: a static redirect keeps old links working on a static host.
+      for (const [from, to, title] of [["skills", "/docs/ai", "AI agents"]]) {
+        this.emitFile({ type: "asset", fileName: `${from}/index.html`, source: `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><title>${title} · LAYR</title><link rel="canonical" href="${SITE_URL}${to}"><meta name="robots" content="noindex"><meta http-equiv="refresh" content="0; url=${to}"></head><body><p>This page moved to <a href="${to}">${title}</a>.</p></body></html>\n` });
+      }
 
       // llms.txt (https://llmstxt.org): an index for agents, and the whole documentation in one file.
       const bySection = nav(docs)
         .map((s) => `## ${s.title}\n\n${s.items.map((i) => `- [${docs.find((d) => d.slug === i.slug)?.title ?? i.title}](${SITE_URL}/docs/${i.slug}.md): ${docs.find((d) => d.slug === i.slug)?.description ?? ""}`).join("\n")}`)
         .join("\n\n");
-      const llms = `# LAYR\n\n> LAYR (Layout Authoritative Yet Responsive) is a compiled UI language for the web: \`.layr\` files compile to React components and static CSS, with Design Scale units, deterministic layout adaptation and Export/Extract/Inject. Create a project: \`npx @dynshift/layr create my-app\`. npm: @dynshift/layr (CLI: layr).\n\nRead the Skill rules before writing LAYR: ${SITE_URL}/skills. Every widget and config key: ${SITE_URL}/api. Every diagnostic: ${SITE_URL}/errors.\n\n${bySection}\n\n## Optional\n\n- [Full documentation](${SITE_URL}/llms-full.txt): every page in one file\n- [Addon index](${SITE_URL}/addons.json): official and listed addons\n`;
+      const llms = `# LAYR\n\n> LAYR (Layout Authoritative Yet Responsive) is a compiled UI language for the web: \`.layr\` files compile to React components and static CSS, with Design Scale units, deterministic layout adaptation and Export/Extract/Inject. Create a project: \`npx @dynshift/layr create my-app\`. npm: @dynshift/layr (CLI: layr).\n\nRead the Skill rules before writing LAYR: ${SITE_URL}/docs/ai. Every widget and config key: ${SITE_URL}/api. Every diagnostic: ${SITE_URL}/errors.\n\n${bySection}\n\n## Optional\n\n- [Full documentation](${SITE_URL}/llms-full.txt): every page in one file\n- [Addon index](${SITE_URL}/addons.json): official and listed addons\n`;
       this.emitFile({ type: "asset", fileName: "llms.txt", source: llms });
       const full = docs.map((d) => `# ${d.title}\n\nSource: ${SITE_URL}/docs/${d.slug}\n\n${d.markdown.replace(/^# .*\n+/, "").trim()}\n`).join("\n\n---\n\n");
       this.emitFile({ type: "asset", fileName: "llms-full.txt", source: `# LAYR documentation\n\n${full}` });

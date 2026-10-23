@@ -14,6 +14,6 @@ jobs:
         with:
           node-version: 22
       - run: npm install
-      - run: npx layr analyze
-      - run: npx layr format --check
-      - run: npx layr pack --dry-run
+      - run: npx @dynshift/layr analyze
+      - run: npx @dynshift/layr format --check
+      - run: npx @dynshift/layr pack --dry-run

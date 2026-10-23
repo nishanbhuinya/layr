@@ -17,6 +17,6 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
       - run: npm install
-      - run: npx layr analyze
-      - run: npx layr pack
+      - run: npx @dynshift/layr analyze
+      - run: npx @dynshift/layr pack
       - run: npm publish --provenance --access public

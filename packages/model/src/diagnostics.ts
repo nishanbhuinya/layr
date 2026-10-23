@@ -61,7 +61,7 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
     "L1017",
     "warning",
     "Deprecated form",
-    "This form still compiles but has a newer spelling, and a later major version removes it. The message names the new form. `layr upgrade` lists every deprecated form in the project and rewrites them once you agree; in VS Code the quick fix or **Update all** does the same.",
+    "This form still compiles but has a newer spelling, and a later major version removes it. The message names the new form. `layr upgrade --code` lists every deprecated form in the project and rewrites them once you agree (`layr upgrade` does the same after moving the project to the latest LAYR); in VS Code the quick fix or **Update all** does the same.",
     { bad: "Widget(.name(Card) .obj(Container()))", good: "Widget(.name(Card) .wgt(Container()))" },
   ),
 
@@ -77,9 +77,9 @@ export const DIAGNOSTICS: readonly DiagnosticDef[] = [
   d(
     "L2004",
     "error",
-    "Arithmetic on a layout size",
-    "`w` and `h` written as `hug` or `fill`, or not written at all, are sizes the layout works out; they are not numbers, so `box.w + 10` has nothing to add to. Give the size a length, change what the box hugs (its `padding`, its content), or read the measured size `box.size.w`. Do not feed a measured size back into the same size: it would grow on every measure.",
-    { bad: "Inject(.into(Home.button) button.h = button.h + 10)", good: "Inject(.into(Home.button) button.padding = all(10))" },
+    "Arithmetic that is not a length",
+    "Arithmetic on a layout size is a size worked out from it: `box.w + 10` on a hugging box is its hugged size plus 10, `pane.w * 0.5` half its fill share, and both keep hugging, filling and adapting. What has no meaning is a size times a size, or anything divided by a size: the result is not a length. Add to the size, subtract from it, or scale it by a number.",
+    { bad: "Inject(.into(Home.button) button.w = button.w * button.h)", good: "Inject(.into(Home.button) button.w = button.w * 1.5)" },
   ),
   d("L2101", "warning", "Overflow cannot adapt", "The content cannot fit and no adaptation applies (for example a fixed child larger than its fixed parent on both axes). It is clipped. Make a size flexible or set `overflow` explicitly."),
   d("L2102", "info", "Layout adapted", "At some frame this Row wraps or stacks. The message says where. Set `overflow` to make the choice explicit."),

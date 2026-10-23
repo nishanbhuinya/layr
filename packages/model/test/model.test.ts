@@ -3,7 +3,7 @@ import { Color } from "../src/color.ts";
 import { DEFAULT_DESIGN_SCALE } from "../src/ds.ts";
 import { BASE_CSS, canonicalAlign, lower } from "../src/lower.ts";
 import { keyOf, widget, WIDGETS } from "../src/schema.ts";
-import { all, arith, gradient, gradientCss, lengthCss, only, pct, px, sym, vp } from "../src/values.ts";
+import { all, arith, computedSizeCss, gradient, gradientCss, isComputedSize, lengthCss, only, pct, px, sizingBasis, sym, vp } from "../src/values.ts";
 
 const ctx = { frames: new Map(DEFAULT_DESIGN_SCALE.frames.map((f) => [f.name, { from: f.from, w: f.w }])) };
 
@@ -205,5 +205,39 @@ describe("explicit stackAt", () => {
     const l = lower("Row", { stackAt: 600 }, ctx);
     expect(l.classes).toContain("l-stackable");
     expect(l.notes).not.toContain("adapt-row");
+  });
+});
+
+describe("sizes computed from hug and fill", () => {
+  it("keeps the layout size as the basis of the arithmetic", () => {
+    const v = arith("+", "hug", 10);
+    expect(v).toEqual({ $: "calc", op: "+", a: "hug", b: 10 });
+    expect(sizingBasis(arith("*", arith("-", "fill", 8), 2))).toBe("fill");
+    expect(isComputedSize(v)).toBe(true);
+    expect(isComputedSize("hug")).toBe(false);
+  });
+
+  it("leaves the layout size alone for +0, -0, *1 and /1", () => {
+    expect(arith("+", "hug", 0)).toBe("hug");
+    expect(arith("*", "fill", 1)).toBe("fill");
+    expect(arith("+", 0, "hug")).toBe("hug");
+  });
+
+  it("writes a hug basis as calc-size() and a measured basis as calc()", () => {
+    const v = arith("*", arith("+", "hug", 10), 2) as never;
+    expect(lengthCss(v)).toBe("calc-size(fit-content, (size + (10 * var(--ds) / 1000)) * 2)");
+    expect(computedSizeCss(v, "120px")).toBe("calc((120px + (10 * var(--ds) / 1000)) * 2)");
+    expect(lengthCss(arith("-", "fill", px(4)) as never)).toBe("auto");
+  });
+
+  it("lowers a computed size with its basis's class, so it adapts the same way", () => {
+    const hug = lower("Container", { w: arith("+", "hug", 10) });
+    expect(hug.classes).not.toContain("l-wfix");
+    expect(hug.decls.width).toBe("calc-size(fit-content, size + (10 * var(--ds) / 1000))");
+    expect(hug.computed?.w).toBeDefined();
+    const fill = lower("Container", { w: arith("+", "fill", 10), h: arith("-", "hug", 2) });
+    expect(fill.classes).toContain("l-wfill");
+    expect(fill.decls.width).toBeUndefined();
+    expect(fill.decls.height).toBe("calc-size(fit-content, size - (2 * var(--ds) / 1000))");
   });
 });

@@ -51,7 +51,7 @@ Page(
   .route('/api')
   .meta(
     title: 'Widgets and keys · LAYR'
-    description: 'Every core LAYR widget with its config keys, types, defaults, aliases, slots and events, generated from the schema.'
+    description: 'Every core LAYR widget with its config keys, types, defaults, aliases, slots and events, and every language object with its modifiers, generated from the schema.'
   )
   .load { return loadApiIndex() }
   Scaffold(
@@ -92,7 +92,7 @@ Page(
                 lineHeight: 1.6
               )
               .obj(
-                'Every core widget, generated from the schema the compiler, the language server and the LAYR Skill read.'
+                'Every core widget, and the language objects that hold them (Page, Widget, If, Each, Repeat, Duplicate, Inject…), generated from the schema the compiler, the language server and the LAYR Skill read.'
               )
             )
           )

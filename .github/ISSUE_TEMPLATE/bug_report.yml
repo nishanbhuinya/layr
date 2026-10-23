@@ -52,5 +52,5 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: "`npx layr doctor` output"
+      label: "`layr doctor` (or `npx @dynshift/layr doctor`) output"
       render: text

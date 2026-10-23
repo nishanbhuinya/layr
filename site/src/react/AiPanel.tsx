@@ -27,9 +27,9 @@ const WAYS: Array<{ id: string; tab: string; lines: Line[] }> = [
     tab: "MCP client",
     lines: [
       { kind: "note", text: "Tools for any MCP client: widgets, diagnostics, format, analyze, addons" },
-      { kind: "cmd", text: "claude mcp add layr -- npx layr mcp" },
+      { kind: "cmd", text: "claude mcp add layr -- npx -y @dynshift/layr mcp" },
       { kind: "note", text: "Any other client: add it to its MCP config" },
-      { kind: "text", text: '{ "mcpServers": { "layr": { "command": "npx", "args": ["layr", "mcp"] } } }' },
+      { kind: "text", text: '{ "mcpServers": { "layr": { "command": "npx", "args": ["-y", "@dynshift/layr", "mcp"] } } }' },
       { kind: "note", text: "The assistant now verifies LAYR instead of guessing it" },
       { kind: "ask", text: "Why does my Row stack on phones? Check it with the layr tools." },
     ],

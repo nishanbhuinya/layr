@@ -3,9 +3,9 @@
  * config, injected layers and per-frame values are lowered here at runtime with the same lowering
  * the compiler uses.
  */
-import { type Decls, lengthCss, lower, PRIMARY_ACTIONS, runtimeWidget, SLOTS, size as makeSize } from "@layr-internal/model";
+import { type Calc, computedSizeCss, type Decls, lengthCss, lower, PRIMARY_ACTIONS, runtimeWidget, SLOTS, sizingBasis, size as makeSize } from "@layr-internal/model";
 import { type Action, atFrame, registry, router, run, type Signal } from "@layr-internal/runtime";
-import { Children, type CSSProperties, createElement, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { Children, type CSSProperties, createElement, type ReactNode, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { applyMotion, exitAnimation, type MotionSpec } from "./motion.ts";
 import { resolveOverrides, usePublish } from "./declared.ts";
 import { exitSpecs } from "./presence.tsx";
@@ -80,6 +80,112 @@ function observeResize(targets: Element[], cb: () => void): () => void {
   };
 }
 
+/** Whether CSS can size from the content itself (`calc-size()`: Chromium 129+, not Firefox or Safari yet). */
+const hasCalcSize = () => typeof CSS !== "undefined" && typeof CSS.supports === "function" && CSS.supports("width", "calc-size(fit-content, size)");
+const noSubscribe = () => () => {};
+
+type Basis = { w?: number; h?: number };
+
+/**
+ * A size computed from hug or fill (`w: hug + 10`). Where CSS has `calc-size()` a hug basis is pure
+ * CSS. Otherwise, and always for fill (a share of a row is not a width CSS can compute with), the
+ * basis is measured: the computed size is taken off, the object laid out as plain hug/fill, its size
+ * read, and the result written from that, all before paint. Measuring with the arithmetic removed is
+ * what keeps it from feeding back into itself.
+ */
+function computedSizes(computed: { w?: Calc; h?: Calc } | undefined, calcSize: boolean, basis: Basis, decls: Decls, classes: string[]): string {
+  const axes: string[] = [];
+  for (const axis of ["w", "h"] as const) {
+    const v = computed?.[axis];
+    if (!v) continue;
+    const fill = sizingBasis(v) === "fill";
+    if (!fill && calcSize) continue;
+    axes.push(`${axis}${fill ? "f" : "h"}`);
+    const prop = axis === "w" ? "width" : "height";
+    const px = basis[axis];
+    if (fill) {
+      // Fill keeps its class (so rows still stack and share); `l-wcomp` sizes it from `--l-cw`.
+      if (px === undefined) continue;
+      decls[`--l-c${axis}`] = computedSizeCss(v, `${num2(px)}px`);
+      classes.push(`l-${axis}comp`);
+    } else if (px === undefined) {
+      if (axis === "w") decls.width = "fit-content";
+      else delete decls.height;
+    } else decls[prop] = computedSizeCss(v, `${num2(px)}px`);
+  }
+  return axes.join(",");
+}
+
+const num2 = (n: number) => String(Math.round(n * 100) / 100);
+
+/** The element its parent lays out with: pass-through wrappers (`display: contents`) are skipped. */
+function layoutParent(node: Element): Element | null {
+  let p = node.parentElement;
+  while (p && getComputedStyle(p).display === "contents") p = p.parentElement;
+  return p;
+}
+
+/** Measures the hug/fill basis of computed sizes (see `computedSizes`) and keeps it current. */
+function useComputedSizeBasis(el: { current: HTMLElement | null }, key: string, setBasis: (f: (b: Basis) => Basis) => void) {
+  useIsoLayoutEffect(() => {
+    const node = el.current;
+    if (!node || !key) return undefined;
+    const axes = key.split(",").map((s) => ({ axis: s[0] as "w" | "h", fill: s[1] === "f" }));
+    let waiting = false;
+    let alive = true;
+    const measure = () => {
+      if (!alive) return;
+      // A size in the middle of an animation is not its basis: measure when it lands.
+      const running = node.getAnimations?.().filter((a) => a.playState === "running") ?? [];
+      if (running.length) {
+        if (!waiting) {
+          waiting = true;
+          void Promise.allSettled(running.map((a) => a.finished)).then(() => {
+            waiting = false;
+            measure();
+          });
+        }
+        return;
+      }
+      const saved = { w: node.style.width, h: node.style.height, wc: node.classList.contains("l-wcomp"), hc: node.classList.contains("l-hcomp") };
+      for (const { axis, fill } of axes) {
+        if (axis === "w") node.style.width = fill ? "" : "fit-content";
+        else node.style.height = "";
+        if (fill) node.classList.remove(`l-${axis}comp`);
+      }
+      // The layout size, unaffected by transforms (a pressed button's scale).
+      const cs = getComputedStyle(node);
+      const next: Basis = {};
+      for (const { axis } of axes) next[axis] = Number.parseFloat(axis === "w" ? cs.width : cs.height) || 0;
+      node.style.width = saved.w;
+      node.style.height = saved.h;
+      if (saved.wc) node.classList.add("l-wcomp");
+      if (saved.hc) node.classList.add("l-hcomp");
+      setBasis((prev) => (axes.every(({ axis }) => prev[axis] !== undefined && Math.abs((prev[axis] as number) - (next[axis] as number)) < 0.5) ? prev : { ...prev, ...next }));
+    };
+    measure();
+    // What it hugs changes (children, text), or the room it has changes (its parent).
+    let stop = () => {};
+    const watch = () => {
+      stop();
+      const parent = layoutParent(node);
+      stop = observeResize([...node.children, ...(parent ? [parent] : [])], measure);
+    };
+    watch();
+    const mo = new MutationObserver((records) => {
+      if (records.some((r) => r.type === "childList" && r.target === node)) watch();
+      measure();
+    });
+    mo.observe(node, { childList: true, characterData: true, subtree: true });
+    return () => {
+      alive = false;
+      stop();
+      mo.disconnect();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+}
+
 const presets = new Map<string, Map<string, Record<string, unknown>>>();
 
 /** Forgets registered presets and icons (a runner starting a new program). */
@@ -135,6 +241,10 @@ export function N(props: NodeProps): ReactNode {
   const [chosen, setChosen] = useState(0);
   const motionRef = useRef<MotionSpec>({});
   const fieldId = useId();
+  // The server renders `calc-size()`; a browser without it switches to measuring after hydrating.
+  const calcSize = useSyncExternalStore(noSubscribe, hasCalcSize, () => true);
+  const [basis, setBasis] = useState<Basis>({});
+  let computedKey = "";
   try {
     const { w, c, d, s, b, a, ip, o, x, ar, v, m, pr, ad, oe } = props;
     // A caller's `.fnc` on a custom widget arrives as `press`; it runs the root's primary action.
@@ -172,6 +282,7 @@ export function N(props: NodeProps): ReactNode {
     let attrs: Record<string, unknown> = { ...(x ?? {}) };
     if (cfg) {
       const l = lower(w, cfg);
+      if (l.computed) computedKey = computedSizes(l.computed, calcSize, basis, l.decls, l.classes);
       className = [...new Set([...(c ?? "").split(" ").filter(Boolean), ...l.classes])].join(" ");
       style = styleFrom(l.decls);
       tag = l.tag;
@@ -235,6 +346,7 @@ export function N(props: NodeProps): ReactNode {
       }
     });
     usePublish(a ? [a, instanceAddr] : [], a ? Object.fromEntries(slotNames.map((k) => [k, slotValue(k)])) : {}, props.xs);
+    useComputedSizeBasis(el, computedKey, setBasis);
     useIsoLayoutEffect(() => {
       const node = el.current;
       if (!node || (!a && !ad)) return;

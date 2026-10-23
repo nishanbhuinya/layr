@@ -3,6 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { main } from "../src/cli.ts";
+import { mcpServer } from "../src/commands/skills.ts";
+import { codeStep, dependencySpec, installArgs, pickVersion } from "../src/commands/upgrade.ts";
 
 const PAGE = `Widget(.name(Tag) .param(req txt label) .obj(Container(.obj(Text(param.label)))))
 
@@ -58,9 +60,9 @@ describe("layr chain", () => {
   });
 });
 
-describe("layr upgrade", () => {
+describe("layr upgrade --code", () => {
   it("informs and changes nothing without consent", async () => {
-    const check = await run("upgrade", "--check");
+    const check = await run("upgrade", "--code", "--check");
     expect(check.out).toContain("A Widget renders `.wgt(...)`");
     expect(check.out).toContain("src/pages/index.layr:1");
     expect(process.exitCode).toBe(1);
@@ -68,10 +70,48 @@ describe("layr upgrade", () => {
     expect(readFileSync(join(dir, "src/pages/index.layr"), "utf8")).toBe(PAGE);
   });
   it("rewrites and formats with --yes, then has nothing left", async () => {
-    await run("upgrade", "--yes");
+    await run("upgrade", "--code", "--yes");
     const text = readFileSync(join(dir, "src/pages/index.layr"), "utf8");
     expect(text).toContain(".wgt(");
     expect(text).not.toMatch(/Widget\([^]*?\.obj\(Container/);
-    expect((await run("upgrade")).out).toContain("Nothing to upgrade");
+    expect((await run("upgrade", "--code")).out).toContain("Nothing to upgrade");
+  });
+});
+
+describe("layr upgrade: LAYR itself", () => {
+  const p = { "dist-tags": { latest: "3.3.0", next: "3.4.0-beta.1" }, versions: { "3.1.0": {}, "3.2.0": {}, "3.2.1": {}, "3.3.0": {}, "3.4.0-beta.1": {} } } as never;
+  it("picks the version a tag, a version or a range names", () => {
+    expect(pickVersion(p, "latest")).toBe("3.3.0");
+    expect(pickVersion(p, "next")).toBe("3.4.0-beta.1");
+    expect(pickVersion(p, "3.2")).toBe("3.2.1");
+    expect(pickVersion(p, "3.1.0")).toBe("3.1.0");
+    expect(pickVersion(p, "9")).toBeNull();
+  });
+  it("keeps the project's dependency style and field", () => {
+    expect(dependencySpec("^3.1.0", "3.3.0")).toBe("^3.3.0");
+    expect(dependencySpec("~3.1.0", "3.3.0")).toBe("~3.3.0");
+    expect(dependencySpec("3.1.0", "3.3.0")).toBe("3.3.0");
+    expect(installArgs("npm", "^3.3.0", true)).toEqual(["install", "@dynshift/layr@^3.3.0", "--save-dev"]);
+    expect(installArgs("pnpm", "^3.3.0", false)).toEqual(["add", "@dynshift/layr@^3.3.0"]);
+  });
+  it("runs the code step the new version has", () => {
+    expect(codeStep("3.3.0")).toEqual(["upgrade", "--code"]);
+    expect(codeStep("3.2.0")).toEqual(["upgrade"]);
+    expect(codeStep("3.1.0")).toBeNull();
+  });
+});
+
+describe("layr skills install", () => {
+  it("points agents and MCP at the scoped package, keeping other MCP servers", async () => {
+    writeFileSync(join(dir, ".mcp.json"), JSON.stringify({ mcpServers: { other: { command: "x" }, layr: { command: "npx", args: ["layr", "mcp"] } } }));
+    const r = await run("skills", "install");
+    expect(r.out).toContain("updated the LAYR MCP server");
+    const mcp = JSON.parse(readFileSync(join(dir, ".mcp.json"), "utf8"));
+    expect(mcp.mcpServers.other).toEqual({ command: "x" });
+    expect(mcp.mcpServers.layr.args).toContain("@dynshift/layr");
+    expect(readFileSync(join(dir, "AGENTS.md"), "utf8")).toContain("npx @dynshift/layr analyze --json");
+    expect((await run("skills", "install")).out).toContain("kept the LAYR MCP server");
+    expect(mcpServer("linux")).toEqual({ command: "npx", args: ["-y", "@dynshift/layr", "mcp"] });
+    expect(mcpServer("win32").args.slice(0, 2)).toEqual(["/c", "npx"]);
   });
 });

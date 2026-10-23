@@ -10,7 +10,7 @@ mkdir "$work/tool" && (cd "$work/tool" && npm init -y >/dev/null && npm i "$tgz"
 cd "$work/smoke-app"
 node -e "const f='package.json',p=require('./'+f);p.dependencies['@dynshift/layr']='file:$tgz';require('fs').writeFileSync(f,JSON.stringify(p,null,2))"
 npm install --no-audit --no-fund >/dev/null
-npx layr analyze
-npx layr build
+npx @dynshift/layr analyze
+npx @dynshift/layr build
 test -f dist/index.html
 echo "smoke: packed @dynshift/layr creates, analyzes and builds a project"

@@ -55,6 +55,8 @@ export async function create(args: Args) {
   fill(target, { name, Name: pascalCase(name), id, layrVersion: layrVersion() });
   const rel = relative(process.cwd(), target) || ".";
   console.log(`${c.green("✓")} Created ${kind === "addon" ? "addon" : "project"} ${c.bold(name)} in ${rel}\n`);
-  console.log(`  cd ${rel}\n  npm install\n  npx layr dev\n`);
-  if (kind !== "addon") console.log(c.dim("Give your AI agent the LAYR Skill: npx layr skills install"));
+  console.log(`  cd ${rel}\n  npm install\n  layr dev\n`);
+  // Run through npx, there is probably no `layr` command yet: say how to get one.
+  if (process.env.npm_command === "exec") console.log(c.dim(`No layr command yet? ${c.bold("npm i -g @dynshift/layr")} once; inside a project it runs that project's version. Or use ${c.bold("npm run dev")}.`));
+  if (kind !== "addon") console.log(c.dim("Give your AI agent the LAYR Skill: layr skills install"));
 }

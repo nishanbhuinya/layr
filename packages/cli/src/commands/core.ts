@@ -4,9 +4,12 @@ import { dirname, join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import { format } from "@layr-internal/compiler";
 import { DIAGNOSTIC_BY_CODE, DIAGNOSTICS } from "@layr-internal/model";
+import { loadConfig } from "@layr-internal/node";
+import semver from "semver";
 import { layr } from "../vite.ts";
 import { findRoot, loadProject, printDiagnostics } from "../project.ts";
 import { type Args, banner, c, CliError, flag } from "../ui.ts";
+import { layrVersion, projectLayrVersion } from "../version.ts";
 
 async function viteConfig(root: string, extra: Record<string, unknown> = {}): Promise<import("vite").InlineConfig> {
   const hasConfig = ["vite.config.ts", "vite.config.js", "vite.config.mjs"].some((f) => existsSync(join(root, f)));
@@ -28,7 +31,7 @@ export async function dev(args: Args) {
   console.log(banner("dev"));
   server.printUrls();
   const deprecated = loadProject(root).result.diagnostics.filter((d) => d.deprecation).length;
-  if (deprecated) console.log(c.yellow(`\n  ${deprecated} deprecated form(s) in this project: ${c.bold("layr upgrade")} lists them and updates them when you agree.`));
+  if (deprecated) console.log(c.yellow(`\n  ${deprecated} deprecated form(s) in this project: ${c.bold("layr upgrade --code")} lists them and updates them when you agree.`));
 }
 
 export async function preview(args: Args) {
@@ -210,6 +213,13 @@ export async function doctor() {
     const pkg = existsSync(join(root, "package.json")) ? (JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as { dependencies?: Record<string, string>; devDependencies?: Record<string, string> }) : {};
     const deps = { ...pkg.dependencies, ...pkg.devDependencies };
     for (const d of ["@dynshift/layr", "react", "react-dom", "vite"]) checks.push([d, !!deps[d], deps[d] ?? "missing"]);
+    // The installed LAYR is the one the CLI, the editor and agents run here; layr.yaml says which it expects.
+    const installed = projectLayrVersion(root);
+    const range = existsSync(join(root, "layr.yaml")) ? (loadConfig(root).yaml.layr ?? null) : null;
+    if (installed) {
+      const fits = !range || semver.satisfies(installed, range, { includePrerelease: true });
+      checks.push(["LAYR installed", fits, `${installed}${range ? ` (layr.yaml: ${range})` : ""}${installed !== layrVersion() ? ` · the layr command is ${layrVersion()} and runs ${installed} here` : ""}`]);
+    } else checks.push(["LAYR installed", false, "not installed: run your package manager's install"]);
     const p = loadProject(root);
     const errs = p.result.diagnostics.filter((d) => d.severity === "error").length;
     checks.push(["Compiles", errs === 0, `${p.files.length} file(s), ${errs} error(s)`]);

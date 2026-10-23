@@ -258,7 +258,7 @@ Page(
 > - Add `'Barbara'` to the list and run: `Each` shows five without any other change.
 > - Swap the `.obj(...)` and `.fb(...)` contents: the condition now works the other way round.
 
-`Repeat` shows an object a number of times. Inside, `rep.index` counts from 0, `rep.count` is the total, and `rep.first` and `rep.last` mark the ends. `.as(i)` gives the index a short name, and `.sep(...)` goes between repeats. The count can be state:
+[`Repeat`](/api/repeat) shows an object a number of times. Inside, `rep.index` counts from 0, `rep.count` is the total, and `rep.first` and `rep.last` mark the ends. `.as(i)` gives the index a short name, and `.sep(...)` goes between repeats. The count can be state:
 
 ```layr
 Page(

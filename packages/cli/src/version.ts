@@ -1,18 +1,13 @@
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { ownLayrInstall, resolveProjectLayr } from "@layr-internal/node/install";
 
-/** The version of the installed `@dynshift/layr` package. */
+/** The version of the `@dynshift/layr` package this CLI belongs to. */
 export function layrVersion(): string {
-  let dir = dirname(fileURLToPath(import.meta.url));
-  for (let i = 0; i < 6; i++) {
-    const candidates = [join(dir, "package.json"), join(dir, "packages", "layr", "package.json")];
-    for (const p of candidates) {
-      if (!existsSync(p)) continue;
-      const pkg = JSON.parse(readFileSync(p, "utf8")) as { name?: string; version?: string };
-      if (pkg.name === "@dynshift/layr" && pkg.version) return pkg.version;
-    }
-    dir = dirname(dir);
-  }
-  return "3.0.0";
+  return ownLayrInstall(dirname(fileURLToPath(import.meta.url)))?.version ?? "3";
+}
+
+/** The `@dynshift/layr` version the project in `dir` installs, when it has one. */
+export function projectLayrVersion(dir = process.cwd()): string | null {
+  return resolveProjectLayr(dir)?.version ?? null;
 }

@@ -41,14 +41,14 @@ export async function loadIndex(): Promise<IndexEntry[]> {
   return idx?.addons ?? [];
 }
 
-interface NpmPackument {
+export interface NpmPackument {
   name: string;
   "dist-tags": Record<string, string>;
   versions: Record<string, { version: string; layr?: { id: string; layr?: string }; scripts?: Record<string, string> }>;
   description?: string;
 }
 
-async function packument(name: string): Promise<NpmPackument | null> {
+export async function packument(name: string): Promise<NpmPackument | null> {
   return fetchJson<NpmPackument>(`${REGISTRY}/${name.replace("/", "%2f")}`);
 }
 
@@ -67,14 +67,14 @@ export async function resolveAddon(spec: string): Promise<{ npm: string; range: 
   throw new CliError(`Could not find an addon called \`${id}\` (looked in ${INDEX_URL} and npm). Use the npm name directly: ${c.bold("layr add @author/layr-name")}.`);
 }
 
-function packageManager(root: string): { name: string; add: string[]; remove: string[]; update: string[] } {
+export function packageManager(root: string): { name: string; add: string[]; remove: string[]; update: string[] } {
   if (existsSync(join(root, "pnpm-lock.yaml"))) return { name: "pnpm", add: ["add"], remove: ["remove"], update: ["update"] };
   if (existsSync(join(root, "yarn.lock"))) return { name: "yarn", add: ["add"], remove: ["remove"], update: ["upgrade"] };
   if (existsSync(join(root, "bun.lockb")) || existsSync(join(root, "bun.lock"))) return { name: "bun", add: ["add"], remove: ["remove"], update: ["update"] };
   return { name: "npm", add: ["install"], remove: ["uninstall"], update: ["update"] };
 }
 
-function run(cmd: string, args: string[], cwd: string) {
+export function run(cmd: string, args: string[], cwd: string) {
   console.log(c.gray(`$ ${cmd} ${args.join(" ")}`));
   const r = spawnSync(cmd, args, { cwd, stdio: "inherit", shell: process.platform === "win32" });
   if (r.status !== 0) throw new CliError(`${cmd} ${args[0]} failed.`);

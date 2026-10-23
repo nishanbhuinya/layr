@@ -16,8 +16,8 @@ import {{Name}} from 'layr-{{name}}'
 
 ```sh
 npm install
-npx layr dev        # addon gallery: every example at every design frame
-npx layr analyze
-npx layr pack       # validate and pack
-npx layr publish    # validate, then npm publish
+layr dev            # addon gallery: every example at every design frame
+layr analyze
+layr pack           # validate and pack
+layr publish        # validate, then npm publish
 ```
