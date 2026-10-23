@@ -65,7 +65,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version="${{ steps.v.outputs.version }}"
-          awk -v v="$version" '$0 ~ "^## \[?"v"\]?" {p=1; next} /^## / && p {exit} p' CHANGELOG.md > notes.md
+          # Only this version's section: the heading is compared as a string, not a regex, so another
+          # version's heading ends the section instead of matching it.
+          awk -v v="$version" '/^## / { if (p) exit; h = $2; gsub(/[][]/, "", h); if (h == v) p = 1; next } p' CHANGELOG.md > notes.md
           [ -s notes.md ] || echo "See CHANGELOG.md." > notes.md
           flags=""
           if [ "${{ steps.v.outputs.dist }}" = "next" ]; then flags="--prerelease"; fi
